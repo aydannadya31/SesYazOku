@@ -9,8 +9,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AssignmentTurnedIn
-import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -29,18 +28,16 @@ import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.i18n.AppStrings
 import com.example.ui.AppViewModel
-import com.example.ui.screens.CloudSyncScreen
 import com.example.ui.screens.NoteDetailScreen
-import com.example.ui.screens.NotesListScreen
 import com.example.ui.screens.RecordingScreen
+import com.example.ui.screens.RecordingsScreen
 import com.example.ui.screens.SettingsScreen
-import com.example.ui.screens.TasksScreen
+import com.example.ui.screens.TranscriptsListScreen
 import com.example.ui.theme.SesYaziciTheme
 
 enum class ScreenTab {
-    NOTES,
-    TASKS,
-    CLOUD,
+    RECORDINGS,
+    TRANSCRIPTS,
     SETTINGS
 }
 
@@ -72,10 +69,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainAppHost(viewModel: AppViewModel) {
-    var currentTab by remember { mutableStateOf(ScreenTab.NOTES) }
+    var currentTab by remember { mutableStateOf(ScreenTab.RECORDINGS) }
     var destination by remember { mutableStateOf(NavigationDestination.MAIN_TABS) }
     val appLanguage by viewModel.appLanguage.collectAsState()
-    val activeNoteId by viewModel.activeNoteId.collectAsState()
 
     // Handle back stack navigation
     BackHandler(enabled = destination != NavigationDestination.MAIN_TABS) {
@@ -109,25 +105,18 @@ fun MainAppHost(viewModel: AppViewModel) {
                 bottomBar = {
                     NavigationBar {
                         NavigationBarItem(
-                            selected = currentTab == ScreenTab.NOTES,
-                            onClick = { currentTab = ScreenTab.NOTES },
+                            selected = currentTab == ScreenTab.RECORDINGS,
+                            onClick = { currentTab = ScreenTab.RECORDINGS },
                             icon = { Icon(Icons.Default.GraphicEq, contentDescription = null) },
-                            label = { Text(AppStrings.get("tab_notes", appLanguage)) },
-                            modifier = Modifier.testTag("nav_notes")
+                            label = { Text(AppStrings.get("tab_records", appLanguage)) },
+                            modifier = Modifier.testTag("nav_recordings")
                         )
                         NavigationBarItem(
-                            selected = currentTab == ScreenTab.TASKS,
-                            onClick = { currentTab = ScreenTab.TASKS },
-                            icon = { Icon(Icons.Default.AssignmentTurnedIn, contentDescription = null) },
-                            label = { Text(AppStrings.get("tab_tasks", appLanguage)) },
-                            modifier = Modifier.testTag("nav_tasks")
-                        )
-                        NavigationBarItem(
-                            selected = currentTab == ScreenTab.CLOUD,
-                            onClick = { currentTab = ScreenTab.CLOUD },
-                            icon = { Icon(Icons.Default.CloudSync, contentDescription = null) },
-                            label = { Text(AppStrings.get("tab_cloud", appLanguage)) },
-                            modifier = Modifier.testTag("nav_cloud")
+                            selected = currentTab == ScreenTab.TRANSCRIPTS,
+                            onClick = { currentTab = ScreenTab.TRANSCRIPTS },
+                            icon = { Icon(Icons.Default.Description, contentDescription = null) },
+                            label = { Text(AppStrings.get("tab_transcripts", appLanguage)) },
+                            modifier = Modifier.testTag("nav_transcripts")
                         )
                         NavigationBarItem(
                             selected = currentTab == ScreenTab.SETTINGS,
@@ -141,26 +130,21 @@ fun MainAppHost(viewModel: AppViewModel) {
             ) { padding ->
                 val contentModifier = Modifier.padding(padding)
                 when (currentTab) {
-                    ScreenTab.NOTES -> {
-                        NotesListScreen(
+                    ScreenTab.RECORDINGS -> {
+                        RecordingsScreen(
                             viewModel = viewModel,
-                            onNavigateToRecord = { destination = NavigationDestination.RECORDING },
+                            onNavigateToLiveRecord = { destination = NavigationDestination.RECORDING },
+                            modifier = contentModifier
+                        )
+                    }
+                    ScreenTab.TRANSCRIPTS -> {
+                        TranscriptsListScreen(
+                            viewModel = viewModel,
                             onNoteClick = { noteId ->
                                 viewModel.openNote(noteId)
                                 destination = NavigationDestination.NOTE_DETAIL
                             },
-                            modifier = contentModifier
-                        )
-                    }
-                    ScreenTab.TASKS -> {
-                        TasksScreen(
-                            viewModel = viewModel,
-                            modifier = contentModifier
-                        )
-                    }
-                    ScreenTab.CLOUD -> {
-                        CloudSyncScreen(
-                            viewModel = viewModel,
+                            onNavigateToRecord = { currentTab = ScreenTab.RECORDINGS },
                             modifier = contentModifier
                         )
                     }

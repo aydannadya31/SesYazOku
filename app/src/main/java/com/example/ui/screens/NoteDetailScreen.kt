@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.AssignmentTurnedIn
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Share
@@ -41,6 +42,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -56,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -63,11 +66,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ai.SmartSummarizer
 import com.example.data.model.TranscriptSegment
+import com.example.export.DocumentExportManager
 import com.example.ui.AppViewModel
 import com.example.ui.components.AudioPlayerBar
 import com.example.ui.components.ExportDialog
 import com.example.ui.components.SpeakerChip
 import com.example.ui.components.SpeakerEditDialog
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,11 +94,14 @@ fun NoteDetailScreen(
     val isTtsSpeaking by viewModel.tts.isSpeaking.collectAsState()
     val spokenSegmentIndex by viewModel.tts.currentSpokenSegmentIndex.collectAsState()
 
+    val context = LocalContext.current
     var selectedTabIndex by remember { mutableStateOf(0) }
     var showExportDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var editingSpeakerSegment by remember { mutableStateOf<TranscriptSegment?>(null) }
     var showTaskExtractedBanner by remember { mutableStateOf(false) }
+    var savedPdfFile by remember { mutableStateOf<File?>(null) }
+    var showPdfSavedDialog by remember { mutableStateOf(false) }
 
     if (note == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -220,6 +228,57 @@ fun NoteDetailScreen(
                     TextButton(onClick = { viewModel.stopTts() }) {
                         Text("Durdur", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                     }
+                }
+            }
+
+            // PDF Actions Row (Cihaza PDF Kaydet & WhatsApp Paylaş)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        viewModel.saveNotePdfToDevice(currentNote) { file ->
+                            if (file != null) {
+                                savedPdfFile = file
+                                showPdfSavedDialog = true
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("detail_save_pdf_btn"),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FileDownload,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Cihaza PDF Kaydet", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
+
+                Button(
+                    onClick = { viewModel.shareNotePdf(currentNote) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("detail_share_pdf_btn"),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF10B981),
+                        contentColor = Color.White
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("PDF Paylaş", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
             }
 
@@ -565,6 +624,59 @@ fun NoteDetailScreen(
             onExportFormat = { format ->
                 viewModel.exportNote(format, currentNote)
                 showExportDialog = false
+            }
+        )
+    }
+
+    // PDF Saved Dialog
+    if (showPdfSavedDialog && savedPdfFile != null) {
+        val file = savedPdfFile!!
+        AlertDialog(
+            onDismissRequest = { showPdfSavedDialog = false },
+            icon = {
+                Icon(
+                    Icons.Default.FileDownload,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(36.dp)
+                )
+            },
+            title = { Text("PDF Cihaza Kaydedildi", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Transkript metni başarıyla PDF olarak cihazınıza kaydedildi.")
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = file.name,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(10.dp)
+                        )
+                    }
+                    Text(
+                        text = "Konum: İndirilenler (Downloads) klasörü",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showPdfSavedDialog = false
+                        DocumentExportManager.openPdfFile(context, file)
+                    }
+                ) {
+                    Text("PDF'i Aç", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPdfSavedDialog = false }) {
+                    Text("Tamam")
+                }
             }
         )
     }

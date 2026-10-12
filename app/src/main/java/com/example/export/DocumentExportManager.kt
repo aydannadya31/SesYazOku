@@ -365,9 +365,76 @@ object DocumentExportManager {
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        val chooser = Intent.createChooser(shareIntent, "Dosyayı Paylaş")
+        val chooser = Intent.createChooser(shareIntent, "PDF'i Paylaş (WhatsApp, E-posta...)")
         chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(chooser)
+    }
+
+    /**
+     * Generates PDF and opens the native share sheet directly (e.g. for WhatsApp, Telegram, etc.)
+     */
+    fun sharePdf(context: Context, note: TranscriptionNote, segments: List<TranscriptSegment>): Boolean {
+        val pdfFile = exportToPdf(context, note, segments) ?: return false
+        shareFile(context, pdfFile, "application/pdf")
+        return true
+    }
+
+    /**
+     * Saves the PDF directly to the device's Downloads directory and registers with MediaScanner
+     */
+    fun savePdfToDevice(context: Context, note: TranscriptionNote, segments: List<TranscriptSegment>): File? {
+        val tempPdf = exportToPdf(context, note, segments) ?: return null
+        val safeTitle = note.title.replace("[^a-zA-Z0-9_-]".toRegex(), "_").take(35)
+        val fileName = "SesYazici_${safeTitle}_${note.id}.pdf"
+
+        val targetDir = try {
+            val publicDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+            if (publicDir != null && (publicDir.exists() || publicDir.mkdirs())) {
+                publicDir
+            } else {
+                context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir
+            }
+        } catch (e: Exception) {
+            context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir
+        }
+
+        val destinationFile = File(targetDir, fileName)
+        return try {
+            tempPdf.copyTo(destinationFile, overwrite = true)
+            // Trigger MediaScanner so the PDF is immediately visible in Downloads and File Manager
+            try {
+                android.media.MediaScannerConnection.scanFile(
+                    context,
+                    arrayOf(destinationFile.absolutePath),
+                    arrayOf("application/pdf"),
+                    null
+                )
+            } catch (e: Exception) {
+                Log.w("ExportManager", "MediaScanner failed", e)
+            }
+            destinationFile
+        } catch (e: Exception) {
+            Log.e("ExportManager", "Failed to save PDF to Downloads", e)
+            tempPdf
+        }
+    }
+
+    fun openPdfFile(context: Context, file: File) {
+        try {
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                file
+            )
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/pdf")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(Intent.createChooser(intent, "PDF'i Aç"))
+        } catch (e: Exception) {
+            Log.e("ExportManager", "Cannot open PDF viewer", e)
+        }
     }
 
     private fun escapeXml(input: String): String {

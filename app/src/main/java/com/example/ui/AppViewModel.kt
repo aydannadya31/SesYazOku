@@ -223,6 +223,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun selectFolder(folderId: Long?) { _selectedFolderId.value = folderId }
     fun selectTag(tag: String?) { _selectedTag.value = tag }
     fun toggleFavoritesOnly() { _showFavoritesOnly.value = !_showFavoritesOnly.value }
+    fun setShowFavoritesOnly(show: Boolean) { _showFavoritesOnly.value = show }
     fun setThemeMode(mode: String) { _themeMode.value = mode }
     fun setAppLanguage(lang: AppLanguage) {
         _appLanguage.value = lang
@@ -513,6 +514,32 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun stopTts() {
         tts.stop()
+    }
+
+    // PDF Export & Share Actions
+    fun saveNotePdfToDevice(note: TranscriptionNote, onDone: (File?) -> Unit) {
+        viewModelScope.launch {
+            val context = getApplication<Application>()
+            val segments = if (_activeNoteId.value == note.id && _activeSegments.value.isNotEmpty()) {
+                _activeSegments.value
+            } else {
+                transcriptionRepository.getSegmentsForNoteDirect(note.id)
+            }
+            val file = DocumentExportManager.savePdfToDevice(context, note, segments)
+            onDone(file)
+        }
+    }
+
+    fun shareNotePdf(note: TranscriptionNote) {
+        viewModelScope.launch {
+            val context = getApplication<Application>()
+            val segments = if (_activeNoteId.value == note.id && _activeSegments.value.isNotEmpty()) {
+                _activeSegments.value
+            } else {
+                transcriptionRepository.getSegmentsForNoteDirect(note.id)
+            }
+            DocumentExportManager.sharePdf(context, note, segments)
+        }
     }
 
     // Export Actions

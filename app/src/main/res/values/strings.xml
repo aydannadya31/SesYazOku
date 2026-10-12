@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SesYazıcı</string>
+    <string name="app_name">SesYazıcı AI</string>
     <string name="notification_channel_reminders">Görev Hatırlatıcıları</string>
     <string name="notification_channel_reminders_desc">SesYazıcı görevleri için zamanlanmış hatırlatıcı bildirimleri</string>
 </resources>
