@@ -1,4 +1,4 @@
-# 🎙️ SesYazıcı AI (VoxScribe)
+# 🎙️ SesYazıcı AI
 
 > **Canlı ve Harici Görüşme Ses Transkripsiyonu, Konuşmacı Etiketleme, Yapay Zeka Özetleme ve Görev Yöneticisi**
 
