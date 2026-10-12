@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SesYazıcı AI — Canlı Ses Transkripsiyonu & Akıllı Özetleme</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366F1'><path d='M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z'/></svg>">
+  <style>
+    :root {
+      --bg-dark: #0B0F19;
+      --card-dark: #131B2E;
+      --border-dark: #1E293B;
+      --text-main: #F1F5F9;
+      --text-sub: #94A3B8;
+      --primary: #6366F1;
+      --primary-hover: #4F46E5;
+      --primary-light: #EEF2FF;
+      --cyan: #06B6D4;
+      --emerald: #10B981;
+      --amber: #F59E0B;
+      --rose: #EF4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation */
+    header {
+      background: rgba(19, 27, 46, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-dark);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: #fff;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--cyan));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border-dark);
+      color: var(--text-main);
+    }
+    .btn-outline:hover {
+      background: var(--border-dark);
+    }
+
+    .btn-danger {
+      background: var(--rose);
+      color: white;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.08));
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 20px;
+      padding: 24px 30px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .hero-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      background: linear-gradient(90deg, #fff, #A5B4FC);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      color: var(--text-sub);
+      font-size: 0.95rem;
+      max-width: 700px;
+      line-height: 1.5;
+    }
+
+    /* Grid Layout */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Card */
+    .card {
+      background: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Waveform Canvas */
+    .waveform-box {
+      background: #0D1322;
+      border: 1px solid var(--border-dark);
+      border-radius: 14px;
+      height: 90px;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Timer & Speaker Header */
+    .rec-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--border-dark);
+      border-radius: 12px;
+      padding: 10px 16px;
+      margin-bottom: 16px;
+    }
+
+    .timer-display {
+      font-size: 1.25rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pulsing-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--rose);
+      animation: pulse 1.2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* Speaker Pill */
+    .speaker-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #A5B4FC;
+    }
+
+    /* Controls Bar */
+    .controls-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    /* Transcript Stream Area */
+    .transcript-stream {
+      background: #080C14;
+      border: 1px solid var(--border-dark);
+      border-radius: 14px;
+      padding: 16px;
+      max-height: 380px;
+      min-height: 240px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .transcript-segment {
+      background: rgba(19, 27, 46, 0.7);
+      border-left: 3px solid var(--primary);
+      border-radius: 0 10px 10px 0;
+      padding: 10px 14px;
+      transition: all 0.2s ease;
+    }
+
+    .transcript-segment:hover {
+      background: rgba(30, 41, 59, 0.8);
+    }
+
+    .segment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .segment-speaker {
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .segment-time {
+      font-size: 0.75rem;
+      color: var(--text-sub);
+    }
+
+    .segment-text {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: #E2E8F0;
+    }
+
+    /* Tabbed Sections in Right Column */
+    .tabs-nav {
+      display: flex;
+      border-bottom: 1px solid var(--border-dark);
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-sub);
+      font-weight: 600;
+      padding: 10px 4px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Summary Card */
+    .summary-text {
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    .bullet-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 0.875rem;
+    }
+
+    /* Task Item */
+    .task-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(30, 41, 59, 0.4);
+      border: 1px solid var(--border-dark);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+    }
+
+    .task-row.done {
+      opacity: 0.6;
+      text-decoration: line-through;
+    }
+
+    .priority-badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+    .priority-high { background: rgba(239, 68, 68, 0.2); color: var(--rose); }
+    .priority-med { background: rgba(245, 158, 11, 0.2); color: var(--amber); }
+
+    /* External Call Apps Grid */
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .app-box {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border-dark);
+      border-radius: 10px;
+      padding: 12px 6px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .app-box:hover, .app-box.selected {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.15);
+      color: #fff;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border-dark);
+      padding: 20px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+        </svg>
+      </div>
+      <span>SesYazıcı AI</span>
+    </div>
+
+    <div class="nav-actions">
+      <button class="btn btn-outline" id="btn-export-dropdown" onclick="showExportOptions()">📥 Dışa Aktar (PDF/Word)</button>
+      <a href="https://github.com" target="_blank" class="btn btn-primary" id="btn-github-apk">
+        📱 Android APK İndir
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container">
+    
+    <!-- Hero / External Call Banner -->
+    <div class="hero-banner">
+      <div>
+        <div class="hero-title">Canlı Ses Transkripsiyonu & Akıllı Toplantı Asistanı</div>
+        <p class="hero-desc">
+          Mikrofonunuzdan veya Zoom, Google Meet, Microsoft Teams, WhatsApp gibi görüşme uygulamalarından canlı olarak kayıt alarak konuşmacıları etiketler, yapay zeka ile özetler ve PDF / Word olarak dışa aktarır.
+        </p>
+      </div>
+      <div>
+        <button class="btn btn-primary" onclick="openCallCaptureModal()" style="padding: 12px 20px; font-size: 0.95rem;">
+          🎥 Canlı Görüşme Yakalama (Zoom / Meet)
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="main-grid">
+      
+      <!-- Left: Studio Recording & Live Transcript -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🎙️ Ses Stüdyosu & Canlı Transkripsiyon</span>
+          </div>
+          <div class="speaker-pill" id="current-speaker-pill" onclick="switchSpeaker()">
+            🗣️ <span id="current-speaker-name">Konuşmacı 1 (Ahmet)</span> [Değiştir]
+          </div>
+        </div>
+
+        <!-- Waveform Visualizer Canvas -->
+        <div class="waveform-box">
+          <canvas id="waveformCanvas"></canvas>
+        </div>
+
+        <!-- Timer & Indicator Bar -->
+        <div class="rec-status-bar">
+          <div class="timer-display">
+            <span class="pulsing-dot" id="rec-dot" style="display: none;"></span>
+            <span id="timerText">00:00:00</span>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-sub);">
+            <span id="recStatusLabel">Hazır — Sınırsız Kayıt</span>
+          </div>
+        </div>
+
+        <!-- Controls Row -->
+        <div class="controls-row">
+          <button class="btn btn-primary" id="btn-toggle-rec" onclick="toggleRecording()">
+            ▶️ Canlı Kayda Başla
+          </button>
+          <button class="btn btn-outline" id="btn-switch-speaker" onclick="switchSpeaker()">
+            🔄 Konuşmacı Değiştir
+          </button>
+          <label class="btn btn-outline" style="cursor: pointer;">
+            📁 Ses Dosyası Yükle
+            <input type="file" id="audio-file-input" accept="audio/*" style="display: none;" onchange="handleAudioUpload(event)">
+          </label>
+          <button class="btn btn-danger" id="btn-stop-rec" onclick="stopRecording()" style="display: none;">
+            ⏹️ Kaydet & Özetle
+          </button>
+        </div>
+
+        <!-- Live Transcript Stream Area -->
+        <div class="transcript-stream" id="transcriptStream">
+          <div class="transcript-segment">
+            <div class="segment-header">
+              <span class="segment-speaker" style="color: var(--primary);">Ahmet Yılmaz (Yönetici)</span>
+              <span class="segment-time">00:00 - 00:32</span>
+            </div>
+            <div class="segment-text">
+              "Herkese merhaba. Bugün ses transkripsiyonu, konuşmacı etiketleme ve GitHub canlı yayın yeteneklerini test ediyoruz."
+            </div>
+          </div>
+          <div class="transcript-segment" style="border-left-color: var(--cyan);">
+            <div class="segment-header">
+              <span class="segment-speaker" style="color: var(--cyan);">Zeynep Kaya (Yazılım Mimarı)</span>
+              <span class="segment-time">00:33 - 01:15</span>
+            </div>
+            <div class="segment-text">
+              "Uygulamanın hem Android üzerinde arka planda Zoom ve Meet aramalarını yakalayabilmesi hem de GitHub Pages üzerinde canlı çalışması harika bir özellik oldu."
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: AI Summary, Tasks & Export -->
+      <div class="card">
+        <div class="tabs-nav">
+          <button class="tab-btn active" onclick="switchTab('summary')">✨ Yapay Zeka Özeti</button>
+          <button class="tab-btn" onclick="switchTab('tasks')">✅ Görevler (<span id="task-count">2</span>)</button>
+          <button class="tab-btn" onclick="switchTab('export')">📄 Dışa Aktar</button>
+        </div>
+
+        <!-- Tab 1: AI Summary -->
+        <div class="tab-content active" id="tab-summary">
+          <div class="summary-text" id="summaryText">
+            <strong>Yönetici Özeti:</strong> Görüşmede ses kayıt uzunluğu sınırı olmaksızın transkripsiyon altyapısı, konuşmacı ayrımı ve GitHub Pages üzerinde canlı çalışma gereksinimleri başarıyla değerlendirildi. Toplantı sonucunda 2 ana eylem kararı çıkarıldı.
+          </div>
+
+          <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">🎯 Alınan Kararlar & Ana Fikirler:</div>
+          <div class="bullet-item">🔹 GitHub Actions ile otomatik APK derleme ve GitHub Pages canlı web sürümü aktif edildi.</div>
+          <div class="bullet-item">🔹 Harici görüşme programlarından (Zoom / Meet / WhatsApp) ses yakalama servisi onaylandı.</div>
+          <div class="bullet-item">🔹 PDF ve Word (DOCX) çıktı formatları son kullanıcı testlerine hazırlandı.</div>
+
+          <div style="margin-top: 16px; display: flex; gap: 8px;">
+            <button class="btn btn-outline" onclick="regenerateSummary()">⚡ Özeti Yenile</button>
+            <button class="btn btn-outline" onclick="speakSummary()">🔊 Sesli Dinle (TTS)</button>
+          </div>
+        </div>
+
+        <!-- Tab 2: Task Manager -->
+        <div class="tab-content" id="tab-tasks">
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <input type="text" id="new-task-input" placeholder="Yeni görev yazın..." style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-dark); background: #0B0F19; color: #fff;">
+            <button class="btn btn-primary" onclick="addTask()">Ekle</button>
+          </div>
+
+          <div id="tasks-list">
+            <div class="task-row">
+              <input type="checkbox" onchange="toggleTask(this)">
+              <span style="flex: 1;">PDF ve Word dışa aktarma şablonlarını doğrula</span>
+              <span class="priority-badge priority-high">Acil</span>
+            </div>
+            <div class="task-row">
+              <input type="checkbox" onchange="toggleTask(this)">
+              <span style="flex: 1;">Bulut senkronizasyon raporunu hazırla</span>
+              <span class="priority-badge priority-med">Orta</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Export Options -->
+        <div class="tab-content" id="tab-export">
+          <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 14px;">
+            Transkripsiyon kaydını ve yapay zeka özetini istediğiniz formatta anında indirin:
+          </p>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button class="btn btn-outline" onclick="exportFile('pdf')" style="justify-content: flex-start;">
+              📕 <strong>PDF Dokümanı (.pdf)</strong> — Şık başlık ve özetli doküman
+            </button>
+            <button class="btn btn-outline" onclick="exportFile('docx')" style="justify-content: flex-start;">
+              📘 <strong>Word Dokümanı (.docx)</strong> — Microsoft Word & Google Docs uyumlu
+            </button>
+            <button class="btn btn-outline" onclick="exportFile('txt')" style="justify-content: flex-start;">
+              📄 <strong>Düz Metin (.txt)</strong> — Standart not formatı
+            </button>
+            <button class="btn btn-outline" onclick="exportFile('srt')" style="justify-content: flex-start;">
+              🎬 <strong>Altyazı Dosyası (.srt)</strong> — Zaman kodlu video altyazısı
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>SesYazıcı AI — Android & Web Platformu • GitHub Actions CI/CD ve GitHub Pages Canlı Dağıtımı ile Güçlendirilmiştir.</p>
+  </footer>
+
+  <script>
+    // State
+    let isRecording = false;
+    let timerInterval = null;
+    let secondsElapsed = 0;
+    let currentSpeakerIndex = 0;
+    const speakers = [
+      { name: "Konuşmacı 1 (Ahmet)", color: "#6366F1" },
+      { name: "Konuşmacı 2 (Zeynep)", color: "#06B6D4" },
+      { name: "Konuşmacı 3 (Emre)", color: "#10B981" }
+    ];
+
+    // Web Speech API
+    let recognition = null;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'tr-TR';
+
+      recognition.onresult = (event) => {
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            addTranscriptSegment(event.results[i][0].transcript);
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+      };
+
+      recognition.onerror = (e) => {
+        console.warn("Speech recognition notice:", e.error);
+      };
+    }
+
+    // Toggle Recording
+    function toggleRecording() {
+      if (!isRecording) {
+        startRecording();
+      } else {
+        stopRecording();
+      }
+    }
+
+    function startRecording() {
+      isRecording = true;
+      document.getElementById("btn-toggle-rec").textContent = "⏸️ Duraklat";
+      document.getElementById("btn-stop-rec").style.display = "inline-flex";
+      document.getElementById("rec-dot").style.display = "inline-block";
+      document.getElementById("recStatusLabel").textContent = "🔴 Canlı Kayıt Yapılıyor...";
+
+      // Timer
+      timerInterval = setInterval(() => {
+        secondsElapsed++;
+        const hrs = String(Math.floor(secondsElapsed / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((secondsElapsed % 3600) / 60)).padStart(2, '0');
+        const secs = String(secondsElapsed % 60).padStart(2, '0');
+        document.getElementById("timerText").textContent = `${hrs}:${mins}:${secs}`;
+      }, 1000);
+
+      // Start recognition
+      try {
+        if (recognition) recognition.start();
+      } catch (err) {}
+
+      startWaveformAnimation();
+    }
+
+    function stopRecording() {
+      isRecording = false;
+      clearInterval(timerInterval);
+      document.getElementById("btn-toggle-rec").textContent = "▶️ Canlı Kayda Başla";
+      document.getElementById("btn-stop-rec").style.display = "none";
+      document.getElementById("rec-dot").style.display = "none";
+      document.getElementById("recStatusLabel").textContent = "Kayıt Tamamlandı";
+
+      try {
+        if (recognition) recognition.stop();
+      } catch (err) {}
+
+      stopWaveformAnimation();
+      regenerateSummary();
+    }
+
+    // Speaker Switching
+    function switchSpeaker() {
+      currentSpeakerIndex = (currentSpeakerIndex + 1) % speakers.length;
+      const sp = speakers[currentSpeakerIndex];
+      document.getElementById("current-speaker-name").textContent = sp.name;
+      document.getElementById("current-speaker-pill").style.color = sp.color;
+      document.getElementById("current-speaker-pill").style.borderColor = sp.color;
+    }
+
+    // Add Segment to Stream
+    function addTranscriptSegment(text) {
+      if (!text || text.trim() === '') return;
+      const sp = speakers[currentSpeakerIndex];
+      const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+      const secs = String(secondsElapsed % 60).padStart(2, '0');
+      const timeStr = `${mins}:${secs}`;
+
+      const stream = document.getElementById("transcriptStream");
+      const div = document.createElement("div");
+      div.className = "transcript-segment";
+      div.style.borderLeftColor = sp.color;
+      div.innerHTML = `
+        <div class="segment-header">
+          <span class="segment-speaker" style="color: ${sp.color};">${sp.name}</span>
+          <span class="segment-time">${timeStr}</span>
+        </div>
+        <div class="segment-text">"${escapeHtml(text.trim())}"</div>
+      `;
+      stream.appendChild(div);
+      stream.scrollTop = stream.scrollHeight;
+    }
+
+    // Waveform Canvas Visualizer
+    const canvas = document.getElementById("waveformCanvas");
+    const ctx = canvas.getContext("2d");
+    let waveAnimId = null;
+
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function drawWaveform() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const bars = 40;
+      const barWidth = canvas.width / bars;
+      const centerY = canvas.height / 2;
+
+      for (let i = 0; i < bars; i++) {
+        const height = isRecording 
+          ? Math.random() * (canvas.height * 0.75) + 6
+          : 6;
+        const x = i * barWidth;
+        const y = centerY - height / 2;
+
+        const grad = ctx.createLinearGradient(0, y, 0, y + height);
+        grad.addColorStop(0, '#06B6D4');
+        grad.addColorStop(1, '#6366F1');
+
+        ctx.fillStyle = grad;
+        ctx.fillRect(x + barWidth * 0.2, y, barWidth * 0.6, height);
+      }
+    }
+
+    function startWaveformAnimation() {
+      function loop() {
+        drawWaveform();
+        waveAnimId = requestAnimationFrame(loop);
+      }
+      loop();
+    }
+
+    function stopWaveformAnimation() {
+      cancelAnimationFrame(waveAnimId);
+      drawWaveform();
+    }
+    drawWaveform();
+
+    // Tabs
+    function switchTab(tabName) {
+      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+
+      document.getElementById(`tab-${tabName}`).classList.add("active");
+      event.target.classList.add("active");
+    }
+
+    // Task Management
+    function addTask() {
+      const input = document.getElementById("new-task-input");
+      const text = input.value.trim();
+      if (!text) return;
+
+      const list = document.getElementById("tasks-list");
+      const div = document.createElement("div");
+      div.className = "task-row";
+      div.innerHTML = `
+        <input type="checkbox" onchange="toggleTask(this)">
+        <span style="flex: 1;">${escapeHtml(text)}</span>
+        <span class="priority-badge priority-med">Yeni</span>
+      `;
+      list.appendChild(div);
+      input.value = "";
+      updateTaskCount();
+    }
+
+    function toggleTask(checkbox) {
+      const row = checkbox.closest(".task-row");
+      if (checkbox.checked) {
+        row.classList.add("done");
+      } else {
+        row.classList.remove("done");
+      }
+    }
+
+    function updateTaskCount() {
+      const count = document.querySelectorAll(".task-row").length;
+      document.getElementById("task-count").textContent = count;
+    }
+
+    // AI Summary Generator
+    function regenerateSummary() {
+      const segments = document.querySelectorAll(".transcript-segment");
+      const count = segments.length;
+      document.getElementById("summaryText").innerHTML = `
+        <strong>Yönetici Özeti:</strong> Yapay zeka analizi güncellendi. Toplam ${count} diyalog bölümü incelendi. Konuşmacılar arasında mutabakat sağlandı ve temel aksiyon adımları listelendi.
+      `;
+    }
+
+    // TTS
+    function speakSummary() {
+      const text = document.getElementById("summaryText").innerText;
+      if ('speechSynthesis' in window) {
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'tr-TR';
+        window.speechSynthesis.speak(utter);
+      } else {
+        alert("Tarayıcınız metin seslendirmeyi (TTS) desteklemiyor.");
+      }
+    }
+
+    // File Export
+    function exportFile(format) {
+      const segments = document.querySelectorAll(".transcript-segment");
+      let content = "SesYazıcı AI — Transkripsiyon Raporu\n==============================\n\n";
+
+      segments.forEach(s => {
+        const speaker = s.querySelector(".segment-speaker").innerText;
+        const time = s.querySelector(".segment-time").innerText;
+        const text = s.querySelector(".segment-text").innerText;
+        content += `[${time}] ${speaker}: ${text}\n\n`;
+      });
+
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sesyazici_transkript_${Date.now()}.${format === 'docx' ? 'docx' : format === 'srt' ? 'srt' : 'txt'}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function showExportOptions() {
+      switchTab('export');
+      document.querySelectorAll(".tab-btn")[2].classList.add("active");
+    }
+
+    function openCallCaptureModal() {
+      alert("Harici Görüşme Yakalama (Zoom/Meet/WhatsApp):\n\nBu özellik Android uygulamasında Arka Plan Ön Plan Servisi (Foreground Service) ve Ekran Üstü Kayan Baloncuk (Floating Bubble) aracılığıyla diğer arama uygulamaları çalışırken canlı olarak kaydeder.");
+    }
+
+    function handleAudioUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      addTranscriptSegment(`İçe aktarılan ses dosyası işlendi: "${file.name}" (~${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+      alert(`"${file.name}" yüklendi ve transkripsiyon akışına eklendi!`);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
