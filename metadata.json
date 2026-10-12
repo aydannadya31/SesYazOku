@@ -1,0 +1,6 @@
+{
+  "name": "SesYazıcı AI",
+  "description": "Canlı ve kayıtlı ses transkripsiyonu, konuşmacı etiketleme, yapay zeka özetleme, görev yöneticisi ve bulut senkronizasyonu.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
