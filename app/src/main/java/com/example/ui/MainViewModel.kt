@@ -83,7 +83,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         recorderManager.startRecording(
             audioFormat = _audioFormat.value,
             audioBitrate = _audioBitrate.value,
-            sampleRate = _audioSampleRate.value
+            sampleRate = _audioSampleRate.value,
+            language = _language.value
         )
     }
 
@@ -130,6 +131,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     recordingId = recording.id,
                     filePath = recording.filePath,
                     targetSpeakerCount = speakerCount,
+                    language = _language.value,
                     onProgress = { progress -> _transcribeProgress.value = progress }
                 )
 

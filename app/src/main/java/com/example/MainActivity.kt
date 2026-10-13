@@ -75,9 +75,21 @@ fun AppRootContent(viewModel: MainViewModel) {
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 
+    val authProfile by viewModel.authManager.userProfile.collectAsState()
+
     if (showSplash) {
         SplashScreen(
             onSplashFinished = { showSplash = false }
+        )
+        return
+    }
+
+    if (!authProfile.isSignedIn) {
+        com.example.ui.components.GoogleSignInScreen(
+            authManager = viewModel.authManager,
+            onSignInSuccess = {
+                // User signed in successfully
+            }
         )
         return
     }

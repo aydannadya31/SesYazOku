@@ -191,6 +191,31 @@ fun RecordScreen(
                     }
                 }
 
+                val liveSpokenText by recorderManager.liveSpokenText.collectAsState()
+                if (isRecording && liveSpokenText.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "Canlı Algılanan Ses:",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = liveSpokenText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(20.dp))
 
                 // Recording Action Buttons

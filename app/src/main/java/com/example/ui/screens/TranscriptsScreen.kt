@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -295,24 +296,29 @@ fun TranscriptsScreen(
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = "Ayrım: Kişi 1, Kişi 2 vb.",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    OutlinedButton(
+                                        onClick = {
+                                            viewModel.selectRecordingForView(item.id)
+                                            viewModel.runTranscription(item, speakerCount = item.speakerCount.coerceAtLeast(1))
+                                        },
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("Yeniden Dönüştür", fontSize = 12.sp)
+                                    }
 
                                     Button(
                                         onClick = {
                                             viewModel.selectRecordingForView(item.id)
                                             onNavigateToDocuments()
                                         },
-                                        shape = RoundedCornerShape(10.dp)
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.weight(1.3f)
                                     ) {
-                                        Text("Döküman Olarak Aç & PDF Al")
+                                        Text("Döküman & PDF Al", fontSize = 12.sp)
                                     }
                                 }
                             }

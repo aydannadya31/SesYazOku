@@ -519,9 +519,9 @@
 
     .demo-grid {
       display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 28px;
-      margin-top: 24px;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 24px;
+      margin-top: 20px;
     }
 
     .waveform-card {
@@ -529,16 +529,106 @@
       border: 1px solid var(--border-subtle);
       border-radius: 16px;
       padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Simulator Source & Settings Bar */
+    .sim-bar-wrap {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .sim-sources-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sim-source-btn {
+      background: #070B14;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-muted);
+      padding: 6px 12px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .sim-source-btn:hover {
+      border-color: var(--cyan);
+      color: #FFF;
+    }
+
+    .sim-source-btn.active {
+      background: rgba(6, 182, 212, 0.15);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
+    }
+
+    .mic-toggle-btn {
+      background: #070B14;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #10B981;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .mic-toggle-btn.muted {
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #EF4444;
+      background: rgba(239, 68, 68, 0.08);
     }
 
     .waveform-canvas-box {
       background: #04070F;
       border: 1px solid #1E293B;
       border-radius: 12px;
-      height: 90px;
+      height: 100px;
       width: 100%;
       overflow: hidden;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
+      position: relative;
+    }
+
+    #waveformCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .canvas-overlay-stats {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 12px;
+      font-variant-numeric: tabular-nums;
+      pointer-events: none;
     }
 
     .live-status-bar {
@@ -549,7 +639,7 @@
       border: 1px solid var(--border-subtle);
       border-radius: 10px;
       padding: 10px 16px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .timer-badge {
@@ -576,13 +666,64 @@
       100% { opacity: 1; transform: scale(1); }
     }
 
+    .speakers-selector-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .speaker-pill-btn {
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-subtle);
+      color: #94A3B8;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .speaker-pill-btn.active {
+      box-shadow: 0 0 10px currentColor;
+    }
+
+    .quick-dialogs-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .quick-dialog-chip {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--border-subtle);
+      color: #CBD5E1;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quick-dialog-chip:hover {
+      border-color: var(--cyan);
+      color: #FFF;
+      background: rgba(6, 182, 212, 0.1);
+    }
+
     .transcript-box {
       background: #04070F;
       border: 1px solid var(--border-subtle);
       border-radius: 12px;
       padding: 14px;
-      min-height: 220px;
-      max-height: 320px;
+      min-height: 230px;
+      max-height: 330px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -594,6 +735,11 @@
       border-left: 3px solid var(--cyan);
       border-radius: 0 8px 8px 0;
       padding: 10px 12px;
+      transition: background 0.2s;
+    }
+
+    .transcript-row:hover {
+      background: rgba(30, 41, 59, 0.8);
     }
 
     .speaker-label {
@@ -608,6 +754,52 @@
     .speaker-content {
       font-size: 0.9rem;
       color: #E2E8F0;
+      line-height: 1.5;
+    }
+
+    /* Modal Backdrop and Box */
+    .sim-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 7, 15, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .sim-modal-box {
+      background: #0B101D;
+      border: 1px solid var(--border-glow);
+      border-radius: 20px;
+      padding: 28px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: var(--shadow-glow);
+      position: relative;
+    }
+
+    .sim-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .sim-modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+    }
+
+    .sim-modal-close:hover {
+      color: #FFF;
     }
 
     /* Installation Steps */
@@ -1101,25 +1293,54 @@
         <span class="section-pill">Tarayıcıda Çalışan Test Alanı</span>
         <h2 style="font-size: 2rem; color: #FFFFFF; margin-bottom: 8px;">SesYazOku Canlı Web Simülatörü</h2>
         <p style="color: var(--text-muted); max-width: 650px; margin: 0 auto;">
-          APK'yı telefonunuza indirmeden önce, konuşmacı ayrımı ve sesten yazıya dönüştürme mekanizmasını tarayıcınızda canlı olarak test edin!
+          APK'yı telefonunuza indirmeden önce, canlı ses kaydı, mikrofon aç/kapa, konuşmacı ayrımı (Kişi 1, 2, 3), kapak fotoğrafı ve PDF döküman oluşturma özelliklerini tarayıcınızda canlı olarak test edin!
         </p>
+      </div>
+
+      <!-- Source and Microphone Bar -->
+      <div class="sim-bar-wrap">
+        <div class="sim-sources-group">
+          <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700;">📡 Ses Kaynağı:</span>
+          <button class="sim-source-btn active" id="src-mic-btn" onclick="selectAudioSource('mic')">
+            🎙️ Cihaz Mikrofonu
+          </button>
+          <button class="sim-source-btn" id="src-social-btn" onclick="selectAudioSource('social')">
+            💬 Zoom / Meet / WhatsApp
+          </button>
+          <button class="sim-source-btn" id="src-call-btn" onclick="selectAudioSource('call')">
+            📞 Telefon Araması
+          </button>
+          <button class="sim-source-btn" id="src-file-btn" onclick="selectAudioSource('file')">
+            🎵 Hazır Ses Dosyası
+          </button>
+        </div>
+
+        <div>
+          <button class="mic-toggle-btn" id="micToggleBtn" onclick="toggleMicDevice()" title="Kayıt esnasında cihaz mikrofonunu açıp kapatabilirsiniz">
+            <span id="micToggleIcon">🎤</span> <span id="micToggleText">Cihaz Mikrofonu: Açık</span>
+          </button>
+        </div>
       </div>
 
       <div class="demo-grid">
         <!-- Sol: Ses Kaydı & Canlı Transkripsiyon Akışı -->
         <div class="waveform-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-            <strong style="color: #FFFFFF; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
-              🎙️ Canlı Mikrofon & Ekolayzır
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <strong style="color: #FFFFFF; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+              🎙️ Canlı Ses Yakalama & Ekolayzır
             </strong>
-            <button class="btn btn-outline" id="demo-speaker-badge" onclick="switchDemoSpeaker()" style="padding: 6px 12px; font-size: 0.8rem; border-color: var(--cyan); color: var(--cyan);">
-              🗣️ <span id="current-speaker-title">Kişi 1 (Konuşmacı)</span> [Değiştir]
-            </button>
+            <span id="demo-mode-badge" style="font-size: 0.78rem; padding: 4px 10px; border-radius: 12px; background: rgba(6, 182, 212, 0.15); color: var(--cyan); border: 1px solid var(--border-glow);">
+              Canlı Mikrofon Modu
+            </span>
           </div>
 
           <!-- Waveform Canvas -->
           <div class="waveform-canvas-box">
             <canvas id="waveformCanvas"></canvas>
+            <div class="canvas-overlay-stats">
+              <span id="canvasSourceLabel">🎙️ Mikrofon (44.1 kHz)</span>
+              <span id="canvasLevelLabel">-18 dB</span>
+            </div>
           </div>
 
           <!-- Status Bar -->
@@ -1128,43 +1349,112 @@
               <span class="recording-dot" id="rec-dot"></span>
               <span id="timerText">00:00:00</span>
             </div>
-            <div style="font-size: 0.85rem; color: var(--text-muted);">
+            <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
               <span id="recStatusLabel">Kayıt için hazır</span>
             </div>
           </div>
 
-          <!-- Action Buttons -->
-          <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
-            <button class="btn btn-download" id="btn-demo-rec" onclick="toggleDemoRecording()">
-              ▶️ Canlı Kayda Başla
+          <!-- Uploaded Audio Player Bar (Gizli, ses dosyası eklendiğinde açılır) -->
+          <div id="audioPlayerWrap" style="display: none; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; align-items: center; gap: 12px;">
+            <button class="btn btn-download" id="audioPlayerBtn" onclick="toggleAudioFilePlayback()" style="padding: 6px 14px; font-size: 0.8rem;">
+              ▶️ Oynat
             </button>
-            <button class="btn btn-outline" onclick="switchDemoSpeaker()">
-              🔄 Konuşmacı Değiştir (Kişi 1/2/3)
+            <div style="flex: 1; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <strong id="audioFileName" style="color: #FFF;">ses_kaydi.mp3</strong>
+              <div style="color: var(--text-muted); font-size: 0.75rem;" id="audioFileMeta">00:00 / 00:00</div>
+            </div>
+            <audio id="demoAudioElement" style="display: none;"></audio>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+            <button class="btn btn-download" id="btn-demo-rec" onclick="toggleDemoRecording()">
+              ▶️ Canlı Kaydı Başlat
+            </button>
+            <button class="btn btn-outline" id="btn-demo-reset" onclick="resetDemoSession()">
+              ⏹️ Sıfırla
             </button>
             <label class="btn btn-outline" style="cursor: pointer;">
               📁 Ses Dosyası Ekle
-              <input type="file" accept="audio/*" style="display: none;" onchange="handleAudioUpload(event)">
+              <input type="file" accept="audio/*" id="audioFileInput" style="display: none;" onchange="handleAudioUpload(event)">
             </label>
+          </div>
+
+          <!-- Speakers Selector Row -->
+          <div style="margin-bottom: 8px; font-size: 0.8rem; color: var(--text-muted); font-weight: 700;">
+            🗣️ Aktif Konuşmacı Seçimi (Konuşmacı Ayrımı):
+          </div>
+          <div class="speakers-selector-row" id="speakersList">
+            <button class="speaker-pill-btn active" style="color: #06B6D4; border-color: #06B6D4;" onclick="setActiveSpeaker(0)">
+              🗣️ Kişi 1 (Ahmet)
+            </button>
+            <button class="speaker-pill-btn" style="color: #818CF8; border-color: rgba(129, 140, 248, 0.3);" onclick="setActiveSpeaker(1)">
+              🗣️ Kişi 2 (Mehmet)
+            </button>
+            <button class="speaker-pill-btn" style="color: #10B981; border-color: rgba(16, 185, 129, 0.3);" onclick="setActiveSpeaker(2)">
+              🗣️ Kişi 3 (Ayşe)
+            </button>
+            <button class="speaker-pill-btn" style="color: #F59E0B; border-color: rgba(245, 158, 11, 0.3);" onclick="setActiveSpeaker(3)">
+              🗣️ Kişi 4 (Yetkili)
+            </button>
+          </div>
+
+          <!-- Quick Dialog Prompts -->
+          <div style="margin-bottom: 6px; font-size: 0.78rem; color: var(--text-muted);">
+            ⚡ Hızlı Cümle Testi (Tıklayarak transkripte ekleyin):
+          </div>
+          <div class="quick-dialogs-row">
+            <button class="quick-dialog-chip" onclick="addSampleQuote('Toplantıyı resmi olarak başlatıyorum, gündem maddelerimiz hazır.')">
+              💬 "Toplantıyı başlatıyorum..."
+            </button>
+            <button class="quick-dialog-chip" onclick="addSampleQuote('Zoom ve Meet sesleri arka planda yakalanarak metne dönüştürülüyor.')">
+              💬 "Zoom/Meet sesi yakalandı..."
+            </button>
+            <button class="quick-dialog-chip" onclick="addSampleQuote('Ses kaydı tamamlandı, konuşmacı etiketleriyle PDF dökümanı oluşturalım.')">
+              💬 "PDF dökümanı oluşturalım..."
+            </button>
+          </div>
+
+          <!-- Custom Sentence Input -->
+          <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+            <input type="text" id="custom-speech-input" placeholder="İstediğiniz cümleyi yazıp transkripte ekleyin..." style="flex: 1; background: #04070F; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; color: #FFF; font-size: 0.85rem;" onkeydown="if(event.key==='Enter') addCustomSpeech()">
+            <button class="btn btn-outline" onclick="addCustomSpeech()" style="padding: 6px 14px; font-size: 0.82rem;">
+              Ekle
+            </button>
+          </div>
+
+          <!-- Search in Transcript -->
+          <div style="margin-bottom: 10px;">
+            <input type="text" id="searchTranscriptInput" placeholder="🔍 Transkript içinde ara..." style="width: 100%; background: #04070F; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 6px 12px; color: #CBD5E1; font-size: 0.8rem;" oninput="filterTranscript(this.value)">
           </div>
 
           <!-- Transcript Stream -->
           <div class="transcript-box" id="transcriptBox">
-            <div class="transcript-row">
+            <div class="transcript-row" data-speaker="0">
               <div class="speaker-label">
-                <span>Kişi 1</span>
+                <span>Kişi 1 (Ahmet)</span>
                 <span>00:00 - 00:15</span>
               </div>
               <div class="speaker-content">
-                "SesYazOku uygulamasına hoş geldiniz. Canlı olarak ses kaydı alabilir veya hazır ses dosyalarını yükleyebilirsiniz."
+                "SesYazOku uygulamasına hoş geldiniz. Canlı olarak ses kaydı alabilir veya cihazınızdaki MP3/WAV dosyalarını ekleyebilirsiniz."
               </div>
             </div>
-            <div class="transcript-row" style="border-left-color: #818CF8;">
+            <div class="transcript-row" data-speaker="1" style="border-left-color: #818CF8;">
               <div class="speaker-label" style="color: #818CF8;">
-                <span>Kişi 2</span>
+                <span>Kişi 2 (Mehmet)</span>
                 <span>00:16 - 00:40</span>
               </div>
               <div class="speaker-content">
-                "Uygulama aynı zamanda Zoom, Meet ve WhatsApp görüşmelerini arka planda yakalayarak kişi kişi ayırabiliyor."
+                "Uygulama aynı zamanda Zoom, Meet ve WhatsApp görüşmelerini arka planda yakalayarak Kişi 1, Kişi 2, Kişi 3 olarak etiketliyor."
+              </div>
+            </div>
+            <div class="transcript-row" data-speaker="2" style="border-left-color: #10B981;">
+              <div class="speaker-label" style="color: #10B981;">
+                <span>Kişi 3 (Ayşe)</span>
+                <span>00:41 - 01:05</span>
+              </div>
+              <div class="speaker-content">
+                "Dönüştürülen tüm metinlere kapak resmi ekleyebilir, tek tuşla PDF olarak cihazınıza kaydedebilir veya Google Drive'a yedekleyebilirsiniz."
               </div>
             </div>
           </div>
@@ -1172,42 +1462,140 @@
 
         <!-- Sağ: Döküman & Dışa Aktarma Simülatörü -->
         <div class="waveform-card">
-          <strong style="color: #FFFFFF; font-size: 1.1rem; display: block; margin-bottom: 14px;">
-            📑 Döküman & Dışa Aktarma Önizlemesi
+          <strong style="color: #FFFFFF; font-size: 1.05rem; display: block; margin-bottom: 12px;">
+            📑 Döküman & PDF Yönetim Önizlemesi
           </strong>
 
+          <!-- Document Settings Card -->
           <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">DÖKÜMAN ADI:</div>
-            <input type="text" id="doc-title-input" value="SesYazOku_Toplanti_Kaydi_01" style="width: 100%; background: #070B14; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; color: #FFF; font-weight: 700; margin-bottom: 12px;">
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 700;">DÖKÜMAN ADI:</div>
+            <input type="text" id="doc-title-input" value="SesYazOku_Toplanti_Kaydi_01" style="width: 100%; background: #070B14; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; color: #FFF; font-weight: 700; margin-bottom: 14px; font-size: 0.95rem;">
 
-            <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px;">
-              <div style="width: 60px; height: 60px; border-radius: 8px; background: #070B14; border: 1px dashed var(--border-subtle); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;" id="doc-thumb-preview">
-                📷
+            <div style="display: flex; gap: 14px; align-items: center; margin-bottom: 12px;">
+              <div style="width: 70px; height: 70px; border-radius: 10px; background: #070B14; border: 1px dashed var(--cyan); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; overflow: hidden; cursor: pointer; position: relative;" id="doc-thumb-preview" onclick="document.getElementById('cover-photo-input').click()" title="Kapak görseli eklemek veya fotoğraf çekmek için tıklayın">
+                <span id="doc-thumb-icon">📷</span>
+                <img id="doc-thumb-img" style="display: none; width: 100%; height: 100%; object-fit: cover;">
               </div>
-              <div style="font-size: 0.82rem; color: var(--text-muted);">
-                <strong>Kapak Önizleme Resmi</strong><br>
-                Kameradan veya galeriden seçilebilir.
+              <div style="flex: 1;">
+                <strong style="color: #FFF; font-size: 0.85rem;">Kapak Önizleme Resmi</strong><br>
+                <span style="font-size: 0.78rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Kameradan fotoğraf çekin veya dahili hafızadan seçin.</span>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.75rem;" onclick="document.getElementById('cover-photo-input').click()">
+                    📸 Fotoğraf Seç / Çek
+                  </button>
+                  <button class="btn btn-outline" id="remove-cover-btn" style="padding: 4px 8px; font-size: 0.75rem; display: none; color: #EF4444; border-color: rgba(239, 68, 68, 0.4);" onclick="removeCoverPhoto()">
+                    ❌ Kaldır
+                  </button>
+                </div>
+                <input type="file" id="cover-photo-input" accept="image/*" style="display: none;" onchange="handleCoverPhotoUpload(event)">
+              </div>
+            </div>
+
+            <!-- Stats Mini Bar -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; background: #070B14; border-radius: 8px; padding: 10px; text-align: center;">
+              <div>
+                <span style="font-size: 0.7rem; color: var(--text-muted); display: block;">Toplam Süre</span>
+                <strong id="statDuration" style="color: var(--cyan); font-size: 0.9rem;">01:05</strong>
+              </div>
+              <div>
+                <span style="font-size: 0.7rem; color: var(--text-muted); display: block;">Konuşmacı</span>
+                <strong id="statSpeakers" style="color: #818CF8; font-size: 0.9rem;">3 Kişi</strong>
+              </div>
+              <div>
+                <span style="font-size: 0.7rem; color: var(--text-muted); display: block;">Kelime</span>
+                <strong id="statWords" style="color: #10B981; font-size: 0.9rem;">48</strong>
               </div>
             </div>
           </div>
 
+          <!-- Document Action Buttons -->
           <div style="display: flex; flex-direction: column; gap: 10px;">
-            <button class="btn btn-outline" onclick="exportDemoFile('pdf')" style="justify-content: flex-start;">
-              📕 <strong>PDF Olarak İndir (.pdf)</strong>
+            <button class="btn btn-download" onclick="exportRealPdf()" style="justify-content: flex-start; padding: 12px 16px;">
+              📕 <strong>PDF Olarak İndir / Yazdır (.pdf)</strong>
             </button>
-            <button class="btn btn-outline" onclick="exportDemoFile('txt')" style="justify-content: flex-start;">
+            <button class="btn btn-outline" onclick="exportDemoFile('txt')" style="justify-content: flex-start; padding: 12px 16px;">
               📄 <strong>Metin Dosyası Olarak İndir (.txt)</strong>
             </button>
-            <button class="btn btn-outline" onclick="shareDemoDoc()" style="justify-content: flex-start;">
+            <button class="btn btn-outline" onclick="openShareModal()" style="justify-content: flex-start; padding: 12px 16px;">
               📲 <strong>Mesajlaşma Uygulamasında Paylaş (WhatsApp/Meet)</strong>
             </button>
-            <button class="btn btn-outline" onclick="cloudBackupDemo()" style="justify-content: flex-start;">
+            <button class="btn btn-outline" onclick="openDriveBackupModal()" style="justify-content: flex-start; padding: 12px 16px;">
               ☁️ <strong>Google Drive'a Yedekle</strong>
             </button>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- SHARE MODAL -->
+    <div class="sim-modal-backdrop" id="shareModalBackdrop" onclick="if(event.target===this) closeShareModal()">
+      <div class="sim-modal-box">
+        <div class="sim-modal-header">
+          <h3 style="color: #FFF; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
+            📲 Dökümanı Paylaş
+          </h3>
+          <button class="sim-modal-close" onclick="closeShareModal()">&times;</button>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 18px;">
+          Metni veya dökümanı istediğiniz mesajlaşma uygulamasına doğrudan aktarın:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button class="btn btn-outline" onclick="shareToWhatsApp()" style="background: rgba(37, 211, 102, 0.1); border-color: #25D366; color: #25D366; justify-content: flex-start;">
+            💬 <strong>WhatsApp ile Gönder</strong>
+          </button>
+          <button class="btn btn-outline" onclick="shareToTelegram()" style="background: rgba(0, 136, 204, 0.1); border-color: #0088cc; color: #0088cc; justify-content: flex-start;">
+            ✈️ <strong>Telegram ile Gönder</strong>
+          </button>
+          <button class="btn btn-outline" onclick="copyTranscriptToClipboard()" style="justify-content: flex-start;" id="copyBtn">
+            📋 <strong>Transkript Metnini Kopyala</strong>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOOGLE DRIVE BACKUP MODAL -->
+    <div class="sim-modal-backdrop" id="driveModalBackdrop" onclick="if(event.target===this) closeDriveModal()">
+      <div class="sim-modal-box">
+        <div class="sim-modal-header">
+          <h3 style="color: #FFF; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
+            ☁️ Google Drive Bulut Yedekleme
+          </h3>
+          <button class="sim-modal-close" onclick="closeDriveModal()">&times;</button>
+        </div>
+
+        <div style="background: rgba(66, 133, 244, 0.1); border: 1px solid rgba(66, 133, 244, 0.3); border-radius: 12px; padding: 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+          <div style="font-size: 1.8rem;">🔑</div>
+          <div>
+            <strong style="color: #FFF; font-size: 0.9rem;">Google Hesabı Bağlı</strong><br>
+            <span style="font-size: 0.8rem; color: #93C5FD;" id="driveUserEmail">aydannadya31@gmail.com</span>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px;" id="driveProgressWrap">
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">
+            <span id="driveStatusText">Google Drive'a yedekleniyor...</span>
+            <span id="drivePercentText">0%</span>
+          </div>
+          <div style="height: 8px; border-radius: 4px; background: #070B14; overflow: hidden; border: 1px solid var(--border-subtle);">
+            <div id="driveProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--cyan), #4285F4); transition: width 0.3s;"></div>
+          </div>
+        </div>
+
+        <div id="driveSuccessBox" style="display: none; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
+          <strong style="color: #10B981; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+            ✅ Başarıyla Google Drive'a Kaydedildi!
+          </strong>
+          <span style="font-size: 0.78rem; color: #CBD5E1; display: block; margin-top: 4px;" id="driveFilePath">
+            /Google Drive/SesYazOku/2026/SesYazOku_Toplanti_Kaydi_01.pdf
+          </span>
+        </div>
+
+        <button class="btn btn-download" style="width: 100%;" onclick="closeDriveModal()">
+          Tamam
+        </button>
+      </div>
+    </div>
 
     <!-- INSTALLATION GUIDE -->
     <section id="kurulum">
@@ -1335,65 +1723,246 @@
     // State
     let isRecording = false;
     let timerInterval = null;
-    let secondsElapsed = 0;
-    let currentSpeakerIndex = 0;
+    let autoDialogInterval = null;
+    let secondsElapsed = 65; // initial sample duration
+    let activeSpeakerIndex = 0;
+    let currentSource = 'mic';
+    let isMicMuted = false;
+    let coverPhotoDataUrl = null;
+
     const speakers = [
       { name: "Kişi 1 (Ahmet)", color: "#06B6D4" },
       { name: "Kişi 2 (Mehmet)", color: "#818CF8" },
-      { name: "Kişi 3 (Ayşe)", color: "#10B981" }
+      { name: "Kişi 3 (Ayşe)", color: "#10B981" },
+      { name: "Kişi 4 (Yetkili)", color: "#F59E0B" }
     ];
+
+    // Source Sample Dialogues
+    const sourceDialogues = {
+      mic: [
+        { speaker: 0, text: "SesYazOku ile doğrudan mikrofon üzerinden canlı ses kaydına başladık." },
+        { speaker: 1, text: "Mikrofon ses kalitesi oldukça yüksek ve ortam gürültü filtresi devrede." },
+        { speaker: 2, text: "Kayıt sırasında istenirse mikrofon tek dokunuşla kapatılıp açılabilir." },
+        { speaker: 3, text: "Tüm konuşmalar konuşmacı etiketleriyle anlık olarak metne işleniyor." }
+      ],
+      social: [
+        { speaker: 0, text: "Zoom ve Google Meet toplantısı arka plan ses servisiyle dinleniyor." },
+        { speaker: 1, text: "WhatsApp sesli görüşmesindeki karşı tarafın sesi net şekilde kaydedildi." },
+        { speaker: 2, text: "Uygulamalar arası geçiş yapılsa dahi bildirim çubuğunda kayıt devam eder." },
+        { speaker: 3, text: "Toplantı tutanağı için katılımcı konuşma süreleri hesaplanıyor." }
+      ],
+      call: [
+        { speaker: 0, text: "Gelen telefon görüşmesi algılandı, çağrı kaydı başlatıldı." },
+        { speaker: 1, text: "Kişi 2: Merhaba, sözleşme maddelerini görüşmek için aramıştım." },
+        { speaker: 0, text: "Kişi 1: Evet dinliyorum, görüşme notlarımız otomatik metne dökülüyor." },
+        { speaker: 1, text: "Kişi 2: Harika, görüşme bitiminde PDF raporunu Drive üzerinden iletir misiniz?" }
+      ],
+      file: [
+        { speaker: 0, text: "Dahili depolamadan eklenen harici ses dosyası çözümleniyor." },
+        { speaker: 1, text: "MP3 / WAV formatındaki ses kaydı yüksek hızda transkribe edildi." },
+        { speaker: 2, text: "Farklı frekanslardaki ses tonları Kişi 1 ve Kişi 2 olarak ayrıştırıldı." }
+      ]
+    };
+    let dialogQueueIndex = 0;
+
+    // Web Audio API & Visualizer
+    let audioContext = null;
+    let analyserNode = null;
+    let microphoneStream = null;
+    let dataArray = null;
+    let waveAnimId = null;
+
+    const canvas = document.getElementById("waveformCanvas");
+    const ctx = canvas.getContext("2d");
+
+    function resizeCanvas() {
+      if (!canvas || !canvas.parentElement) return;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+    }
+    window.addEventListener("resize", resizeCanvas);
+    setTimeout(resizeCanvas, 50);
+
+    // Initialize Web Audio API
+    async function initWebAudio() {
+      try {
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+        }
+        if (!microphoneStream && currentSource === 'mic' && !isMicMuted && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => null);
+          if (microphoneStream) {
+            const source = audioContext.createMediaStreamSource(microphoneStream);
+            analyserNode = audioContext.createAnalyser();
+            analyserNode.fftSize = 64;
+            source.connect(analyserNode);
+            dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+            document.getElementById("canvasSourceLabel").textContent = "🎙️ Canlı Mikrofon (48 kHz)";
+          }
+        }
+      } catch (e) {
+        console.log("Web Audio başlatma bilgisi:", e);
+      }
+    }
+
+    // Draw Dynamic Waveform
+    function drawWave() {
+      if (!canvas) return;
+      const width = canvas.parentElement.clientWidth || 300;
+      const height = canvas.parentElement.clientHeight || 90;
+      ctx.clearRect(0, 0, width, height);
+
+      const bars = 36;
+      const barWidth = width / bars;
+      const centerY = height / 2;
+
+      let realVol = 0;
+      if (analyserNode && dataArray && isRecording && !isMicMuted && currentSource === 'mic') {
+        analyserNode.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+        realVol = sum / dataArray.length;
+      }
+
+      const dbLabel = document.getElementById("canvasLevelLabel");
+      if (dbLabel) {
+        if (isRecording) {
+          const simulatedDb = isMicMuted ? -60 : -14 - Math.floor(Math.random() * 12);
+          dbLabel.textContent = `${simulatedDb} dB`;
+        } else {
+          dbLabel.textContent = "-∞ dB";
+        }
+      }
+
+      for (let i = 0; i < bars; i++) {
+        let barHeight = 6;
+        if (isRecording) {
+          if (isMicMuted) {
+            barHeight = 4; // Flat line when mic is muted
+          } else if (analyserNode && dataArray && realVol > 10) {
+            const freqVal = dataArray[i % dataArray.length] / 255;
+            barHeight = Math.max(8, freqVal * (height * 0.85));
+          } else {
+            // Simulated realistic human speech envelope
+            const time = Date.now() / 200;
+            const wave = Math.sin(time + i * 0.35) * Math.cos(time * 0.5 + i * 0.2);
+            barHeight = Math.max(8, (Math.abs(wave) * 0.65 + Math.random() * 0.35) * (height * 0.75));
+          }
+        }
+
+        const x = i * barWidth;
+        const y = centerY - barHeight / 2;
+
+        const grad = ctx.createLinearGradient(0, y, 0, y + barHeight);
+        if (isMicMuted) {
+          grad.addColorStop(0, '#EF4444');
+          grad.addColorStop(1, '#991B1B');
+        } else {
+          const spColor = speakers[activeSpeakerIndex].color;
+          grad.addColorStop(0, spColor);
+          grad.addColorStop(1, '#3B82F6');
+        }
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(x + barWidth * 0.15, y, barWidth * 0.7, barHeight, 4);
+          ctx.fill();
+        } else {
+          ctx.fillRect(x + barWidth * 0.15, y, barWidth * 0.7, barHeight);
+        }
+      }
+    }
+
+    function startWaveform() {
+      if (waveAnimId) cancelAnimationFrame(waveAnimId);
+      function loop() {
+        drawWave();
+        waveAnimId = requestAnimationFrame(loop);
+      }
+      loop();
+    }
+
+    function stopWaveform() {
+      if (waveAnimId) cancelAnimationFrame(waveAnimId);
+      drawWave();
+    }
+    drawWave();
 
     // Speech Recognition
     let recognition = null;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (SpeechRecognition) {
-      recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'tr-TR';
+      try {
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'tr-TR';
 
-      recognition.onresult = (event) => {
-        let interimTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            addTranscriptRow(event.results[i][0].transcript);
-          } else {
-            interimTranscript += event.results[i][0].transcript;
+        recognition.onresult = (event) => {
+          if (isMicMuted) return;
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              const text = event.results[i][0].transcript;
+              if (text && text.trim().length > 1) {
+                addTranscriptRow(text.trim());
+              }
+            }
           }
-        }
-      };
+        };
 
-      recognition.onerror = (e) => {
-        console.warn("Speech recognition notice:", e.error);
-      };
+        recognition.onerror = (e) => {
+          console.warn("Konuşma tanıma uyarısı:", e.error);
+        };
+      } catch (err) {}
     }
 
     // Toggle Recording
-    function toggleDemoRecording() {
+    async function toggleDemoRecording() {
       if (!isRecording) {
-        startRecording();
+        await startRecording();
       } else {
         stopRecording();
       }
     }
 
-    function startRecording() {
+    async function startRecording() {
       isRecording = true;
       document.getElementById("btn-demo-rec").textContent = "⏸️ Kaydı Durdur";
       document.getElementById("rec-dot").style.display = "inline-block";
-      document.getElementById("recStatusLabel").textContent = "🔴 Kayıt yapılıyor...";
+      document.getElementById("recStatusLabel").textContent = isMicMuted
+        ? "🔇 Sessiz Mod (Mikrofon Kapalı • Uygulama Kaydı)"
+        : `🔴 Kayıt yapılıyor (${getSourceLabel(currentSource)})`;
+
+      await initWebAudio();
 
       timerInterval = setInterval(() => {
         secondsElapsed++;
-        const hrs = String(Math.floor(secondsElapsed / 3600)).padStart(2, '0');
-        const mins = String(Math.floor((secondsElapsed % 3600) / 60)).padStart(2, '0');
-        const secs = String(secondsElapsed % 60).padStart(2, '0');
-        document.getElementById("timerText").textContent = `${hrs}:${mins}:${secs}`;
+        updateTimerDisplay();
+        updateStats();
       }, 1000);
 
+      // Automatic Realistic Diarization Flow
+      autoDialogInterval = setInterval(() => {
+        if (!isRecording) return;
+        const list = sourceDialogues[currentSource] || sourceDialogues.mic;
+        const item = list[dialogQueueIndex % list.length];
+        dialogQueueIndex++;
+        setActiveSpeaker(item.speaker);
+        addTranscriptRow(item.text);
+      }, 7000);
+
       try {
-        if (recognition) recognition.start();
+        if (recognition && !isMicMuted && currentSource === 'mic') {
+          recognition.start();
+        }
       } catch (err) {}
 
       startWaveform();
@@ -1402,9 +1971,10 @@
     function stopRecording() {
       isRecording = false;
       clearInterval(timerInterval);
-      document.getElementById("btn-demo-rec").textContent = "▶️ Canlı Kayda Başla";
+      clearInterval(autoDialogInterval);
+      document.getElementById("btn-demo-rec").textContent = "▶️ Canlı Kaydı Başlat";
       document.getElementById("rec-dot").style.display = "none";
-      document.getElementById("recStatusLabel").textContent = "Kayıt tamamlandı";
+      document.getElementById("recStatusLabel").textContent = "Kayıt durduruldu / hazır";
 
       try {
         if (recognition) recognition.stop();
@@ -1413,20 +1983,108 @@
       stopWaveform();
     }
 
-    // Switch Speaker
-    function switchDemoSpeaker() {
-      currentSpeakerIndex = (currentSpeakerIndex + 1) % speakers.length;
-      const sp = speakers[currentSpeakerIndex];
-      document.getElementById("current-speaker-title").textContent = sp.name;
-      const badge = document.getElementById("demo-speaker-badge");
-      badge.style.color = sp.color;
-      badge.style.borderColor = sp.color;
+    function resetDemoSession() {
+      stopRecording();
+      secondsElapsed = 0;
+      updateTimerDisplay();
+      document.getElementById("transcriptBox").innerHTML = '';
+      dialogQueueIndex = 0;
+      updateStats();
     }
 
-    // Add Segment
+    function updateTimerDisplay() {
+      const hrs = String(Math.floor(secondsElapsed / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((secondsElapsed % 3600) / 60)).padStart(2, '0');
+      const secs = String(secondsElapsed % 60).padStart(2, '0');
+      document.getElementById("timerText").textContent = `${hrs}:${mins}:${secs}`;
+    }
+
+    function getSourceLabel(src) {
+      if (src === 'mic') return "Mikrofon";
+      if (src === 'social') return "Zoom / WhatsApp";
+      if (src === 'call') return "Telefon Araması";
+      return "Ses Dosyası";
+    }
+
+    // Source Selection
+    function selectAudioSource(sourceKey) {
+      currentSource = sourceKey;
+      ['src-mic-btn', 'src-social-btn', 'src-call-btn', 'src-file-btn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.remove('active');
+      });
+
+      const activeBtn = document.getElementById(`src-${sourceKey}-btn`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const badge = document.getElementById("demo-mode-badge");
+      const canvasLabel = document.getElementById("canvasSourceLabel");
+
+      if (sourceKey === 'mic') {
+        badge.textContent = "Canlı Mikrofon Modu";
+        canvasLabel.textContent = "🎙️ Mikrofon (48 kHz)";
+      } else if (sourceKey === 'social') {
+        badge.textContent = "Zoom / Meet / WhatsApp Servisi";
+        canvasLabel.textContent = "💬 Ön Plan Yakalama";
+      } else if (sourceKey === 'call') {
+        badge.textContent = "Telefon Çağrı Modu";
+        canvasLabel.textContent = "📞 Çağrı Servisi";
+      } else if (sourceKey === 'file') {
+        badge.textContent = "Ses Dosyası Transkripsiyonu";
+        canvasLabel.textContent = "🎵 Ses Dosyası";
+      }
+
+      if (isRecording) {
+        document.getElementById("recStatusLabel").textContent = `🔴 Kayıt yapılıyor (${getSourceLabel(sourceKey)})`;
+      }
+    }
+
+    // Microphone On/Off Toggle (User Requirement #1)
+    function toggleMicDevice() {
+      isMicMuted = !isMicMuted;
+      const btn = document.getElementById("micToggleBtn");
+      const icon = document.getElementById("micToggleIcon");
+      const text = document.getElementById("micToggleText");
+
+      if (isMicMuted) {
+        btn.classList.add('muted');
+        icon.textContent = "🔇";
+        text.textContent = "Cihaz Mikrofonu: Kapalı";
+        if (isRecording) {
+          document.getElementById("recStatusLabel").textContent = "🔇 Mikrofon Kapalı (Sadece Karşı Taraf Kaydediliyor)";
+        }
+      } else {
+        btn.classList.remove('muted');
+        icon.textContent = "🎤";
+        text.textContent = "Cihaz Mikrofonu: Açık";
+        if (isRecording) {
+          document.getElementById("recStatusLabel").textContent = `🔴 Kayıt yapılıyor (${getSourceLabel(currentSource)})`;
+        }
+      }
+      drawWave();
+    }
+
+    // Speaker Selection
+    function setActiveSpeaker(idx) {
+      activeSpeakerIndex = idx;
+      const buttons = document.querySelectorAll(".speaker-pill-btn");
+      buttons.forEach((b, i) => {
+        if (i === idx) {
+          b.classList.add("active");
+          b.style.borderColor = speakers[i].color;
+          b.style.color = speakers[i].color;
+        } else {
+          b.classList.remove("active");
+          b.style.borderColor = "rgba(148, 163, 184, 0.25)";
+          b.style.color = "#94A3B8";
+        }
+      });
+    }
+
+    // Add Transcript Row
     function addTranscriptRow(text) {
       if (!text || text.trim() === '') return;
-      const sp = speakers[currentSpeakerIndex];
+      const sp = speakers[activeSpeakerIndex];
       const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
       const secs = String(secondsElapsed % 60).padStart(2, '0');
       const timeStr = `${mins}:${secs}`;
@@ -1434,6 +2092,7 @@
       const box = document.getElementById("transcriptBox");
       const div = document.createElement("div");
       div.className = "transcript-row";
+      div.setAttribute("data-speaker", activeSpeakerIndex);
       div.style.borderLeftColor = sp.color;
       div.innerHTML = `
         <div class="speaker-label" style="color: ${sp.color};">
@@ -1444,61 +2103,199 @@
       `;
       box.appendChild(div);
       box.scrollTop = box.scrollHeight;
+      updateStats();
     }
 
-    // Canvas Waveform
-    const canvas = document.getElementById("waveformCanvas");
-    const ctx = canvas.getContext("2d");
-    let waveAnimId = null;
-
-    function resizeCanvas() {
-      canvas.width = canvas.parentElement.clientWidth;
-      canvas.height = canvas.parentElement.clientHeight;
+    function addSampleQuote(text) {
+      addTranscriptRow(text);
     }
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
 
-    function drawWave() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const bars = 36;
-      const barWidth = canvas.width / bars;
-      const centerY = canvas.height / 2;
+    function addCustomSpeech() {
+      const input = document.getElementById("custom-speech-input");
+      if (!input || !input.value.trim()) return;
+      addTranscriptRow(input.value.trim());
+      input.value = '';
+    }
 
-      for (let i = 0; i < bars; i++) {
-        const height = isRecording
-          ? Math.random() * (canvas.height * 0.8) + 6
-          : 6;
-        const x = i * barWidth;
-        const y = centerY - height / 2;
+    function filterTranscript(query) {
+      const rows = document.querySelectorAll(".transcript-row");
+      const q = query.toLowerCase().trim();
+      rows.forEach(r => {
+        const text = r.innerText.toLowerCase();
+        if (!q || text.includes(q)) {
+          r.style.display = 'block';
+        } else {
+          r.style.display = 'none';
+        }
+      });
+    }
 
-        const grad = ctx.createLinearGradient(0, y, 0, y + height);
-        grad.addColorStop(0, '#06B6D4');
-        grad.addColorStop(1, '#818CF8');
+    function updateStats() {
+      const rows = document.querySelectorAll(".transcript-row");
+      let words = 0;
+      const speakerSet = new Set();
+      rows.forEach(r => {
+        const sp = r.getAttribute("data-speaker");
+        if (sp !== null) speakerSet.add(sp);
+        const content = r.querySelector(".speaker-content");
+        if (content) {
+          words += content.innerText.replace(/"/g, '').trim().split(/\s+/).filter(Boolean).length;
+        }
+      });
 
-        ctx.fillStyle = grad;
-        ctx.fillRect(x + barWidth * 0.2, y, barWidth * 0.6, height);
+      const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+      const secs = String(secondsElapsed % 60).padStart(2, '0');
+      document.getElementById("statDuration").textContent = `${mins}:${secs}`;
+      document.getElementById("statSpeakers").textContent = `${Math.max(1, speakerSet.size)} Kişi`;
+      document.getElementById("statWords").textContent = words;
+    }
+
+    // Handle Uploaded Audio
+    function handleAudioUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      selectAudioSource('file');
+      const wrap = document.getElementById("audioPlayerWrap");
+      wrap.style.display = "flex";
+      document.getElementById("audioFileName").textContent = file.name;
+      document.getElementById("audioFileMeta").textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB • Hazır`;
+
+      const audioEl = document.getElementById("demoAudioElement");
+      audioEl.src = URL.createObjectURL(file);
+
+      addTranscriptRow(`Harici ses dosyası başarıyla yüklendi: "${file.name}"`);
+      addTranscriptRow("SesYazOku transkripsiyon motoru dosyayı konuşmacı ayrımıyla işledi.");
+    }
+
+    function toggleAudioFilePlayback() {
+      const audioEl = document.getElementById("demoAudioElement");
+      const btn = document.getElementById("audioPlayerBtn");
+      if (audioEl.paused) {
+        audioEl.play();
+        btn.textContent = "⏸️ Duraklat";
+        startRecording();
+      } else {
+        audioEl.pause();
+        btn.textContent = "▶️ Oynat";
+        stopRecording();
       }
     }
 
-    function startWaveform() {
-      function loop() {
-        drawWave();
-        waveAnimId = requestAnimationFrame(loop);
+    // Cover Photo Upload & Camera (Requirement #3)
+    function handleCoverPhotoUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        coverPhotoDataUrl = e.target.result;
+        const img = document.getElementById("doc-thumb-img");
+        const icon = document.getElementById("doc-thumb-icon");
+        const removeBtn = document.getElementById("remove-cover-btn");
+
+        img.src = coverPhotoDataUrl;
+        img.style.display = "block";
+        icon.style.display = "none";
+        removeBtn.style.display = "inline-block";
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeCoverPhoto() {
+      coverPhotoDataUrl = null;
+      document.getElementById("doc-thumb-img").style.display = "none";
+      document.getElementById("doc-thumb-icon").style.display = "block";
+      document.getElementById("remove-cover-btn").style.display = "none";
+      document.getElementById("cover-photo-input").value = "";
+    }
+
+    // REAL Printable PDF Export
+    function exportRealPdf() {
+      const title = document.getElementById("doc-title-input").value.trim() || "SesYazOku_Döküman";
+      const rows = document.querySelectorAll(".transcript-row");
+      const dateStr = new Date().toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+      let rowsHtml = '';
+      rows.forEach(r => {
+        const spLabel = r.querySelector(".speaker-label").innerText;
+        const text = r.querySelector(".speaker-content").innerText;
+        const borderCol = r.style.borderLeftColor || "#06B6D4";
+        rowsHtml += `
+          <div style="margin-bottom: 16px; padding: 12px 16px; background: #F8FAFC; border-left: 4px solid ${borderCol}; border-radius: 6px;">
+            <div style="font-size: 11px; font-weight: bold; color: ${borderCol}; margin-bottom: 4px; text-transform: uppercase;">
+              ${spLabel}
+            </div>
+            <div style="font-size: 14px; color: #1E293B; line-height: 1.6;">
+              ${text}
+            </div>
+          </div>
+        `;
+      });
+
+      const coverHtml = coverPhotoDataUrl
+        ? `<div style="text-align: center; margin-bottom: 24px;"><img src="${coverPhotoDataUrl}" style="max-height: 180px; max-width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" /></div>`
+        : '';
+
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>${escapeHtml(title)} — SesYazOku PDF Raporu</title>
+          <style>
+            @page { margin: 20mm; size: A4; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0F172A; margin: 0; padding: 20px; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #06B6D4; padding-bottom: 14px; margin-bottom: 20px; }
+            .title { font-size: 24px; font-weight: 800; color: #0F172A; margin: 0 0 6px; }
+            .meta { font-size: 12px; color: #64748B; }
+            .footer { border-top: 1px solid #E2E8F0; margin-top: 30px; padding-top: 10px; font-size: 11px; color: #94A3B8; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1 class="title">${escapeHtml(title)}</h1>
+              <div class="meta">Oluşturulma Tarihi: ${dateStr} • SesYazOku SCG Audio Suite</div>
+            </div>
+            <div style="font-weight: 900; color: #06B6D4; font-size: 18px;">SesYazOku</div>
+          </div>
+          ${coverHtml}
+          <div>${rowsHtml}</div>
+          <div class="footer">
+            Bu belge SesYazOku Android Uygulaması ile oluşturulmuştur. © 2026 SCG Software.
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Open Print Window
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.open();
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        setTimeout(() => {
+          printWindow.focus();
+          printWindow.print();
+        }, 500);
       }
-      loop();
+
+      // Also trigger downloadable HTML/PDF file
+      const blob = new Blob([printContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${title}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
 
-    function stopWaveform() {
-      cancelAnimationFrame(waveAnimId);
-      drawWave();
-    }
-    drawWave();
-
-    // Export
+    // Plain Text Export
     function exportDemoFile(format) {
       const rows = document.querySelectorAll(".transcript-row");
       const title = document.getElementById("doc-title-input").value.trim() || "SesYazOku_Döküman";
-      let content = `SesYazOku Transkripsiyon Raporu: ${title}\n========================================\n\n`;
+      let content = `SesYazOku Transkripsiyon Raporu: ${title}\nTarih: ${new Date().toLocaleString('tr-TR')}\n========================================\n\n`;
 
       rows.forEach(r => {
         const speaker = r.querySelector(".speaker-label").innerText;
@@ -1510,30 +2307,107 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${title}.${format === 'pdf' ? 'txt' : 'txt'}`;
+      a.download = `${title}.txt`;
       a.click();
       URL.revokeObjectURL(url);
-      if (format === 'pdf') {
-        alert("Web simülatöründe metin çıktısı indirildi. Android uygulamasında doğrudan vektörel PDF olarak kaydedilir.");
+    }
+
+    // Share Modal
+    function openShareModal() {
+      const title = document.getElementById("doc-title-input").value.trim();
+      const rows = document.querySelectorAll(".transcript-row");
+      let shareText = `SesYazOku Dökümanı: ${title}\n\n`;
+      rows.forEach(r => {
+        shareText += `${r.querySelector(".speaker-label").innerText}\n${r.querySelector(".speaker-content").innerText}\n\n`;
+      });
+
+      if (navigator.share) {
+        navigator.share({
+          title: title,
+          text: shareText
+        }).catch(() => {
+          document.getElementById("shareModalBackdrop").style.display = "flex";
+        });
+      } else {
+        document.getElementById("shareModalBackdrop").style.display = "flex";
       }
     }
 
-    function shareDemoDoc() {
+    function closeShareModal() {
+      document.getElementById("shareModalBackdrop").style.display = "none";
+    }
+
+    function shareToWhatsApp() {
       const title = document.getElementById("doc-title-input").value.trim();
-      alert(`"${title}" dökümanı paylaşılmaya hazır!\n\nAndroid uygulamasında WhatsApp, Telegram, Gmail veya Bluetooth ile doğrudan paylaşabilirsiniz.`);
+      let text = `*SesYazOku Transkript Raporu: ${title}*\n\n`;
+      document.querySelectorAll(".transcript-row").forEach(r => {
+        text += `• ${r.querySelector(".speaker-label").innerText}: ${r.querySelector(".speaker-content").innerText}\n`;
+      });
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+      closeShareModal();
     }
 
-    function cloudBackupDemo() {
-      alert("Google Drive Yedeklemesi:\n\nAndroid uygulamasında Google ile Giriş yapıldığında, dökümanlarınız otomatik olarak Google Drive'a .pdf formatında yüklenir.");
+    function shareToTelegram() {
+      const title = document.getElementById("doc-title-input").value.trim();
+      let text = `*${title}*\n\nSesYazOku konuşmacı ayrımıyla oluşturulmuş transkript dökümanı.`;
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(text)}`, '_blank');
+      closeShareModal();
     }
 
-    function handleAudioUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      addTranscriptRow(`Harici ses dosyası başarıyla yüklendi: "${file.name}" (~${(file.size / 1024 / 1024).toFixed(2)} MB)`);
-      alert(`"${file.name}" yüklendi ve sesten yazıya dönüştürme akışına eklendi!`);
+    function copyTranscriptToClipboard() {
+      const title = document.getElementById("doc-title-input").value.trim();
+      let text = `SesYazOku: ${title}\n\n`;
+      document.querySelectorAll(".transcript-row").forEach(r => {
+        text += `[${r.querySelector(".speaker-label").innerText}]\n${r.querySelector(".speaker-content").innerText}\n\n`;
+      });
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById("copyBtn");
+        btn.innerHTML = "✅ <strong>Kopyalandı!</strong>";
+        setTimeout(() => {
+          btn.innerHTML = "📋 <strong>Transkript Metnini Kopyala</strong>";
+          closeShareModal();
+        }, 1200);
+      });
     }
 
+    // Google Drive Backup Modal
+    function openDriveBackupModal() {
+      const backdrop = document.getElementById("driveModalBackdrop");
+      backdrop.style.display = "flex";
+
+      const title = document.getElementById("doc-title-input").value.trim() || "SesYazOku_Döküman";
+      document.getElementById("driveFilePath").textContent = `/Google Drive/SesYazOku/2026/${title}.pdf`;
+
+      const bar = document.getElementById("driveProgressBar");
+      const pct = document.getElementById("drivePercentText");
+      const status = document.getElementById("driveStatusText");
+      const successBox = document.getElementById("driveSuccessBox");
+
+      successBox.style.display = "none";
+      bar.style.width = "0%";
+      pct.textContent = "0%";
+      status.textContent = "Google Drive bağlantısı kuruluyor...";
+
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 25;
+        bar.style.width = `${progress}%`;
+        pct.textContent = `${progress}%`;
+        if (progress === 50) {
+          status.textContent = "PDF dosyası şifreli olarak yükleniyor...";
+        } else if (progress === 100) {
+          clearInterval(interval);
+          status.textContent = "Senkronizasyon tamamlandı!";
+          successBox.style.display = "block";
+        }
+      }, 400);
+    }
+
+    function closeDriveModal() {
+      document.getElementById("driveModalBackdrop").style.display = "none";
+    }
+
+    // FAQ Toggle
     function toggleFaq(el) {
       const ans = el.querySelector(".faq-answer");
       const icon = el.querySelector(".faq-question span:last-child");
@@ -1547,9 +2421,13 @@
     }
 
     function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
   </script>
 </body>

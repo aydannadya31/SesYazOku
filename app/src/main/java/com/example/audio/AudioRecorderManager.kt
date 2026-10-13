@@ -1,10 +1,18 @@
 package com.example.audio
 
 import android.content.Context
+import android.content.Intent
 import android.media.MediaRecorder
 import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.util.Log
+import com.example.transcription.SpeechTranscriptionEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -42,7 +50,19 @@ class AudioRecorderManager(private val context: Context) {
     private val _currentAmplitude = MutableStateFlow(0f)
     val currentAmplitude: StateFlow<Float> = _currentAmplitude.asStateFlow()
 
-    fun startRecording(audioFormat: String = "M4A", audioBitrate: Int = 128000, sampleRate: Int = 44100): Boolean {
+    // Canlı tanınan metin akışı
+    private val _liveSpokenText = MutableStateFlow("")
+    val liveSpokenText: StateFlow<String> = _liveSpokenText.asStateFlow()
+
+    private var liveSpeechRecognizer: SpeechRecognizer? = null
+    private var isRecognizerListening = false
+
+    fun startRecording(
+        audioFormat: String = "M4A",
+        audioBitrate: Int = 128000,
+        sampleRate: Int = 44100,
+        language: String = "tr"
+    ): Boolean {
         if (_isRecording.value) return false
 
         try {
@@ -77,8 +97,11 @@ class AudioRecorderManager(private val context: Context) {
             _isPaused.value = false
             _isMicMuted.value = false
             _elapsedTimeMs.value = 0L
+            _liveSpokenText.value = ""
 
             startTicker()
+            initLiveSpeechRecognizer(language)
+
             return true
         } catch (e: Exception) {
             Log.e("AudioRecorderManager", "Failed to start recording", e)
@@ -87,11 +110,94 @@ class AudioRecorderManager(private val context: Context) {
         }
     }
 
+    private fun initLiveSpeechRecognizer(language: String) {
+        Handler(Looper.getMainLooper()).post {
+            try {
+                if (!SpeechRecognizer.isRecognitionAvailable(context)) return@post
+
+                liveSpeechRecognizer?.destroy()
+                val recognizer = SpeechRecognizer.createSpeechRecognizer(context)
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    val tag = if (language.equals("en", true)) "en-US" else if (language.equals("de", true)) "de-DE" else "tr-TR"
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, tag)
+                    putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                }
+
+                recognizer.setRecognitionListener(object : RecognitionListener {
+                    override fun onReadyForSpeech(params: Bundle?) {
+                        isRecognizerListening = true
+                    }
+                    override fun onBeginningOfSpeech() {}
+                    override fun onRmsChanged(rmsdB: Float) {}
+                    override fun onBufferReceived(buffer: ByteArray?) {}
+                    override fun onEndOfSpeech() {
+                        isRecognizerListening = false
+                    }
+
+                    override fun onError(error: Int) {
+                        isRecognizerListening = false
+                        // Kayıt devam ediyorsa ve mikrofon sessizde değilse yeniden dinle
+                        if (_isRecording.value && !_isPaused.value && !_isMicMuted.value) {
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                try {
+                                    if (_isRecording.value && !isRecognizerListening) {
+                                        liveSpeechRecognizer?.startListening(intent)
+                                    }
+                                } catch (_: Exception) {}
+                            }, 500)
+                        }
+                    }
+
+                    override fun onResults(results: Bundle?) {
+                        isRecognizerListening = false
+                        val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        val text = matches?.firstOrNull()
+                        if (!text.isNullOrBlank()) {
+                            val current = _liveSpokenText.value
+                            val updated = if (current.isBlank()) text else "$current $text"
+                            _liveSpokenText.value = updated
+                            SpeechTranscriptionEngine.setLiveRecognizedText(updated)
+                        }
+
+                        // Sürekli dinleme döngüsü
+                        if (_isRecording.value && !_isPaused.value && !_isMicMuted.value) {
+                            try {
+                                liveSpeechRecognizer?.startListening(intent)
+                            } catch (_: Exception) {}
+                        }
+                    }
+
+                    override fun onPartialResults(partialResults: Bundle?) {
+                        val partials = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        val partial = partials?.firstOrNull()
+                        if (!partial.isNullOrBlank()) {
+                            val base = _liveSpokenText.value
+                            val full = if (base.isBlank()) partial else "$base $partial"
+                            SpeechTranscriptionEngine.setLiveRecognizedText(full)
+                        }
+                    }
+
+                    override fun onEvent(eventType: Int, params: Bundle?) {}
+                })
+
+                liveSpeechRecognizer = recognizer
+                recognizer.startListening(intent)
+            } catch (e: Exception) {
+                Log.w("AudioRecorderManager", "SpeechRecognizer init skipped: ${e.message}")
+            }
+        }
+    }
+
+    fun setLiveRecognizedCustomText(text: String) {
+        _liveSpokenText.value = text
+        SpeechTranscriptionEngine.setLiveRecognizedText(text)
+    }
+
     fun toggleMicMute() {
         if (!_isRecording.value) return
         val current = _isMicMuted.value
         _isMicMuted.value = !current
-        // Visual indicator and state toggle for mic active/mute during session
     }
 
     fun pauseRecording() {
@@ -99,6 +205,7 @@ class AudioRecorderManager(private val context: Context) {
         try {
             mediaRecorder?.pause()
             _isPaused.value = true
+            liveSpeechRecognizer?.stopListening()
         } catch (e: Exception) {
             Log.e("AudioRecorderManager", "Error pausing recorder", e)
         }
@@ -117,6 +224,12 @@ class AudioRecorderManager(private val context: Context) {
     fun stopRecording(): File? {
         if (!_isRecording.value) return null
         tickerJob?.cancel()
+
+        try {
+            liveSpeechRecognizer?.stopListening()
+            liveSpeechRecognizer?.destroy()
+            liveSpeechRecognizer = null
+        } catch (_: Exception) {}
 
         try {
             mediaRecorder?.apply {
@@ -172,5 +285,9 @@ class AudioRecorderManager(private val context: Context) {
         _isMicMuted.value = false
         _currentAmplitude.value = 0f
         tickerJob?.cancel()
+        try {
+            liveSpeechRecognizer?.destroy()
+            liveSpeechRecognizer = null
+        } catch (_: Exception) {}
     }
 }
