@@ -1,75 +1,73 @@
-# 🎙️ SesYazıcı AI
+# 🎙️ SesYazOku (SCG)
 
-> **Canlı ve Harici Görüşme Ses Transkripsiyonu, Konuşmacı Etiketleme, Yapay Zeka Özetleme ve Görev Yöneticisi**
+<p align="center">
+  <img src="docs/assets/logo.jpg" alt="SesYazOku Logo" width="120" style="border-radius: 24px; box-shadow: 0 4px 20px rgba(6,182,212,0.4);" />
+</p>
 
-[![Android CI & Build APK](https://github.com/actions/workflows/build.yml/badge.svg)](../../actions)
-[![Deploy Live Web App to GitHub Pages](https://github.com/actions/workflows/pages.yml/badge.svg)](../../actions)
-![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Web-blue)
-![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-purple)
-![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-green)
-![License](https://img.shields.io/badge/License-Apache%202.0-lightgrey)
+<p align="center">
+  <strong>Canlı Ses Kaydı, Harici Uygulamalardan Ses Yakalama (Zoom, Meet, WhatsApp, Telefon), Çoklu Konuşmacı Ayrımı (Kişi 1, Kişi 2, Kişi 3...), PDF/Kamera Döküman Yönetimi ve Google Drive Bulut Senkronizasyonu</strong>
+</p>
 
----
-
-## 🌐 GitHub Üzerinde Canlı Çalışma & Kullanım
-
-Bu depo, GitHub üzerinde hem **otomatik derleme (CI/CD)** hem de **canlı web uygulaması (GitHub Pages)** olarak çalışacak şekilde yapılandırılmıştır:
-
-1. **Canlı Web Sürümü (GitHub Pages)**:
-   - Depo ayarlarından **GitHub Pages**'i etkinleştirdiğinizde (veya GitHub Actions otomatik dağıtımı tamamlandığında), `https://<kullanici-adiniz>.github.io/<depo-adiniz>/` adresi üzerinden tarayıcınızda canlı olarak çalışır.
-   - Tarayıcı üzerinden mikrofonla canlı transkripsiyon, konuşmacı ayrımı, yapay zeka özetleme ve PDF/Word dışa aktarma işlemlerini anında test edebilirsiniz.
-
-2. **Otomatik Android APK Derlemesi (GitHub Actions)**:
-   - Depoya her `git push` yapıldığında veya `v*` sürüm etiketi eklendiğinde `.github/workflows/build.yml` iş akışı devreye girer.
-   - Android APK'sı otomatik olarak derlenir ve GitHub Actions **Artifacts** ile **Releases** sekmesinden hemen indirilip telefona kurulabilir.
+<p align="center">
+  <a href="../../actions"><img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue?logo=githubactions" alt="CI/CD" /></a>
+  <a href="docs/SesYazOku.apk"><img src="https://img.shields.io/badge/APK-SesYazOku.apk%20(v1.0.0)-success?logo=android" alt="Download APK" /></a>
+  <img src="https://img.shields.io/badge/Kotlin-2.2.10-purple?logo=kotlin" alt="Kotlin" />
+  <img src="https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-brightgreen?logo=jetpackcompose" alt="Compose" />
+  <img src="https://img.shields.io/badge/License-Apache%202.0-lightgrey" alt="License" />
+</p>
 
 ---
 
-## 🚀 Öne Çıkan Özellikler
+## 🌐 Canlı Web Sayfası & APK İndirme
 
-### 1. 🎙️ Canlı & Kayıtlı Ses Transkripsiyonu (Süre Sınırı Yok)
-- **Sınırsız Süre:** Toplantılar, mülakatlar, dersler ve saatler süren görüşmeler için kesintisiz kayıt ve transkripsiyon.
-- **Ses Dosyası Yükleme:** Cihazınızdaki `.mp3`, `.wav`, `.m4a` formatındaki ses kayıtlarını yükleyip tek tıkla yazıya dökebilme.
-- **Entegre Ses Oynatıcı:** Zaman damgalı ses dalgası, ±5 saniye atlama ve ayarlanabilir oynatma hızları (0.75x, 1x, 1.25x, 1.5x, 2x).
+Bu projede **GitHub Pages** üzerinde canlı olarak çalışan kapsamlı bir tanıtım ve indirme sayfası bulunmaktadır:
 
-### 2. 🎥 Harici Canlı Görüşme Yakalama (Zoom, Meet, Teams, WhatsApp)
-- **Ön Plan Servisi (Foreground Service):** Siz Zoom, Google Meet veya WhatsApp görüşmesine geçtiğinizde arka planda mikrofon ve görüşme seslerini kaydetmeye ve transkribe etmeye devam eder.
-- **Ekran Üstü Kayan Baloncuk (Floating Bubble):** Video görüşmesini engellemeden ekranda gezdirilebilen, canlı transkripti gösteren ve tek dokunuşla konuşmacı değiştirmeye olanak tanıyan yüzen pencere.
-- **Görüşmeye Özel Ses Filtresi (`VOICE_COMMUNICATION`):** Donanımsal yankı ve gürültü engelleme desteği.
+- **Canlı Web Tanıtım Sayfası**: `https://<kullanici-adiniz>.github.io/<depo-adiniz>/`
+- **Doğrudan APK İndir**: [docs/SesYazOku.apk](docs/SesYazOku.apk) (~25.1 MB, Android 8.0+)
+- **Tarayıcıda Canlı Test Simülatörü**: Web sayfasında canlı mikrofon kaydı, konuşmacı simülasyonu ve PDF çıktısı anında test edilebilir.
 
-### 3. 👥 Konuşmacı Etiketleme (Speaker Diarization)
-- Katılımcıları ayırt etme (*Konuşmacı 1*, *Konuşmacı 2*, *Ahmet*, *Zeynep* vb.).
-- Canlı kayıt ve görüşme sırasında anlık **"Konuşmacı Değiştir"** butonu.
-- Transkript üzerinde konuşmacı isimlerini ve renk etiketlerini düzenleme.
-- Konuşmacı konuşma payı analiz grafiği.
+---
 
-### 4. 🤖 Yapay Zeka ile Otomatik Özetleme
-- **Yönetici Özeti (Executive Summary):** Görüşmenin ana fikri.
-- **Alınan Kararlar:** Toplantıda mutabık kalınan kritik noktalar.
-- **Aksiyon Maddeleri:** Yapılacak işler, görevliler ve aciliyet dereceleri.
+## 📱 SesYazOku'nun 7 Temel Modülü
 
-### 5. 📄 4 Farklı Formatta Dışa Aktarma
-- **PDF (.pdf):** Renkli başlıklar, katılımcı etiketleri ve yapay zeka özeti içeren doküman.
-- **Word (.docx):** Microsoft Word ve Google Docs ile %100 uyumlu standart OpenXML dokümanı.
-- **Düz Metin (.txt):** Standart not formatı.
-- **Altyazı (.srt):** Zaman damgalı video altyazı formatı.
+### 0. 🔑 Google ile Giriş & Bulut Entegrasyonu
+- **Güvenli Kimlik Doğrulama:** Google Sign-In (Credential Manager) ile tek tıkla güvenli oturum.
+- **Entegrasyonlar:** İlerleyen aşamalarda Gmail, Mesajlar ve Google Drive yedeklemeleri için güvenli yetkilendirme.
 
-### 6. ☁️ Bulut Senkronizasyonu & Çevrimdışı Öncelikli
-- **Çevrimdışı (Room/SQLite):** İnternet bağlantısı olmasa bile tüm kayıtlar cihazda güvenle saklanır.
-- **Bulut Yedekleme & Çapraz Platform (.json):** Verilerinizi web, masaüstü veya diğer cihazlarla senkronize eden evrensel yedekleme paketi.
+### 1. 🎙️ Kayıt Sekmesi
+- **Canlı Mikrofon Kaydı:** İsteğe bağlı olarak mikrofon açık veya kapalı yapılabilir.
+- **Harici Uygulamalardan Canlı Ses Alma:** Zoom, Google Meet, WhatsApp, Telegram, video konferanslar ve normal telefon konuşmalarından arka planda ses kaydı alma (Foreground Service).
+- **Cihazdaki Sesleri Yükleme:** Cihazda önceden kaydedilmiş `.mp3`, `.m4a`, `.wav`, `.ogg`, `.aac`, `.3gp` gibi tüm ses dosyalarını ekleyip kullanabilme.
 
-### 7. 🔊 Metni Sesli Dinleme (Text-to-Speech)
-- Transkripti veya özeti sesli olarak dinleme, konuşma hızı ayarı ve seslendirilen cümlenin vurgulanması.
+### 2. ✍️ Transkriptor Sekmesi (Konuşmacı Ayrımı)
+- **Sesten Yazıya Dönüştürme:** Yüksek doğruluklu Speech-to-Text motoru.
+- **Çoklu Konuşmacı Tespiti:** Ses kaydı içinde kaç kişi varsa tespit edilip metinde sıralı olarak **Kişi 1**, **Kişi 2**, **Kişi 3** şeklinde ayrıştırılması.
+- **Zaman Damgaları & İstatistik:** Cümle başlangıç-bitiş süreleri ve konuşma süresi dağılımı.
 
-### 8. 🌓 Karanlık Mod & Çoklu Dil Desteği
-- Sistem, Açık ve AMOLED uyumlu Koyu tema seçenekleri.
-- Türkçe, English, Deutsch, Español ve Français dil desteği.
+### 3. 📂 Döküman Sekmesi & Yönetim
+- **Dosya Adı Düzenleme:** Sesten dönüştürülmüş dökümanların isimlerini değiştirme.
+- **Kapak/Önizleme Resmi Ekleme:** Dahili/harici hafızadan görsel seçme veya doğrudan **kamera ile anlık fotoğraf çekerek** dökümana kapak resmi atama.
+- **PDF Oluşturma:** Tek dokunuşla cihaz hafızasına profesyonel PDF olarak kaydetme.
+- **Hızlı Paylaşım & Drive:** Mesajlaşma uygulamalarıyla (WhatsApp, Telegram) paylaşma ve Google Drive'a bulut yedekleme.
+
+### 4. ⚙️ Ayarlar Sekmesi
+- **Tema:** Koyu (Dark) ve Açık (Light) Material 3 teması.
+- **Dil Seçimi:** Türkçe ve İngilizce arayüz dili.
+- **Ses İnce Ayarları:** Ses örnekleme frekansı, gürültü bastırma filtresi ve mikrofon hassasiyeti.
+
+### 5. ✨ Özel Açılış Deneyimi & SCG Logosu
+- **Splash Animasyonu:** Açılışta sabit logo yerine **"SesYazOku"** yazısı ve çevresinde dönen parlama efekti (Glow effect).
+- **Özel Logo:** Canlı ses dalgası ekolayzırı ve **SCG** harflerinden oluşan marka simgesi.
+
+### 6. 🛡️ Açılış İzinleri
+- Program açılışında şeffaf bilgilendirmeyle Dahili/Harici Depolama, Mikrofon ve Kamera erişim izin talepleri.
+
+### 7. 💬 Üreticiye Mesaj (Geri Bildirim)
+- Programın işleyişi, eksik kısımları ve geliştirme önerileri hakkında kullanıcıların doğrudan geliştiriciye mesaj gönderebileceği entegre form.
 
 ---
 
 ## 🛠️ Yerel Geliştirme & Derleme
-
-Depoyu yerel bilgisayarınızda derlemek için:
 
 ```bash
 # Depoyu klonlayın
@@ -83,9 +81,9 @@ cd <depo-adiniz>
 ./gradlew assembleDebug
 ```
 
-Derlenen APK dosyası `app/build/outputs/apk/debug/app-debug.apk` dizininde oluşturulacaktır.
+Derlenen APK: `app/build/outputs/apk/debug/app-debug.apk` ve `docs/SesYazOku.apk`.
 
 ---
 
 ## 📄 Lisans
-Bu proje [Apache License 2.0](LICENSE) ile lisanslanmıştır.
+Bu proje Apache License 2.0 ile lisanslanmıştır.

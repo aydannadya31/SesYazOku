@@ -42,10 +42,15 @@ jobs:
       - name: Build Debug APK
         run: ./gradlew assembleDebug
 
+      - name: Copy Built APK to Docs for GitHub Pages
+        run: |
+          mkdir -p docs
+          cp app/build/outputs/apk/debug/app-debug.apk docs/SesYazOku.apk || true
+
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SesYazici-AI-Debug-APK
+          name: SesYazOku-Debug-APK
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
 

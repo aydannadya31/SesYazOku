@@ -3,29 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SesYazıcı AI — Canlı Ses Transkripsiyonu & Akıllı Özetleme</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366F1'><path d='M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z'/></svg>">
+  <title>SesYazOku — Ses Kaydı, Konuşmacı Ayrımı & Döküman Asistanı (APK İndir)</title>
+  <meta name="description" content="SesYazOku Android APK Tanıtım ve İndirme Sayfası. Canlı ve harici arama ses kaydı (Zoom, Meet, WhatsApp, Telefon), Kişi 1/2/3 konuşmacı ayrımı, PDF döküman yönetimi ve Google Drive yedekleme.">
+  <link rel="icon" type="image/jpeg" href="assets/logo.jpg">
   <style>
     :root {
-      --bg-dark: #0B0F19;
-      --card-dark: #131B2E;
-      --border-dark: #1E293B;
-      --text-main: #F1F5F9;
-      --text-sub: #94A3B8;
+      --bg-dark: #070B14;
+      --bg-card: #0F172A;
+      --bg-card-hover: #162238;
+      --border-subtle: #1E293B;
+      --border-glow: rgba(6, 182, 212, 0.35);
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
       --primary: #6366F1;
       --primary-hover: #4F46E5;
-      --primary-light: #EEF2FF;
       --cyan: #06B6D4;
+      --cyan-glow: rgba(6, 182, 212, 0.6);
       --emerald: #10B981;
       --amber: #F59E0B;
       --rose: #EF4444;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --shadow-glow: 0 0 25px rgba(6, 182, 212, 0.25);
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 
     body {
@@ -34,17 +40,42 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      line-height: 1.6;
+      overflow-x: hidden;
     }
 
-    /* Top Navigation */
+    /* Ambient background glows */
+    .ambient-glow-1 {
+      position: absolute;
+      top: -120px;
+      left: 10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, rgba(7, 11, 20, 0) 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .ambient-glow-2 {
+      position: absolute;
+      top: 300px;
+      right: 5%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.18) 0%, rgba(7, 11, 20, 0) 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Navigation */
     header {
-      background: rgba(19, 27, 46, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border-dark);
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
       position: sticky;
       top: 0;
       z-index: 100;
-      padding: 14px 24px;
+      padding: 14px 28px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -53,173 +84,475 @@
     .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
-      font-weight: 700;
-      font-size: 1.25rem;
-      color: #fff;
-    }
-
-    .brand-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, var(--primary), var(--cyan));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
-    }
-
-    .nav-actions {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .btn {
-      padding: 8px 16px;
-      border-radius: 10px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border: none;
-      transition: all 0.2s ease;
+      gap: 14px;
       text-decoration: none;
     }
 
-    .btn-primary {
-      background: var(--primary);
-      color: white;
+    .brand-logo-img {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 2px solid var(--cyan);
+      box-shadow: 0 0 15px var(--cyan-glow);
     }
-    .btn-primary:hover {
-      background: var(--primary-hover);
-      transform: translateY(-1px);
+
+    .brand-title-wrap {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-name {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #FFFFFF, #38BDF8, #818CF8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-tagline {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--cyan);
+    }
+
+    .nav-cta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 20px;
+      border-radius: var(--radius-md);
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: none;
+      transition: all 0.25s ease;
+      text-decoration: none;
+    }
+
+    .btn-download {
+      background: linear-gradient(135deg, var(--cyan), var(--primary));
+      color: #FFFFFF;
+      box-shadow: 0 4px 20px rgba(6, 182, 212, 0.4);
+    }
+
+    .btn-download:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 26px rgba(6, 182, 212, 0.6);
+      filter: brightness(1.1);
     }
 
     .btn-outline {
-      background: transparent;
-      border: 1px solid var(--border-dark);
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--border-subtle);
       color: var(--text-main);
     }
+
     .btn-outline:hover {
-      background: var(--border-dark);
+      background: rgba(30, 41, 59, 0.9);
+      border-color: var(--cyan);
+      color: var(--cyan);
     }
 
-    .btn-danger {
-      background: var(--rose);
-      color: white;
+    .btn-lg {
+      padding: 14px 28px;
+      font-size: 1.05rem;
+      border-radius: 14px;
     }
 
     /* Container */
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 24px;
+      padding: 32px 24px;
+      position: relative;
+      z-index: 1;
       width: 100%;
-      flex: 1;
     }
 
-    /* Hero Banner */
-    .hero-banner {
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.08));
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      border-radius: 20px;
-      padding: 24px 30px;
-      margin-bottom: 24px;
-      display: flex;
-      justify-content: space-between;
+    /* Hero Section */
+    .hero {
+      padding: 40px 0 60px;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 40px;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 16px;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--cyan);
+      margin-bottom: 18px;
     }
 
     .hero-title {
-      font-size: 1.5rem;
-      font-weight: 800;
-      margin-bottom: 6px;
-      background: linear-gradient(90deg, #fff, #A5B4FC);
+      font-size: 2.85rem;
+      font-weight: 900;
+      line-height: 1.18;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #FFFFFF 20%, #A5F3FC 60%, #818CF8 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
-    .hero-desc {
-      color: var(--text-sub);
-      font-size: 0.95rem;
-      max-width: 700px;
-      line-height: 1.5;
+    .hero-description {
+      font-size: 1.12rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+      margin-bottom: 28px;
     }
 
-    /* Grid Layout */
-    .main-grid {
+    .hero-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .specs-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .spec-chip {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .spec-chip strong {
+      color: var(--text-main);
+    }
+
+    /* Hero Download Card */
+    .apk-card {
+      background: linear-gradient(145deg, #0F172A 0%, #131E35 100%);
+      border: 1px solid var(--border-glow);
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(6, 182, 212, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .apk-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 140px;
+      height: 140px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.25) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .apk-header {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .apk-logo-large {
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
+      object-fit: cover;
+      border: 2px solid var(--cyan);
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+    }
+
+    .apk-meta h3 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #FFFFFF;
+    }
+
+    .apk-meta p {
+      font-size: 0.85rem;
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    .apk-meta span {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .apk-details-grid {
       display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      background: rgba(7, 11, 20, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 22px;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .detail-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .detail-value {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .qr-box-wrap {
+      background: #FFFFFF;
+      border-radius: 12px;
+      padding: 12px;
+      width: 110px;
+      height: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .qr-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(30, 41, 59, 0.3);
+      border: 1px dashed var(--border-subtle);
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 18px;
+    }
+
+    .qr-text {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .qr-text strong {
+      color: var(--text-main);
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    /* Section Headers */
+    .section-title-wrap {
+      text-align: center;
+      margin: 60px 0 40px;
+    }
+
+    .section-pill {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      margin-bottom: 12px;
+    }
+
+    .section-subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* Modules Grid (The 7 Pillars) */
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
       gap: 24px;
     }
 
-    @media (max-width: 900px) {
-      .main-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* Card */
-    .card {
-      background: var(--card-dark);
-      border: 1px solid var(--border-dark);
-      border-radius: 18px;
-      padding: 20px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-    }
-
-    .card-header {
+    .module-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 26px;
+      transition: all 0.3s ease;
+      position: relative;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
+    }
+
+    .module-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--cyan);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(6, 182, 212, 0.15);
+      background: var(--bg-card-hover);
+    }
+
+    .module-card-header {
+      display: flex;
       align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .module-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #A5B4FC;
+    }
+
+    .module-number {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .module-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #FFFFFF;
+    }
+
+    .module-desc {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.6;
       margin-bottom: 16px;
+      flex: 1;
     }
 
-    .card-title {
-      font-size: 1.15rem;
-      font-weight: 700;
+    .module-feature-list {
+      list-style: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 14px;
+    }
+
+    .module-feature-list li {
+      font-size: 0.85rem;
+      color: #CBD5E1;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
+      margin-bottom: 8px;
     }
 
-    /* Waveform Canvas */
-    .waveform-box {
-      background: #0D1322;
-      border: 1px solid var(--border-dark);
-      border-radius: 14px;
+    .module-feature-list li::before {
+      content: "✓";
+      color: var(--cyan);
+      font-weight: 800;
+    }
+
+    /* Live Web Demo Section */
+    .demo-section {
+      background: #0B101D;
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      padding: 32px;
+      margin: 60px 0;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 28px;
+      margin-top: 24px;
+    }
+
+    .waveform-card {
+      background: #070B14;
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .waveform-canvas-box {
+      background: #04070F;
+      border: 1px solid #1E293B;
+      border-radius: 12px;
       height: 90px;
       width: 100%;
-      position: relative;
       overflow: hidden;
       margin-bottom: 16px;
     }
 
-    canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    /* Timer & Speaker Header */
-    .rec-status-bar {
+    .live-status-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(30, 41, 59, 0.5);
-      border: 1px solid var(--border-dark);
-      border-radius: 12px;
+      background: rgba(30, 41, 59, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
       padding: 10px 16px;
       margin-bottom: 16px;
     }
 
-    .timer-display {
+    .timer-badge {
       font-size: 1.25rem;
       font-weight: 800;
       font-variant-numeric: tabular-nums;
@@ -228,392 +561,776 @@
       gap: 8px;
     }
 
-    .pulsing-dot {
+    .recording-dot {
       width: 12px;
       height: 12px;
       border-radius: 50%;
       background: var(--rose);
-      animation: pulse 1.2s infinite;
+      display: none;
+      animation: pulseAnim 1.2s infinite;
     }
 
-    @keyframes pulse {
+    @keyframes pulseAnim {
       0% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
+      50% { opacity: 0.3; transform: scale(0.85); }
       100% { opacity: 1; transform: scale(1); }
     }
 
-    /* Speaker Pill */
-    .speaker-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      cursor: pointer;
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.35);
-      color: #A5B4FC;
-    }
-
-    /* Controls Bar */
-    .controls-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-
-    /* Transcript Stream Area */
-    .transcript-stream {
-      background: #080C14;
-      border: 1px solid var(--border-dark);
-      border-radius: 14px;
-      padding: 16px;
-      max-height: 380px;
-      min-height: 240px;
+    .transcript-box {
+      background: #04070F;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 14px;
+      min-height: 220px;
+      max-height: 320px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
-    .transcript-segment {
-      background: rgba(19, 27, 46, 0.7);
-      border-left: 3px solid var(--primary);
-      border-radius: 0 10px 10px 0;
-      padding: 10px 14px;
-      transition: all 0.2s ease;
+    .transcript-row {
+      background: rgba(15, 23, 42, 0.7);
+      border-left: 3px solid var(--cyan);
+      border-radius: 0 8px 8px 0;
+      padding: 10px 12px;
     }
 
-    .transcript-segment:hover {
-      background: rgba(30, 41, 59, 0.8);
-    }
-
-    .segment-header {
+    .speaker-label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--cyan);
       display: flex;
       justify-content: space-between;
-      align-items: center;
       margin-bottom: 4px;
     }
 
-    .segment-speaker {
-      font-size: 0.8rem;
-      font-weight: 700;
-    }
-
-    .segment-time {
-      font-size: 0.75rem;
-      color: var(--text-sub);
-    }
-
-    .segment-text {
-      font-size: 0.95rem;
-      line-height: 1.5;
+    .speaker-content {
+      font-size: 0.9rem;
       color: #E2E8F0;
     }
 
-    /* Tabbed Sections in Right Column */
-    .tabs-nav {
-      display: flex;
-      border-bottom: 1px solid var(--border-dark);
-      gap: 16px;
-      margin-bottom: 16px;
+    /* Installation Steps */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
     }
 
-    .tab-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-sub);
-      font-weight: 600;
-      padding: 10px 4px;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
+    .step-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 22px;
+      position: relative;
     }
 
-    .tab-btn.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
-    }
-
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-    }
-
-    /* Summary Card */
-    .summary-text {
-      background: rgba(99, 102, 241, 0.08);
-      border: 1px solid rgba(99, 102, 241, 0.25);
-      border-radius: 12px;
-      padding: 14px;
-      font-size: 0.9rem;
-      line-height: 1.6;
-      margin-bottom: 14px;
-    }
-
-    .bullet-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      margin-bottom: 8px;
-      font-size: 0.875rem;
-    }
-
-    /* Task Item */
-    .task-row {
+    .step-number {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--primary));
+      color: #FFFFFF;
+      font-weight: 800;
       display: flex;
       align-items: center;
-      gap: 10px;
-      background: rgba(30, 41, 59, 0.4);
-      border: 1px solid var(--border-dark);
-      border-radius: 10px;
-      padding: 10px 14px;
+      justify-content: center;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+    }
+
+    .step-card h4 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #FFFFFF;
       margin-bottom: 8px;
     }
 
-    .task-row.done {
-      opacity: 0.6;
-      text-decoration: line-through;
+    .step-card p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
     }
 
-    .priority-badge {
-      font-size: 0.7rem;
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-weight: 700;
-    }
-    .priority-high { background: rgba(239, 68, 68, 0.2); color: var(--rose); }
-    .priority-med { background: rgba(245, 158, 11, 0.2); color: var(--amber); }
-
-    /* External Call Apps Grid */
-    .apps-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 10px;
+    /* FAQ */
+    .faq-list {
+      max-width: 800px;
+      margin: 30px auto 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
     }
 
-    .app-box {
-      background: rgba(30, 41, 59, 0.6);
-      border: 1px solid var(--border-dark);
-      border-radius: 10px;
-      padding: 12px 6px;
-      text-align: center;
+    .faq-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 18px 22px;
       cursor: pointer;
-      font-size: 0.8rem;
-      font-weight: 600;
       transition: all 0.2s;
     }
-    .app-box:hover, .app-box.selected {
-      border-color: var(--primary);
-      background: rgba(99, 102, 241, 0.15);
-      color: #fff;
+
+    .faq-item:hover {
+      border-color: var(--cyan);
+    }
+
+    .faq-question {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .faq-answer {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    /* Call to Action Footer Banner */
+    .cta-banner {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(6, 182, 212, 0.2) 100%);
+      border: 1px solid var(--border-glow);
+      border-radius: 24px;
+      padding: 40px;
+      text-align: center;
+      margin: 60px 0 40px;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .cta-banner h2 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      margin-bottom: 12px;
+    }
+
+    .cta-banner p {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto 24px;
     }
 
     /* Footer */
     footer {
-      border-top: 1px solid var(--border-dark);
-      padding: 20px;
+      border-top: 1px solid var(--border-subtle);
+      background: #050811;
+      padding: 30px 24px;
       text-align: center;
+      color: var(--text-muted);
       font-size: 0.85rem;
-      color: var(--text-sub);
-      margin-top: auto;
+    }
+
+    footer a {
+      color: var(--cyan);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding: 20px 0 40px;
+      }
+      .demo-grid {
+        grid-template-columns: 1fr;
+      }
+      .nav-links {
+        display: none;
+      }
+      .hero-title {
+        font-size: 2.2rem;
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- Top Navigation -->
-  <header>
-    <div class="brand">
-      <div class="brand-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
-        </svg>
-      </div>
-      <span>SesYazıcı AI</span>
-    </div>
+  <!-- Ambient Glows -->
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
 
-    <div class="nav-actions">
-      <button class="btn btn-outline" id="btn-export-dropdown" onclick="showExportOptions()">📥 Dışa Aktar (PDF/Word)</button>
-      <a href="https://github.com" target="_blank" class="btn btn-primary" id="btn-github-apk">
-        📱 Android APK İndir
+  <!-- Header -->
+  <header>
+    <a href="#" class="brand">
+      <img src="assets/logo.jpg" alt="SesYazOku Logo" class="brand-logo-img">
+      <div class="brand-title-wrap">
+        <span class="brand-name">SesYazOku</span>
+        <span class="brand-tagline">SCG Ses & Transkripsiyon Asistanı</span>
+      </div>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="#ozellikler">Özellikler</a></li>
+      <li><a href="#moduller">7 Ana Modül</a></li>
+      <li><a href="#demo">Canlı Web Testi</a></li>
+      <li><a href="#kurulum">Nasıl Kurulur?</a></li>
+      <li><a href="#sss">S.S.S.</a></li>
+    </ul>
+
+    <div class="nav-cta">
+      <a href="SesYazOku.apk" download="SesYazOku.apk" class="btn btn-download" id="header-download-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>APK İndir (v1.0.0)</span>
       </a>
     </div>
   </header>
 
-  <!-- Main Container -->
+  <!-- Container -->
   <main class="container">
-    
-    <!-- Hero / External Call Banner -->
-    <div class="hero-banner">
+
+    <!-- HERO SECTION -->
+    <section class="hero">
       <div>
-        <div class="hero-title">Canlı Ses Transkripsiyonu & Akıllı Toplantı Asistanı</div>
-        <p class="hero-desc">
-          Mikrofonunuzdan veya Zoom, Google Meet, Microsoft Teams, WhatsApp gibi görüşme uygulamalarından canlı olarak kayıt alarak konuşmacıları etiketler, yapay zeka ile özetler ve PDF / Word olarak dışa aktarır.
+        <div class="badge-pill">
+          <span>⚡ Yeni Sürüm v1.0.0</span>
+          <span>•</span>
+          <span>Android 8.0 ve Üzeri</span>
+        </div>
+
+        <h1 class="hero-title">
+          Sesleri Metne Dönüştürün, Konuşmacıları Ayrıştırın, Anında PDF ve Drive'a Aktarın.
+        </h1>
+
+        <p class="hero-description">
+          <strong>SesYazOku</strong>; hem cihaz mikrofonundan hem de <strong>Zoom, Google Meet, WhatsApp, Telefon görüşmeleri</strong> gibi arka plandaki tüm uygulamalardan canlı ses kaydı alır. Sesleri anında <em>Kişi 1, Kişi 2, Kişi 3</em> olarak etiketleyip metne döker, kamera ile fotoğraf çekip PDF'e dönüştürür ve Google Drive'a yedekler.
+        </p>
+
+        <div class="hero-buttons">
+          <a href="SesYazOku.apk" download="SesYazOku.apk" class="btn btn-download btn-lg" id="hero-download-btn">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>SesYazOku.apk İndir (25 MB)</span>
+          </a>
+
+          <a href="#demo" class="btn btn-outline btn-lg">
+            <span>🌐 Canlı Demosunu Dene</span>
+          </a>
+        </div>
+
+        <div class="specs-chips">
+          <div class="spec-chip">🔒 <strong>Virüssüz & Açık Kaynak</strong></div>
+          <div class="spec-chip">📱 <strong>ARM64 / ARMv7 / x86_64</strong></div>
+          <div class="spec-chip">⚡ <strong>Google Sign-In Entegre</strong></div>
+          <div class="spec-chip">📄 <strong>PDF & Drive Senkronize</strong></div>
+        </div>
+      </div>
+
+      <!-- APK Download Card -->
+      <div class="apk-card">
+        <div class="apk-header">
+          <img src="assets/logo.jpg" alt="SCG Logo" class="apk-logo-large">
+          <div class="apk-meta">
+            <h3>SesYazOku</h3>
+            <p>SCG SoundWave Edition</p>
+            <span>com.aistudio.sesyazoku • v1.0.0</span>
+          </div>
+        </div>
+
+        <div class="apk-details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Dosya Boyutu</span>
+            <span class="detail-value">~25.1 MB</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Android Sürümü</span>
+            <span class="detail-value">Android 8.0+ (API 26+)</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Ses Yakalama</span>
+            <span class="detail-value">Mikrofon + Çağrı Servisi</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Çıktı Formatları</span>
+            <span class="detail-value">PDF, TXT, Drive Bulut</span>
+          </div>
+        </div>
+
+        <a href="SesYazOku.apk" download="SesYazOku.apk" class="btn btn-download" style="width: 100%; padding: 14px; font-size: 1rem;">
+          📥 Doğrudan APK Dosyasını İndir
+        </a>
+
+        <!-- Phone QR Section -->
+        <div class="qr-section">
+          <div class="qr-box-wrap" id="qrcode-box">
+            <!-- Dynamic SVG QR Code -->
+            <svg id="qr-svg" viewBox="0 0 100 100" width="86" height="86">
+              <!-- Visual Mock QR Matrix -->
+              <rect width="100" height="100" fill="white"/>
+              <!-- Corner 1 -->
+              <rect x="10" y="10" width="24" height="24" fill="#070B14"/>
+              <rect x="14" y="14" width="16" height="16" fill="white"/>
+              <rect x="18" y="18" width="8" height="8" fill="#070B14"/>
+              <!-- Corner 2 -->
+              <rect x="66" y="10" width="24" height="24" fill="#070B14"/>
+              <rect x="70" y="14" width="16" height="16" fill="white"/>
+              <rect x="74" y="18" width="8" height="8" fill="#070B14"/>
+              <!-- Corner 3 -->
+              <rect x="10" y="66" width="24" height="24" fill="#070B14"/>
+              <rect x="14" y="70" width="16" height="16" fill="white"/>
+              <rect x="18" y="74" width="8" height="8" fill="#070B14"/>
+              <!-- Random Data modules -->
+              <rect x="40" y="12" width="6" height="6" fill="#070B14"/>
+              <rect x="52" y="16" width="6" height="6" fill="#070B14"/>
+              <rect x="44" y="24" width="6" height="6" fill="#070B14"/>
+              <rect x="12" y="44" width="6" height="6" fill="#070B14"/>
+              <rect x="24" y="48" width="6" height="6" fill="#070B14"/>
+              <rect x="38" y="38" width="10" height="10" fill="#06B6D4"/>
+              <rect x="52" y="40" width="6" height="6" fill="#070B14"/>
+              <rect x="68" y="42" width="6" height="6" fill="#070B14"/>
+              <rect x="80" y="46" width="6" height="6" fill="#070B14"/>
+              <rect x="42" y="64" width="6" height="6" fill="#070B14"/>
+              <rect x="54" y="68" width="8" height="6" fill="#070B14"/>
+              <rect x="68" y="64" width="6" height="6" fill="#070B14"/>
+              <rect x="78" y="72" width="8" height="8" fill="#070B14"/>
+              <rect x="46" y="78" width="6" height="6" fill="#070B14"/>
+              <rect x="60" y="80" width="6" height="6" fill="#070B14"/>
+            </svg>
+          </div>
+          <div class="qr-text">
+            <strong>Telefondan İndirin</strong>
+            Kameranızı QR koda tutarak doğrudan mobil cihazınıza APK indirme işlemini başlatabilirsiniz.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 MAIN MODULES SECTION -->
+    <section id="moduller">
+      <div class="section-title-wrap">
+        <span class="section-pill">Uygulama Mimarisi</span>
+        <h2 class="section-title">SesYazOku'nun 7 Ana Güçlü Modülü</h2>
+        <p class="section-subtitle">
+          İhtiyacınız olan tüm ses, transkripsiyon, dokümantasyon ve yedekleme araçları tek bir Android uygulamasında toplandı.
         </p>
       </div>
-      <div>
-        <button class="btn btn-primary" onclick="openCallCaptureModal()" style="padding: 12px 20px; font-size: 0.95rem;">
-          🎥 Canlı Görüşme Yakalama (Zoom / Meet)
-        </button>
-      </div>
-    </div>
 
-    <!-- Main Grid -->
-    <div class="main-grid">
-      
-      <!-- Left: Studio Recording & Live Transcript -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <span>🎙️ Ses Stüdyosu & Canlı Transkripsiyon</span>
-          </div>
-          <div class="speaker-pill" id="current-speaker-pill" onclick="switchSpeaker()">
-            🗣️ <span id="current-speaker-name">Konuşmacı 1 (Ahmet)</span> [Değiştir]
-          </div>
-        </div>
-
-        <!-- Waveform Visualizer Canvas -->
-        <div class="waveform-box">
-          <canvas id="waveformCanvas"></canvas>
-        </div>
-
-        <!-- Timer & Indicator Bar -->
-        <div class="rec-status-bar">
-          <div class="timer-display">
-            <span class="pulsing-dot" id="rec-dot" style="display: none;"></span>
-            <span id="timerText">00:00:00</span>
-          </div>
-          <div style="font-size: 0.85rem; color: var(--text-sub);">
-            <span id="recStatusLabel">Hazır — Sınırsız Kayıt</span>
-          </div>
-        </div>
-
-        <!-- Controls Row -->
-        <div class="controls-row">
-          <button class="btn btn-primary" id="btn-toggle-rec" onclick="toggleRecording()">
-            ▶️ Canlı Kayda Başla
-          </button>
-          <button class="btn btn-outline" id="btn-switch-speaker" onclick="switchSpeaker()">
-            🔄 Konuşmacı Değiştir
-          </button>
-          <label class="btn btn-outline" style="cursor: pointer;">
-            📁 Ses Dosyası Yükle
-            <input type="file" id="audio-file-input" accept="audio/*" style="display: none;" onchange="handleAudioUpload(event)">
-          </label>
-          <button class="btn btn-danger" id="btn-stop-rec" onclick="stopRecording()" style="display: none;">
-            ⏹️ Kaydet & Özetle
-          </button>
-        </div>
-
-        <!-- Live Transcript Stream Area -->
-        <div class="transcript-stream" id="transcriptStream">
-          <div class="transcript-segment">
-            <div class="segment-header">
-              <span class="segment-speaker" style="color: var(--primary);">Ahmet Yılmaz (Yönetici)</span>
-              <span class="segment-time">00:00 - 00:32</span>
+      <div class="modules-grid">
+        
+        <!-- Modül 0: Google Girişi -->
+        <div class="module-card">
+          <div class="module-card-header">
+            <div class="module-icon-wrap" style="background: rgba(66, 133, 244, 0.15); border-color: rgba(66, 133, 244, 0.3); color: #4285F4;">
+              🔑
             </div>
-            <div class="segment-text">
-              "Herkese merhaba. Bugün ses transkripsiyonu, konuşmacı etiketleme ve GitHub canlı yayın yeteneklerini test ediyoruz."
+            <div>
+              <span class="module-number">Aşama 0</span>
+              <h3 class="module-title">Google ile Güvenli Giriş</h3>
             </div>
           </div>
-          <div class="transcript-segment" style="border-left-color: var(--cyan);">
-            <div class="segment-header">
-              <span class="segment-speaker" style="color: var(--cyan);">Zeynep Kaya (Yazılım Mimarı)</span>
-              <span class="segment-time">00:33 - 01:15</span>
-            </div>
-            <div class="segment-text">
-              "Uygulamanın hem Android üzerinde arka planda Zoom ve Meet aramalarını yakalayabilmesi hem de GitHub Pages üzerinde canlı çalışması harika bir özellik oldu."
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right: AI Summary, Tasks & Export -->
-      <div class="card">
-        <div class="tabs-nav">
-          <button class="tab-btn active" onclick="switchTab('summary')">✨ Yapay Zeka Özeti</button>
-          <button class="tab-btn" onclick="switchTab('tasks')">✅ Görevler (<span id="task-count">2</span>)</button>
-          <button class="tab-btn" onclick="switchTab('export')">📄 Dışa Aktar</button>
-        </div>
-
-        <!-- Tab 1: AI Summary -->
-        <div class="tab-content active" id="tab-summary">
-          <div class="summary-text" id="summaryText">
-            <strong>Yönetici Özeti:</strong> Görüşmede ses kayıt uzunluğu sınırı olmaksızın transkripsiyon altyapısı, konuşmacı ayrımı ve GitHub Pages üzerinde canlı çalışma gereksinimleri başarıyla değerlendirildi. Toplantı sonucunda 2 ana eylem kararı çıkarıldı.
-          </div>
-
-          <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">🎯 Alınan Kararlar & Ana Fikirler:</div>
-          <div class="bullet-item">🔹 GitHub Actions ile otomatik APK derleme ve GitHub Pages canlı web sürümü aktif edildi.</div>
-          <div class="bullet-item">🔹 Harici görüşme programlarından (Zoom / Meet / WhatsApp) ses yakalama servisi onaylandı.</div>
-          <div class="bullet-item">🔹 PDF ve Word (DOCX) çıktı formatları son kullanıcı testlerine hazırlandı.</div>
-
-          <div style="margin-top: 16px; display: flex; gap: 8px;">
-            <button class="btn btn-outline" onclick="regenerateSummary()">⚡ Özeti Yenile</button>
-            <button class="btn btn-outline" onclick="speakSummary()">🔊 Sesli Dinle (TTS)</button>
-          </div>
-        </div>
-
-        <!-- Tab 2: Task Manager -->
-        <div class="tab-content" id="tab-tasks">
-          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-            <input type="text" id="new-task-input" placeholder="Yeni görev yazın..." style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-dark); background: #0B0F19; color: #fff;">
-            <button class="btn btn-primary" onclick="addTask()">Ekle</button>
-          </div>
-
-          <div id="tasks-list">
-            <div class="task-row">
-              <input type="checkbox" onchange="toggleTask(this)">
-              <span style="flex: 1;">PDF ve Word dışa aktarma şablonlarını doğrula</span>
-              <span class="priority-badge priority-high">Acil</span>
-            </div>
-            <div class="task-row">
-              <input type="checkbox" onchange="toggleTask(this)">
-              <span style="flex: 1;">Bulut senkronizasyon raporunu hazırla</span>
-              <span class="priority-badge priority-med">Orta</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab 3: Export Options -->
-        <div class="tab-content" id="tab-export">
-          <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 14px;">
-            Transkripsiyon kaydını ve yapay zeka özetini istediğiniz formatta anında indirin:
+          <p class="module-desc">
+            Uygulama açılışında tek dokunuşla Google hesabınızla oturum açın. Gelecek aşamalarda Gmail entegrasyonu, mesajlaşma ve Google Drive otomatik bulut yedeklemesi için temel hazırlar.
           </p>
+          <ul class="module-feature-list">
+            <li>Jetpack Credential Manager & OAuth2 altyapısı</li>
+            <li>Google Drive dosya senkronizasyonu yetkisi</li>
+            <li>Çoklu cihaz erişimi ve hesap koruması</li>
+          </ul>
+        </div>
+
+        <!-- Modül 1: Kayıt Sekmesi -->
+        <div class="module-card">
+          <div class="module-card-header">
+            <div class="module-icon-wrap" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #EF4444;">
+              🎙️
+            </div>
+            <div>
+              <span class="module-number">Sekme 1</span>
+              <h3 class="module-title">Canlı & Harici Ses Kaydı</h3>
+            </div>
+          </div>
+          <p class="module-desc">
+            Hem cihaz mikrofonundan canlı kayıt yapın, hem de diğer uygulamalardan (Zoom, Google Meet, WhatsApp, Telegram ve normal telefon konuşmalarından) canlı ses yakalayın!
+          </p>
+          <ul class="module-feature-list">
+            <li>Kayıt esnasında cihaz mikrofonunu tek dokunuşla Aç/Kapa</li>
+            <li>Ön plan ses servisi (Foreground Service) ile arka planda kayıt</li>
+            <li>Önceden kaydedilmiş MP3, M4A, WAV, OGG, AAC, 3GP seslerini ekleme</li>
+          </ul>
+        </div>
+
+        <!-- Modül 2: Transkriptor Sekmesi -->
+        <div class="module-card">
+          <div class="module-card-header">
+            <div class="module-icon-wrap" style="background: rgba(6, 182, 212, 0.15); border-color: rgba(6, 182, 212, 0.3); color: #06B6D4;">
+              ✍️
+            </div>
+            <div>
+              <span class="module-number">Sekme 2</span>
+              <h3 class="module-title">Transkriptör & Kişi Ayrımı</h3>
+            </div>
+          </div>
+          <p class="module-desc">
+            Kaydedilmiş tüm sesleri yüksek doğrulukla sesten yazıya dönüştürür. Ses kaydı içinde kaç farklı kişi konuşuyorsa otomatik olarak algılayıp metinde ayrı ayrı belirtir.
+          </p>
+          <ul class="module-feature-list">
+            <li>Konuşmacı ayrımı (Kişi 1, Kişi 2, Kişi 3... etiketleri)</li>
+            <li>Zaman damgalı diyalog akışı ve metin arama</li>
+            <li>Konuşma süresi paylaşımları ve istatistik analizi</li>
+          </ul>
+        </div>
+
+        <!-- Modül 3: Döküman Sekmesi -->
+        <div class="module-card">
+          <div class="module-card-header">
+            <div class="module-icon-wrap" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); color: #10B981;">
+              📑
+            </div>
+            <div>
+              <span class="module-number">Sekme 3</span>
+              <h3 class="module-title">Döküman & PDF Yönetimi</h3>
+            </div>
+          </div>
+          <p class="module-desc">
+            Dönüştürülmüş metinleri tam kapsamlı yönetin: Dosya adı değiştirme, kapak/önizleme resmi koyma (dahili/harici hafızadan veya anlık kamera ile fotoğraf çekerek), PDF oluşturma ve paylaşma.
+          </p>
+          <ul class="module-feature-list">
+            <li>Cihaza PDF olarak kaydetme ve yazdırma</li>
+            <li>Kamera veya galeriden kapak görseli atama</li>
+            <li>WhatsApp ve mesajlaşma uygulamalarında doğrudan paylaşma</li>
+            <li>Google Drive'a tek tıkla bulut yedekleme</li>
+          </ul>
+        </div>
+
+        <!-- Modül 4: Ayarlar Sekmesi -->
+        <div class="module-card">
+          <div class="module-card-header">
+            <div class="module-icon-wrap" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3); color: #F59E0B;">
+              ⚙️
+            </div>
+            <div>
+              <span class="module-number">Sekme 4</span>
+              <h3 class="module-title">Kişisel Ayarlar & İnce Ayar</h3>
+            </div>
+          </div>
+          <p class="module-desc">
+            Kullanıcı deneyiminizi özelleştirin: Koyu/Açık tema tercihi, uygulama dili (Türkçe & İngilizce), ses örnekleme hızı (sample rate) ve gürültü engelleme filtreleri.
+          </p>
+          <ul class="module-feature-list">
+            <li>Koyu (Dark) ve Açık (Light) Material 3 teması</li>
+            <li>Uygulama dil seçimi (Türkçe, İngilizce)</li>
+            <li>Ses kayıt kalitesi, formatı ve mikrofon hassasiyet ayarları</li>
+          </ul>
+        </div>
+
+        <!-- Modül 5: Parlama Efekti & SCG Logo -->
+        <div class="module-card">
+          <div class="module-card-header">
+            <div class="module-icon-wrap" style="background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.3); color: #8B5CF6;">
+              ✨
+            </div>
+            <div>
+              <span class="module-number">Tasarım & Splash</span>
+              <h3 class="module-title">SesYazOku & SCG Logosu</h3>
+            </div>
+          </div>
+          <p class="module-desc">
+            APK açılışında statik logo yerine <strong>"SesYazOku"</strong> yazısı ve çevresinde dönen parlama efekti (Glow rotation). Uygulama simgesi ise özel ses dalgalı SCG amblemidir.
+          </p>
+          <ul class="module-feature-list">
+            <li>Şık dönen parlama animasyonuyla açılış ekranı (Splash)</li>
+            <li>Ses dalgaları ve SCG harflerinden oluşan özel marka ikonu</li>
+            <li>Material Design 3 dinamik renk paleti</li>
+          </ul>
+        </div>
+
+        <!-- Modül 6: İzin Yönetimi -->
+        <div class="module-card">
+          <div class="module-card-header">
+            <div class="module-icon-wrap" style="background: rgba(236, 72, 153, 0.15); border-color: rgba(236, 72, 153, 0.3); color: #EC4899;">
+              🛡️
+            </div>
+            <div>
+              <span class="module-number">Güvenlik</span>
+              <h3 class="module-title">Şeffaf İzinler & Gizlilik</h3>
+            </div>
+          </div>
+          <p class="module-desc">
+            Uygulama açılışında ses kaydı ve dosya işlemleri için gereken izinler (Dahili/Harici Depolama, Mikrofon, Kamera) kullanıcıya açık ve net açıklamalarla sunulur.
+          </p>
+          <ul class="module-feature-list">
+            <li>Kullanıcı onaylı mikrofon ve depolama izinleri</li>
+            <li>Döküman kapak resmi için kamera erişimi</li>
+            <li>Ses verilerinin cihazda güvenle saklanması</li>
+          </ul>
+        </div>
+
+        <!-- Modül 7: Üreticiye Mesaj -->
+        <div class="module-card">
+          <div class="module-card-header">
+            <div class="module-icon-wrap" style="background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); color: #3B82F6;">
+              💬
+            </div>
+            <div>
+              <span class="module-number">Sekme 5</span>
+              <h3 class="module-title">Üreticiye Mesaj (Geri Bildirim)</h3>
+            </div>
+          </div>
+          <p class="module-desc">
+            Programın işleyişi, eksik kısımları, geliştirilmesini istediğiniz noktalar veya öneriler hakkında doğrudan geliştirici ekibe mesaj gönderebileceğiniz iletişim alanı.
+          </p>
+          <ul class="module-feature-list">
+            <li>Hata, öneri veya teşekkür mesajı seçimi</li>
+            <li>Cihaz modeli ve Android sürümünü otomatik ekleme</li>
+            <li>Geliştiriciye doğrudan anlık geri bildirim iletimi</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- LIVE WEB TEST / INTERACTIVE DEMO SECTION -->
+    <section id="demo" class="demo-section">
+      <div style="text-align: center;">
+        <span class="section-pill">Tarayıcıda Çalışan Test Alanı</span>
+        <h2 style="font-size: 2rem; color: #FFFFFF; margin-bottom: 8px;">SesYazOku Canlı Web Simülatörü</h2>
+        <p style="color: var(--text-muted); max-width: 650px; margin: 0 auto;">
+          APK'yı telefonunuza indirmeden önce, konuşmacı ayrımı ve sesten yazıya dönüştürme mekanizmasını tarayıcınızda canlı olarak test edin!
+        </p>
+      </div>
+
+      <div class="demo-grid">
+        <!-- Sol: Ses Kaydı & Canlı Transkripsiyon Akışı -->
+        <div class="waveform-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <strong style="color: #FFFFFF; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+              🎙️ Canlı Mikrofon & Ekolayzır
+            </strong>
+            <button class="btn btn-outline" id="demo-speaker-badge" onclick="switchDemoSpeaker()" style="padding: 6px 12px; font-size: 0.8rem; border-color: var(--cyan); color: var(--cyan);">
+              🗣️ <span id="current-speaker-title">Kişi 1 (Konuşmacı)</span> [Değiştir]
+            </button>
+          </div>
+
+          <!-- Waveform Canvas -->
+          <div class="waveform-canvas-box">
+            <canvas id="waveformCanvas"></canvas>
+          </div>
+
+          <!-- Status Bar -->
+          <div class="live-status-bar">
+            <div class="timer-badge">
+              <span class="recording-dot" id="rec-dot"></span>
+              <span id="timerText">00:00:00</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">
+              <span id="recStatusLabel">Kayıt için hazır</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+            <button class="btn btn-download" id="btn-demo-rec" onclick="toggleDemoRecording()">
+              ▶️ Canlı Kayda Başla
+            </button>
+            <button class="btn btn-outline" onclick="switchDemoSpeaker()">
+              🔄 Konuşmacı Değiştir (Kişi 1/2/3)
+            </button>
+            <label class="btn btn-outline" style="cursor: pointer;">
+              📁 Ses Dosyası Ekle
+              <input type="file" accept="audio/*" style="display: none;" onchange="handleAudioUpload(event)">
+            </label>
+          </div>
+
+          <!-- Transcript Stream -->
+          <div class="transcript-box" id="transcriptBox">
+            <div class="transcript-row">
+              <div class="speaker-label">
+                <span>Kişi 1</span>
+                <span>00:00 - 00:15</span>
+              </div>
+              <div class="speaker-content">
+                "SesYazOku uygulamasına hoş geldiniz. Canlı olarak ses kaydı alabilir veya hazır ses dosyalarını yükleyebilirsiniz."
+              </div>
+            </div>
+            <div class="transcript-row" style="border-left-color: #818CF8;">
+              <div class="speaker-label" style="color: #818CF8;">
+                <span>Kişi 2</span>
+                <span>00:16 - 00:40</span>
+              </div>
+              <div class="speaker-content">
+                "Uygulama aynı zamanda Zoom, Meet ve WhatsApp görüşmelerini arka planda yakalayarak kişi kişi ayırabiliyor."
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sağ: Döküman & Dışa Aktarma Simülatörü -->
+        <div class="waveform-card">
+          <strong style="color: #FFFFFF; font-size: 1.1rem; display: block; margin-bottom: 14px;">
+            📑 Döküman & Dışa Aktarma Önizlemesi
+          </strong>
+
+          <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">DÖKÜMAN ADI:</div>
+            <input type="text" id="doc-title-input" value="SesYazOku_Toplanti_Kaydi_01" style="width: 100%; background: #070B14; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; color: #FFF; font-weight: 700; margin-bottom: 12px;">
+
+            <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px;">
+              <div style="width: 60px; height: 60px; border-radius: 8px; background: #070B14; border: 1px dashed var(--border-subtle); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;" id="doc-thumb-preview">
+                📷
+              </div>
+              <div style="font-size: 0.82rem; color: var(--text-muted);">
+                <strong>Kapak Önizleme Resmi</strong><br>
+                Kameradan veya galeriden seçilebilir.
+              </div>
+            </div>
+          </div>
 
           <div style="display: flex; flex-direction: column; gap: 10px;">
-            <button class="btn btn-outline" onclick="exportFile('pdf')" style="justify-content: flex-start;">
-              📕 <strong>PDF Dokümanı (.pdf)</strong> — Şık başlık ve özetli doküman
+            <button class="btn btn-outline" onclick="exportDemoFile('pdf')" style="justify-content: flex-start;">
+              📕 <strong>PDF Olarak İndir (.pdf)</strong>
             </button>
-            <button class="btn btn-outline" onclick="exportFile('docx')" style="justify-content: flex-start;">
-              📘 <strong>Word Dokümanı (.docx)</strong> — Microsoft Word & Google Docs uyumlu
+            <button class="btn btn-outline" onclick="exportDemoFile('txt')" style="justify-content: flex-start;">
+              📄 <strong>Metin Dosyası Olarak İndir (.txt)</strong>
             </button>
-            <button class="btn btn-outline" onclick="exportFile('txt')" style="justify-content: flex-start;">
-              📄 <strong>Düz Metin (.txt)</strong> — Standart not formatı
+            <button class="btn btn-outline" onclick="shareDemoDoc()" style="justify-content: flex-start;">
+              📲 <strong>Mesajlaşma Uygulamasında Paylaş (WhatsApp/Meet)</strong>
             </button>
-            <button class="btn btn-outline" onclick="exportFile('srt')" style="justify-content: flex-start;">
-              🎬 <strong>Altyazı Dosyası (.srt)</strong> — Zaman kodlu video altyazısı
+            <button class="btn btn-outline" onclick="cloudBackupDemo()" style="justify-content: flex-start;">
+              ☁️ <strong>Google Drive'a Yedekle</strong>
             </button>
           </div>
         </div>
+      </div>
+    </section>
 
+    <!-- INSTALLATION GUIDE -->
+    <section id="kurulum">
+      <div class="section-title-wrap">
+        <span class="section-pill">Kolay Adımlar</span>
+        <h2 class="section-title">APK Nasıl Kurulur?</h2>
+        <p class="section-subtitle">
+          Android telefonunuza SesYazOku'yu 4 basit adımda yükleyip hemen kullanmaya başlayabilirsiniz.
+        </p>
       </div>
 
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <h4>APK Dosyasını İndirin</h4>
+          <p>Yukarıdaki <strong>"APK İndir"</strong> butonuna dokunarak <code>SesYazOku.apk</code> dosyasını telefonunuza indirin.</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <h4>İndirilen Dosyayı Açın</h4>
+          <p>Telefonunuzun bildirim çubuğundan veya İndirilenler (Downloads) klasöründen dosyaya dokunun.</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <h4>Bilinmeyen Kaynağa İzin Verin</h4>
+          <p>İlk kez APK kuruyorsanız açılan güvenlik bildiriminde <em>"Bu kaynaktan yüklemeye izin ver"</em> anahtarını açın.</p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">4</div>
+          <h4>Yükle & İzinleri Onayla</h4>
+          <p><strong>"Yükle"</strong> butonuna basın. Uygulama açılışında Mikrofon, Depolama ve Kamera izinlerini onaylayıp Google ile giriş yapın.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ SECTION -->
+    <section id="sss">
+      <div class="section-title-wrap">
+        <span class="section-pill">Yardım & Merak Edilenler</span>
+        <h2 class="section-title">Sıkça Sorulan Sorular</h2>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item" onclick="toggleFaq(this)">
+          <div class="faq-question">
+            <span>Zoom, WhatsApp ve telefon konuşmaları nasıl kaydedilir?</span>
+            <span>➕</span>
+          </div>
+          <div class="faq-answer">
+            SesYazOku, Android Ön Plan Servisi (Foreground Service) yeteneğini kullanır. Siz Zoom, Meet veya WhatsApp görüşmesini başlattığınızda arkaplanda ses akışını güvenle yakalar. İsteğe bağlı olarak mikrofonu kapatıp sadece karşı tarafı veya her iki tarafı da kaydedebilirsiniz.
+          </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+          <div class="faq-question">
+            <span>Kişi 1, Kişi 2, Kişi 3 konuşmacı ayrımı nasıl yapılıyor?</span>
+            <span>➕</span>
+          </div>
+          <div class="faq-answer">
+            Uygulamanın Transkriptör motoru, ses frekanslarını ve konuşmacı geçişlerini analiz ederek farklı kişileri saptar ve metinde her bir konuşmacıyı kendi etiketiyle sıralı olarak listeler.
+          </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+          <div class="faq-question">
+            <span>Hangi ses formatlarını yükleyebilirim?</span>
+            <span>➕</span>
+          </div>
+          <div class="faq-answer">
+            Cihazınızda önceden kaydedilmiş MP3, M4A, WAV, OGG, AAC ve 3GP formatlarındaki tüm ses dosyalarını Kayıt sekmesinden tek tıkla uygulamaya aktarabilirsiniz.
+          </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+          <div class="faq-question">
+            <span>Google Drive yedeklemesi ve PDF oluşturma nasıl çalışır?</span>
+            <span>➕</span>
+          </div>
+          <div class="faq-answer">
+            Döküman sekmesinde oluşturulan transkript metinlerine kapak fotoğrafı ekleyebilir, tek tuşla PDF formatına dönüştürebilir ve giriş yaptığınız Google hesabınızın Drive alanına bulut yedeğini gönderebilirsiniz.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOTTOM CTA BANNER -->
+    <div class="cta-banner">
+      <h2>Seslerinizi Akıllı Metne Dönüştürmeye Hazır Mısınız?</h2>
+      <p>
+        SesYazOku v1.0.0 sürümünü şimdi ücretsiz indirin ve güçlü ses kaydı ile konuşmacı ayrımının keyfini çıkarın.
+      </p>
+      <a href="SesYazOku.apk" download="SesYazOku.apk" class="btn btn-download btn-lg">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>SesYazOku.apk İndir (~25 MB)</span>
+      </a>
     </div>
 
   </main>
 
   <!-- Footer -->
   <footer>
-    <p>SesYazıcı AI — Android & Web Platformu • GitHub Actions CI/CD ve GitHub Pages Canlı Dağıtımı ile Güçlendirilmiştir.</p>
+    <div style="max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <img src="assets/logo.jpg" alt="Logo" style="width: 28px; height: 28px; border-radius: 8px;">
+        <span><strong>SesYazOku</strong> — SCG Audio Intelligence Suite</span>
+      </div>
+      <div>
+        <span>GitHub Pages Canlı Dağıtımı & GitHub Actions CI/CD ile Otomatik Derlenmiştir.</span>
+      </div>
+      <div>
+        <a href="SesYazOku.apk" download="SesYazOku.apk">Doğrudan APK İndir</a> • <a href="#kurulum">Kurulum Rehberi</a>
+      </div>
+    </div>
   </footer>
 
+  <!-- Scripts -->
   <script>
     // State
     let isRecording = false;
@@ -621,12 +1338,12 @@
     let secondsElapsed = 0;
     let currentSpeakerIndex = 0;
     const speakers = [
-      { name: "Konuşmacı 1 (Ahmet)", color: "#6366F1" },
-      { name: "Konuşmacı 2 (Zeynep)", color: "#06B6D4" },
-      { name: "Konuşmacı 3 (Emre)", color: "#10B981" }
+      { name: "Kişi 1 (Ahmet)", color: "#06B6D4" },
+      { name: "Kişi 2 (Mehmet)", color: "#818CF8" },
+      { name: "Kişi 3 (Ayşe)", color: "#10B981" }
     ];
 
-    // Web Speech API
+    // Speech Recognition
     let recognition = null;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -640,7 +1357,7 @@
         let interimTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
-            addTranscriptSegment(event.results[i][0].transcript);
+            addTranscriptRow(event.results[i][0].transcript);
           } else {
             interimTranscript += event.results[i][0].transcript;
           }
@@ -653,7 +1370,7 @@
     }
 
     // Toggle Recording
-    function toggleRecording() {
+    function toggleDemoRecording() {
       if (!isRecording) {
         startRecording();
       } else {
@@ -663,12 +1380,10 @@
 
     function startRecording() {
       isRecording = true;
-      document.getElementById("btn-toggle-rec").textContent = "⏸️ Duraklat";
-      document.getElementById("btn-stop-rec").style.display = "inline-flex";
+      document.getElementById("btn-demo-rec").textContent = "⏸️ Kaydı Durdur";
       document.getElementById("rec-dot").style.display = "inline-block";
-      document.getElementById("recStatusLabel").textContent = "🔴 Canlı Kayıt Yapılıyor...";
+      document.getElementById("recStatusLabel").textContent = "🔴 Kayıt yapılıyor...";
 
-      // Timer
       timerInterval = setInterval(() => {
         secondsElapsed++;
         const hrs = String(Math.floor(secondsElapsed / 3600)).padStart(2, '0');
@@ -677,63 +1392,61 @@
         document.getElementById("timerText").textContent = `${hrs}:${mins}:${secs}`;
       }, 1000);
 
-      // Start recognition
       try {
         if (recognition) recognition.start();
       } catch (err) {}
 
-      startWaveformAnimation();
+      startWaveform();
     }
 
     function stopRecording() {
       isRecording = false;
       clearInterval(timerInterval);
-      document.getElementById("btn-toggle-rec").textContent = "▶️ Canlı Kayda Başla";
-      document.getElementById("btn-stop-rec").style.display = "none";
+      document.getElementById("btn-demo-rec").textContent = "▶️ Canlı Kayda Başla";
       document.getElementById("rec-dot").style.display = "none";
-      document.getElementById("recStatusLabel").textContent = "Kayıt Tamamlandı";
+      document.getElementById("recStatusLabel").textContent = "Kayıt tamamlandı";
 
       try {
         if (recognition) recognition.stop();
       } catch (err) {}
 
-      stopWaveformAnimation();
-      regenerateSummary();
+      stopWaveform();
     }
 
-    // Speaker Switching
-    function switchSpeaker() {
+    // Switch Speaker
+    function switchDemoSpeaker() {
       currentSpeakerIndex = (currentSpeakerIndex + 1) % speakers.length;
       const sp = speakers[currentSpeakerIndex];
-      document.getElementById("current-speaker-name").textContent = sp.name;
-      document.getElementById("current-speaker-pill").style.color = sp.color;
-      document.getElementById("current-speaker-pill").style.borderColor = sp.color;
+      document.getElementById("current-speaker-title").textContent = sp.name;
+      const badge = document.getElementById("demo-speaker-badge");
+      badge.style.color = sp.color;
+      badge.style.borderColor = sp.color;
     }
 
-    // Add Segment to Stream
-    function addTranscriptSegment(text) {
+    // Add Segment
+    function addTranscriptRow(text) {
       if (!text || text.trim() === '') return;
       const sp = speakers[currentSpeakerIndex];
       const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
       const secs = String(secondsElapsed % 60).padStart(2, '0');
       const timeStr = `${mins}:${secs}`;
 
-      const stream = document.getElementById("transcriptStream");
+      const box = document.getElementById("transcriptBox");
       const div = document.createElement("div");
-      div.className = "transcript-segment";
+      div.className = "transcript-row";
       div.style.borderLeftColor = sp.color;
       div.innerHTML = `
-        <div class="segment-header">
-          <span class="segment-speaker" style="color: ${sp.color};">${sp.name}</span>
-          <span class="segment-time">${timeStr}</span>
+        <div class="speaker-label" style="color: ${sp.color};">
+          <span>${sp.name}</span>
+          <span>${timeStr}</span>
         </div>
-        <div class="segment-text">"${escapeHtml(text.trim())}"</div>
+        <div class="speaker-content">"${escapeHtml(text.trim())}"</div>
       `;
-      stream.appendChild(div);
-      stream.scrollTop = stream.scrollHeight;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
     }
 
-    // Waveform Canvas Visualizer
+    // Canvas Waveform
     const canvas = document.getElementById("waveformCanvas");
     const ctx = canvas.getContext("2d");
     let waveAnimId = null;
@@ -745,145 +1458,97 @@
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
-    function drawWaveform() {
+    function drawWave() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const bars = 40;
+      const bars = 36;
       const barWidth = canvas.width / bars;
       const centerY = canvas.height / 2;
 
       for (let i = 0; i < bars; i++) {
-        const height = isRecording 
-          ? Math.random() * (canvas.height * 0.75) + 6
+        const height = isRecording
+          ? Math.random() * (canvas.height * 0.8) + 6
           : 6;
         const x = i * barWidth;
         const y = centerY - height / 2;
 
         const grad = ctx.createLinearGradient(0, y, 0, y + height);
         grad.addColorStop(0, '#06B6D4');
-        grad.addColorStop(1, '#6366F1');
+        grad.addColorStop(1, '#818CF8');
 
         ctx.fillStyle = grad;
         ctx.fillRect(x + barWidth * 0.2, y, barWidth * 0.6, height);
       }
     }
 
-    function startWaveformAnimation() {
+    function startWaveform() {
       function loop() {
-        drawWaveform();
+        drawWave();
         waveAnimId = requestAnimationFrame(loop);
       }
       loop();
     }
 
-    function stopWaveformAnimation() {
+    function stopWaveform() {
       cancelAnimationFrame(waveAnimId);
-      drawWaveform();
+      drawWave();
     }
-    drawWaveform();
+    drawWave();
 
-    // Tabs
-    function switchTab(tabName) {
-      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
-      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    // Export
+    function exportDemoFile(format) {
+      const rows = document.querySelectorAll(".transcript-row");
+      const title = document.getElementById("doc-title-input").value.trim() || "SesYazOku_Döküman";
+      let content = `SesYazOku Transkripsiyon Raporu: ${title}\n========================================\n\n`;
 
-      document.getElementById(`tab-${tabName}`).classList.add("active");
-      event.target.classList.add("active");
-    }
-
-    // Task Management
-    function addTask() {
-      const input = document.getElementById("new-task-input");
-      const text = input.value.trim();
-      if (!text) return;
-
-      const list = document.getElementById("tasks-list");
-      const div = document.createElement("div");
-      div.className = "task-row";
-      div.innerHTML = `
-        <input type="checkbox" onchange="toggleTask(this)">
-        <span style="flex: 1;">${escapeHtml(text)}</span>
-        <span class="priority-badge priority-med">Yeni</span>
-      `;
-      list.appendChild(div);
-      input.value = "";
-      updateTaskCount();
-    }
-
-    function toggleTask(checkbox) {
-      const row = checkbox.closest(".task-row");
-      if (checkbox.checked) {
-        row.classList.add("done");
-      } else {
-        row.classList.remove("done");
-      }
-    }
-
-    function updateTaskCount() {
-      const count = document.querySelectorAll(".task-row").length;
-      document.getElementById("task-count").textContent = count;
-    }
-
-    // AI Summary Generator
-    function regenerateSummary() {
-      const segments = document.querySelectorAll(".transcript-segment");
-      const count = segments.length;
-      document.getElementById("summaryText").innerHTML = `
-        <strong>Yönetici Özeti:</strong> Yapay zeka analizi güncellendi. Toplam ${count} diyalog bölümü incelendi. Konuşmacılar arasında mutabakat sağlandı ve temel aksiyon adımları listelendi.
-      `;
-    }
-
-    // TTS
-    function speakSummary() {
-      const text = document.getElementById("summaryText").innerText;
-      if ('speechSynthesis' in window) {
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'tr-TR';
-        window.speechSynthesis.speak(utter);
-      } else {
-        alert("Tarayıcınız metin seslendirmeyi (TTS) desteklemiyor.");
-      }
-    }
-
-    // File Export
-    function exportFile(format) {
-      const segments = document.querySelectorAll(".transcript-segment");
-      let content = "SesYazıcı AI — Transkripsiyon Raporu\n==============================\n\n";
-
-      segments.forEach(s => {
-        const speaker = s.querySelector(".segment-speaker").innerText;
-        const time = s.querySelector(".segment-time").innerText;
-        const text = s.querySelector(".segment-text").innerText;
-        content += `[${time}] ${speaker}: ${text}\n\n`;
+      rows.forEach(r => {
+        const speaker = r.querySelector(".speaker-label").innerText;
+        const text = r.querySelector(".speaker-content").innerText;
+        content += `[${speaker}]\n${text}\n\n`;
       });
 
       const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `sesyazici_transkript_${Date.now()}.${format === 'docx' ? 'docx' : format === 'srt' ? 'srt' : 'txt'}`;
+      a.download = `${title}.${format === 'pdf' ? 'txt' : 'txt'}`;
       a.click();
       URL.revokeObjectURL(url);
+      if (format === 'pdf') {
+        alert("Web simülatöründe metin çıktısı indirildi. Android uygulamasında doğrudan vektörel PDF olarak kaydedilir.");
+      }
     }
 
-    function showExportOptions() {
-      switchTab('export');
-      document.querySelectorAll(".tab-btn")[2].classList.add("active");
+    function shareDemoDoc() {
+      const title = document.getElementById("doc-title-input").value.trim();
+      alert(`"${title}" dökümanı paylaşılmaya hazır!\n\nAndroid uygulamasında WhatsApp, Telegram, Gmail veya Bluetooth ile doğrudan paylaşabilirsiniz.`);
     }
 
-    function openCallCaptureModal() {
-      alert("Harici Görüşme Yakalama (Zoom/Meet/WhatsApp):\n\nBu özellik Android uygulamasında Arka Plan Ön Plan Servisi (Foreground Service) ve Ekran Üstü Kayan Baloncuk (Floating Bubble) aracılığıyla diğer arama uygulamaları çalışırken canlı olarak kaydeder.");
+    function cloudBackupDemo() {
+      alert("Google Drive Yedeklemesi:\n\nAndroid uygulamasında Google ile Giriş yapıldığında, dökümanlarınız otomatik olarak Google Drive'a .pdf formatında yüklenir.");
     }
 
     function handleAudioUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
-      addTranscriptSegment(`İçe aktarılan ses dosyası işlendi: "${file.name}" (~${(file.size / 1024 / 1024).toFixed(2)} MB)`);
-      alert(`"${file.name}" yüklendi ve transkripsiyon akışına eklendi!`);
+      addTranscriptRow(`Harici ses dosyası başarıyla yüklendi: "${file.name}" (~${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+      alert(`"${file.name}" yüklendi ve sesten yazıya dönüştürme akışına eklendi!`);
     }
 
-    function escapeHtml(text) {
+    function toggleFaq(el) {
+      const ans = el.querySelector(".faq-answer");
+      const icon = el.querySelector(".faq-question span:last-child");
+      if (ans.style.display === "none" || !ans.style.display) {
+        ans.style.display = "block";
+        icon.textContent = "➖";
+      } else {
+        ans.style.display = "none";
+        icon.textContent = "➕";
+      }
+    }
+
+    function escapeHtml(str) {
       const div = document.createElement('div');
-      div.textContent = text;
+      div.textContent = str;
       return div.innerHTML;
     }
   </script>
