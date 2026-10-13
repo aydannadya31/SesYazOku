@@ -3,6 +3,6 @@
     <item
         android:width="66dp"
         android:height="66dp"
-        android:drawable="@drawable/app_icon_voxscribe_1791547098081"
+        android:drawable="@drawable/scg_soundwave_icon_1791885315536"
         android:gravity="center" />
 </layer-list>

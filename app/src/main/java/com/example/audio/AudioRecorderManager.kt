@@ -3,6 +3,7 @@ package com.example.audio
 import android.content.Context
 import android.media.MediaRecorder
 import android.os.Build
+import android.os.SystemClock
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,11 +15,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
-import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class AudioRecorderManager(private val context: Context) {
+
     private var mediaRecorder: MediaRecorder? = null
     private var currentOutputFile: File? = null
+    private var recordStartTime: Long = 0L
+    private var tickerJob: Job? = null
+    private val scope = CoroutineScope(Dispatchers.Main)
 
     private val _isRecording = MutableStateFlow(false)
     val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
@@ -26,147 +33,144 @@ class AudioRecorderManager(private val context: Context) {
     private val _isPaused = MutableStateFlow(false)
     val isPaused: StateFlow<Boolean> = _isPaused.asStateFlow()
 
-    private val _recordingDurationMs = MutableStateFlow(0L)
-    val recordingDurationMs: StateFlow<Long> = _recordingDurationMs.asStateFlow()
+    private val _isMicMuted = MutableStateFlow(false)
+    val isMicMuted: StateFlow<Boolean> = _isMicMuted.asStateFlow()
+
+    private val _elapsedTimeMs = MutableStateFlow(0L)
+    val elapsedTimeMs: StateFlow<Long> = _elapsedTimeMs.asStateFlow()
 
     private val _currentAmplitude = MutableStateFlow(0f)
     val currentAmplitude: StateFlow<Float> = _currentAmplitude.asStateFlow()
 
-    private val _waveforms = MutableStateFlow<List<Float>>(emptyList())
-    val waveforms: StateFlow<List<Float>> = _waveforms.asStateFlow()
+    fun startRecording(audioFormat: String = "M4A", audioBitrate: Int = 128000, sampleRate: Int = 44100): Boolean {
+        if (_isRecording.value) return false
 
-    private var timerJob: Job? = null
-    private var startTimeMs = 0L
-    private var pausedDurationOffset = 0L
+        try {
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val extension = if (audioFormat.equals("WAV", ignoreCase = true)) "wav" else "m4a"
+            val fileName = "REC_${timeStamp}.$extension"
+            val outputDir = File(context.filesDir, "recordings").apply { if (!exists()) mkdirs() }
+            val outputFile = File(outputDir, fileName)
+            currentOutputFile = outputFile
 
-    fun startRecording(audioSource: Int = MediaRecorder.AudioSource.MIC): File? {
-        stopRecording()
-
-        val recordingsDir = File(context.filesDir, "recordings")
-        if (!recordingsDir.exists()) {
-            recordingsDir.mkdirs()
-        }
-
-        val file = File(recordingsDir, "rec_${System.currentTimeMillis()}.m4a")
-        currentOutputFile = file
-
-        fun createRecorder(source: Int): Boolean {
-            return try {
-                mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    MediaRecorder(context)
-                } else {
-                    @Suppress("DEPRECATION")
-                    MediaRecorder()
-                }.apply {
-                    setAudioSource(source)
-                    setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                    setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                    setAudioEncodingBitRate(128000)
-                    setAudioSamplingRate(44100)
-                    setOutputFile(file.absolutePath)
-                    prepare()
-                    start()
-                }
-                _isRecording.value = true
-                _isPaused.value = false
-                startTimeMs = System.currentTimeMillis()
-                pausedDurationOffset = 0L
-                _recordingDurationMs.value = 0L
-                _waveforms.value = emptyList()
-                startPolling()
-                true
-            } catch (e: Exception) {
-                Log.w("AudioRecorder", "Source $source failed: ${e.message}")
-                releaseRecorder()
-                false
+            val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                MediaRecorder(context)
+            } else {
+                @Suppress("DEPRECATION")
+                MediaRecorder()
             }
-        }
 
-        val success = createRecorder(audioSource)
-        if (!success && audioSource != MediaRecorder.AudioSource.MIC) {
-            createRecorder(MediaRecorder.AudioSource.MIC)
-        }
+            recorder.apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioEncodingBitRate(audioBitrate)
+                setAudioSamplingRate(sampleRate)
+                setOutputFile(outputFile.absolutePath)
+                prepare()
+                start()
+            }
 
-        return file
+            mediaRecorder = recorder
+            recordStartTime = SystemClock.elapsedRealtime()
+            _isRecording.value = true
+            _isPaused.value = false
+            _isMicMuted.value = false
+            _elapsedTimeMs.value = 0L
+
+            startTicker()
+            return true
+        } catch (e: Exception) {
+            Log.e("AudioRecorderManager", "Failed to start recording", e)
+            cleanup()
+            return false
+        }
+    }
+
+    fun toggleMicMute() {
+        if (!_isRecording.value) return
+        val current = _isMicMuted.value
+        _isMicMuted.value = !current
+        // Visual indicator and state toggle for mic active/mute during session
     }
 
     fun pauseRecording() {
-        if (_isRecording.value && !_isPaused.value) {
-            try {
-                mediaRecorder?.pause()
-                _isPaused.value = true
-                pausedDurationOffset = _recordingDurationMs.value
-            } catch (e: Exception) {
-                Log.e("AudioRecorder", "pause failed", e)
-            }
+        if (!_isRecording.value || _isPaused.value) return
+        try {
+            mediaRecorder?.pause()
+            _isPaused.value = true
+        } catch (e: Exception) {
+            Log.e("AudioRecorderManager", "Error pausing recorder", e)
         }
     }
 
     fun resumeRecording() {
-        if (_isRecording.value && _isPaused.value) {
-            try {
-                mediaRecorder?.resume()
-                _isPaused.value = false
-                startTimeMs = System.currentTimeMillis()
-            } catch (e: Exception) {
-                Log.e("AudioRecorder", "resume failed", e)
-            }
+        if (!_isRecording.value || !_isPaused.value) return
+        try {
+            mediaRecorder?.resume()
+            _isPaused.value = false
+        } catch (e: Exception) {
+            Log.e("AudioRecorderManager", "Error resuming recorder", e)
         }
     }
 
     fun stopRecording(): File? {
-        timerJob?.cancel()
-        val file = currentOutputFile
-        if (_isRecording.value) {
-            try {
-                mediaRecorder?.stop()
-            } catch (e: Exception) {
-                Log.e("AudioRecorder", "stop failed", e)
+        if (!_isRecording.value) return null
+        tickerJob?.cancel()
+
+        try {
+            mediaRecorder?.apply {
+                stop()
+                release()
             }
+        } catch (e: Exception) {
+            Log.e("AudioRecorderManager", "Error stopping recorder", e)
         }
-        releaseRecorder()
-        _isRecording.value = false
-        _isPaused.value = false
-        _currentAmplitude.value = 0f
+
+        val file = currentOutputFile
+        cleanup()
         return file
     }
 
-    private fun startPolling() {
-        timerJob?.cancel()
-        timerJob = CoroutineScope(Dispatchers.Default).launch {
+    fun cancelRecording() {
+        val file = stopRecording()
+        try {
+            file?.delete()
+        } catch (e: Exception) {
+            Log.w("AudioRecorderManager", "Failed to delete cancelled file", e)
+        }
+    }
+
+    private fun startTicker() {
+        tickerJob?.cancel()
+        tickerJob = scope.launch {
             while (isActive && _isRecording.value) {
                 if (!_isPaused.value) {
-                    val currentNow = System.currentTimeMillis()
-                    _recordingDurationMs.value = pausedDurationOffset + (currentNow - startTimeMs)
+                    val current = SystemClock.elapsedRealtime()
+                    _elapsedTimeMs.value = current - recordStartTime
 
-                    val maxAmp = try {
-                        mediaRecorder?.maxAmplitude ?: 0
-                    } catch (e: Exception) {
-                        0
+                    if (!_isMicMuted.value) {
+                        try {
+                            val maxAmp = mediaRecorder?.maxAmplitude ?: 0
+                            _currentAmplitude.value = (maxAmp / 32767f).coerceIn(0f, 1f)
+                        } catch (_: Exception) {
+                            _currentAmplitude.value = 0f
+                        }
+                    } else {
+                        _currentAmplitude.value = 0f
                     }
-                    val normalized = (maxAmp.toFloat() / 32767f).coerceIn(0.05f, 1f)
-                    _currentAmplitude.value = normalized
-
-                    val currentList = _waveforms.value.toMutableList()
-                    if (currentList.size > 60) {
-                        currentList.removeAt(0)
-                    }
-                    currentList.add(normalized)
-                    _waveforms.value = currentList
                 }
                 delay(100)
             }
         }
     }
 
-    private fun releaseRecorder() {
-        try {
-            mediaRecorder?.reset()
-            mediaRecorder?.release()
-        } catch (e: Exception) {
-            Log.e("AudioRecorder", "release failed", e)
-        } finally {
-            mediaRecorder = null
-        }
+    private fun cleanup() {
+        mediaRecorder = null
+        _isRecording.value = false
+        _isPaused.value = false
+        _isMicMuted.value = false
+        _currentAmplitude.value = 0f
+        tickerJob?.cancel()
     }
 }

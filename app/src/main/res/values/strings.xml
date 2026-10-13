@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SesYazıcı AI</string>
-    <string name="notification_channel_reminders">Görev Hatırlatıcıları</string>
-    <string name="notification_channel_reminders_desc">SesYazıcı görevleri için zamanlanmış hatırlatıcı bildirimleri</string>
+    <string name="app_name">SesYazOku</string>
+    <string name="notification_channel_recording">Ses Kaydı Servisi</string>
+    <string name="notification_channel_recording_desc">Arka planda ve görüşmelerde ses kaydı bildirimi</string>
 </resources>
