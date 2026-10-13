@@ -1897,7 +1897,14 @@
 
     // Speech Recognition
     let recognition = null;
+    let recognitionActive = false;
+    let recognitionRestartTimer = null;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    function setRecStatus(msg) {
+      const el = document.getElementById("recStatusLabel");
+      if (el) el.textContent = msg;
+    }
 
     if (SpeechRecognition) {
       try {
@@ -1906,20 +1913,48 @@
         recognition.interimResults = true;
         recognition.lang = 'tr-TR';
 
+        recognition.onstart = () => {
+          recognitionActive = true;
+          if (isRecording && !isMicMuted && currentSource === 'mic') {
+            setRecStatus("🎙️ Dinleniyor... (canlı yazı aktif)");
+          }
+        };
+
         recognition.onresult = (event) => {
           if (isMicMuted) return;
           for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const text = event.results[i][0].transcript;
+            if (!text || text.trim().length <= 1) continue;
             if (event.results[i].isFinal) {
-              const text = event.results[i][0].transcript;
-              if (text && text.trim().length > 1) {
-                addTranscriptRow(text.trim());
-              }
+              removeInterimRow();
+              addTranscriptRow(text.trim());
+            } else {
+              updateInterimRow(text.trim());
             }
           }
         };
 
         recognition.onerror = (e) => {
           console.warn("Konuşma tanıma uyarısı:", e.error);
+          if (!isRecording) return;
+          if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+            recognitionActive = false;
+            setRecStatus("🔇 Mikrofon izni verilmedi — tarayıcı ayarından izin verin");
+          } else if (e.error === 'network') {
+            setRecStatus("⚠️ Bağlantı hatası — internet bağlantınızı kontrol edin");
+          }
+        };
+
+        recognition.onend = () => {
+          recognitionActive = false;
+          if (isRecording && !isMicMuted && currentSource === 'mic') {
+            clearTimeout(recognitionRestartTimer);
+            recognitionRestartTimer = setTimeout(() => {
+              if (isRecording && !isMicMuted && currentSource === 'mic') {
+                try { recognition.start(); } catch (err) {}
+              }
+            }, 300);
+          }
         };
       } catch (err) {}
     }
@@ -1940,6 +1975,9 @@
       document.getElementById("recStatusLabel").textContent = isMicMuted
         ? "🔇 Sessiz Mod (Mikrofon Kapalı • Uygulama Kaydı)"
         : `🔴 Kayıt yapılıyor (${getSourceLabel(currentSource)})`;
+      if (!SpeechRecognition && !isMicMuted && currentSource === 'mic') {
+        setRecStatus("❌ Tarayıcınız konuşmayı metne çevirmeyi desteklemiyor — Chrome/Edge kullanın (simülasyon sürüyor)");
+      }
 
       await initWebAudio();
 
@@ -1952,6 +1990,7 @@
       // Automatic Realistic Diarization Flow
       autoDialogInterval = setInterval(() => {
         if (!isRecording) return;
+        if (recognitionActive) return; // gerçek tanıma aktifken hazır cümle girme
         const list = sourceDialogues[currentSource] || sourceDialogues.mic;
         const item = list[dialogQueueIndex % list.length];
         dialogQueueIndex++;
@@ -1979,6 +2018,9 @@
       try {
         if (recognition) recognition.stop();
       } catch (err) {}
+      clearTimeout(recognitionRestartTimer);
+      recognitionActive = false;
+      removeInterimRow();
 
       stopWaveform();
     }
@@ -2108,6 +2150,39 @@
 
     function addSampleQuote(text) {
       addTranscriptRow(text);
+    }
+
+    // Live (interim) speech text — shown grayed until the sentence finalizes
+    function updateInterimRow(text) {
+      const box = document.getElementById("transcriptBox");
+      if (!box) return;
+      const sp = speakers[activeSpeakerIndex];
+      let row = document.getElementById("interimRow");
+      if (!row) {
+        row = document.createElement("div");
+        row.id = "interimRow";
+        row.className = "transcript-row";
+        row.style.opacity = "0.6";
+        row.style.borderLeftColor = sp.color;
+        row.innerHTML = `
+          <div class="speaker-label" style="color: ${sp.color};">
+            <span>${sp.name}</span>
+            <span>🎙️ yazıyor...</span>
+          </div>
+          <div class="speaker-content"></div>
+        `;
+        box.appendChild(row);
+      }
+      row.setAttribute("data-speaker", activeSpeakerIndex);
+      row.style.borderLeftColor = sp.color;
+      row.querySelector(".speaker-label span:first-child").textContent = sp.name;
+      row.querySelector(".speaker-content").textContent = `"${text}"`;
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function removeInterimRow() {
+      const row = document.getElementById("interimRow");
+      if (row) row.remove();
     }
 
     function addCustomSpeech() {
