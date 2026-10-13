@@ -547,40 +547,6 @@
       gap: 12px;
     }
 
-    .sim-sources-group {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .sim-source-btn {
-      background: #070B14;
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      color: var(--text-muted);
-      padding: 6px 12px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
-
-    .sim-source-btn:hover {
-      border-color: var(--cyan);
-      color: #FFF;
-    }
-
-    .sim-source-btn.active {
-      background: rgba(6, 182, 212, 0.15);
-      border-color: var(--cyan);
-      color: var(--cyan);
-      box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
-    }
-
     .mic-toggle-btn {
       background: #070B14;
       border: 1px solid rgba(16, 185, 129, 0.4);
@@ -1290,31 +1256,15 @@
     <!-- LIVE WEB TEST / INTERACTIVE DEMO SECTION -->
     <section id="demo" class="demo-section">
       <div style="text-align: center;">
-        <span class="section-pill">Tarayıcıda Çalışan Test Alanı</span>
-        <h2 style="font-size: 2rem; color: #FFFFFF; margin-bottom: 8px;">SesYazOku Canlı Web Simülatörü</h2>
+        <span class="section-pill">Tarayıcıda Gerçek Kayıt</span>
+        <h2 style="font-size: 2rem; color: #FFFFFF; margin-bottom: 8px;">SesYazOku Canlı Kayıt Alanı</h2>
         <p style="color: var(--text-muted); max-width: 650px; margin: 0 auto;">
-          APK'yı telefonunuza indirmeden önce, canlı ses kaydı, mikrofon aç/kapa, konuşmacı ayrımı (Kişi 1, 2, 3), kapak fotoğrafı ve PDF döküman oluşturma özelliklerini tarayıcınızda canlı olarak test edin!
+          Mikrofonunuzdan gerçek ses kaydı alın, konuşmanız anlık olarak metne dökülsün. Kayıt durdurulduğunuzda ses dosyanız listeye düşer; tekrar dinleyebilir veya indirebilirsiniz.
         </p>
       </div>
 
-      <!-- Source and Microphone Bar -->
+      <!-- Microphone Bar -->
       <div class="sim-bar-wrap">
-        <div class="sim-sources-group">
-          <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700;">📡 Ses Kaynağı:</span>
-          <button class="sim-source-btn active" id="src-mic-btn" onclick="selectAudioSource('mic')">
-            🎙️ Cihaz Mikrofonu
-          </button>
-          <button class="sim-source-btn" id="src-social-btn" onclick="selectAudioSource('social')">
-            💬 Zoom / Meet / WhatsApp
-          </button>
-          <button class="sim-source-btn" id="src-call-btn" onclick="selectAudioSource('call')">
-            📞 Telefon Araması
-          </button>
-          <button class="sim-source-btn" id="src-file-btn" onclick="selectAudioSource('file')">
-            🎵 Hazır Ses Dosyası
-          </button>
-        </div>
-
         <div>
           <button class="mic-toggle-btn" id="micToggleBtn" onclick="toggleMicDevice()" title="Kayıt esnasında cihaz mikrofonunu açıp kapatabilirsiniz">
             <span id="micToggleIcon">🎤</span> <span id="micToggleText">Cihaz Mikrofonu: Açık</span>
@@ -1354,30 +1304,22 @@
             </div>
           </div>
 
-          <!-- Uploaded Audio Player Bar (Gizli, ses dosyası eklendiğinde açılır) -->
-          <div id="audioPlayerWrap" style="display: none; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; align-items: center; gap: 12px;">
-            <button class="btn btn-download" id="audioPlayerBtn" onclick="toggleAudioFilePlayback()" style="padding: 6px 14px; font-size: 0.8rem;">
-              ▶️ Oynat
-            </button>
-            <div style="flex: 1; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              <strong id="audioFileName" style="color: #FFF;">ses_kaydi.mp3</strong>
-              <div style="color: var(--text-muted); font-size: 0.75rem;" id="audioFileMeta">00:00 / 00:00</div>
+          <!-- Saved Recordings List (files recorded in browser) -->
+          <div id="recordingsWrap" style="display: none; margin-bottom: 12px;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700; margin-bottom: 6px;">
+              📁 Kayıtlar (dinlemek için tıklayın)
             </div>
-            <audio id="demoAudioElement" style="display: none;"></audio>
+            <div id="recordingsList" style="display: flex; flex-direction: column; gap: 8px;"></div>
           </div>
 
           <!-- Action Buttons -->
           <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
             <button class="btn btn-download" id="btn-demo-rec" onclick="toggleDemoRecording()">
-              ▶️ Canlı Kaydı Başlat
+              ▶️ Kaydı Başlat
             </button>
             <button class="btn btn-outline" id="btn-demo-reset" onclick="resetDemoSession()">
               ⏹️ Sıfırla
             </button>
-            <label class="btn btn-outline" style="cursor: pointer;">
-              📁 Ses Dosyası Ekle
-              <input type="file" accept="audio/*" id="audioFileInput" style="display: none;" onchange="handleAudioUpload(event)">
-            </label>
           </div>
 
           <!-- Speakers Selector Row -->
@@ -1399,30 +1341,6 @@
             </button>
           </div>
 
-          <!-- Quick Dialog Prompts -->
-          <div style="margin-bottom: 6px; font-size: 0.78rem; color: var(--text-muted);">
-            ⚡ Hızlı Cümle Testi (Tıklayarak transkripte ekleyin):
-          </div>
-          <div class="quick-dialogs-row">
-            <button class="quick-dialog-chip" onclick="addSampleQuote('Toplantıyı resmi olarak başlatıyorum, gündem maddelerimiz hazır.')">
-              💬 "Toplantıyı başlatıyorum..."
-            </button>
-            <button class="quick-dialog-chip" onclick="addSampleQuote('Zoom ve Meet sesleri arka planda yakalanarak metne dönüştürülüyor.')">
-              💬 "Zoom/Meet sesi yakalandı..."
-            </button>
-            <button class="quick-dialog-chip" onclick="addSampleQuote('Ses kaydı tamamlandı, konuşmacı etiketleriyle PDF dökümanı oluşturalım.')">
-              💬 "PDF dökümanı oluşturalım..."
-            </button>
-          </div>
-
-          <!-- Custom Sentence Input -->
-          <div style="display: flex; gap: 8px; margin-bottom: 14px;">
-            <input type="text" id="custom-speech-input" placeholder="İstediğiniz cümleyi yazıp transkripte ekleyin..." style="flex: 1; background: #04070F; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; color: #FFF; font-size: 0.85rem;" onkeydown="if(event.key==='Enter') addCustomSpeech()">
-            <button class="btn btn-outline" onclick="addCustomSpeech()" style="padding: 6px 14px; font-size: 0.82rem;">
-              Ekle
-            </button>
-          </div>
-
           <!-- Search in Transcript -->
           <div style="margin-bottom: 10px;">
             <input type="text" id="searchTranscriptInput" placeholder="🔍 Transkript içinde ara..." style="width: 100%; background: #04070F; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 6px 12px; color: #CBD5E1; font-size: 0.8rem;" oninput="filterTranscript(this.value)">
@@ -1430,32 +1348,8 @@
 
           <!-- Transcript Stream -->
           <div class="transcript-box" id="transcriptBox">
-            <div class="transcript-row" data-speaker="0">
-              <div class="speaker-label">
-                <span>Kişi 1 (Ahmet)</span>
-                <span>00:00 - 00:15</span>
-              </div>
-              <div class="speaker-content">
-                "SesYazOku uygulamasına hoş geldiniz. Canlı olarak ses kaydı alabilir veya cihazınızdaki MP3/WAV dosyalarını ekleyebilirsiniz."
-              </div>
-            </div>
-            <div class="transcript-row" data-speaker="1" style="border-left-color: #818CF8;">
-              <div class="speaker-label" style="color: #818CF8;">
-                <span>Kişi 2 (Mehmet)</span>
-                <span>00:16 - 00:40</span>
-              </div>
-              <div class="speaker-content">
-                "Uygulama aynı zamanda Zoom, Meet ve WhatsApp görüşmelerini arka planda yakalayarak Kişi 1, Kişi 2, Kişi 3 olarak etiketliyor."
-              </div>
-            </div>
-            <div class="transcript-row" data-speaker="2" style="border-left-color: #10B981;">
-              <div class="speaker-label" style="color: #10B981;">
-                <span>Kişi 3 (Ayşe)</span>
-                <span>00:41 - 01:05</span>
-              </div>
-              <div class="speaker-content">
-                "Dönüştürülen tüm metinlere kapak resmi ekleyebilir, tek tuşla PDF olarak cihazınıza kaydedebilir veya Google Drive'a yedekleyebilirsiniz."
-              </div>
+            <div id="transcriptEmptyHint" style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px 10px;">
+              Kayda başladığınızda konuşmanız burada metne dökülecek.
             </div>
           </div>
         </div>
@@ -1723,8 +1617,7 @@
     // State
     let isRecording = false;
     let timerInterval = null;
-    let autoDialogInterval = null;
-    let secondsElapsed = 65; // initial sample duration
+    let secondsElapsed = 0;
     let activeSpeakerIndex = 0;
     let currentSource = 'mic';
     let isMicMuted = false;
@@ -1736,34 +1629,6 @@
       { name: "Kişi 3 (Ayşe)", color: "#10B981" },
       { name: "Kişi 4 (Yetkili)", color: "#F59E0B" }
     ];
-
-    // Source Sample Dialogues
-    const sourceDialogues = {
-      mic: [
-        { speaker: 0, text: "SesYazOku ile doğrudan mikrofon üzerinden canlı ses kaydına başladık." },
-        { speaker: 1, text: "Mikrofon ses kalitesi oldukça yüksek ve ortam gürültü filtresi devrede." },
-        { speaker: 2, text: "Kayıt sırasında istenirse mikrofon tek dokunuşla kapatılıp açılabilir." },
-        { speaker: 3, text: "Tüm konuşmalar konuşmacı etiketleriyle anlık olarak metne işleniyor." }
-      ],
-      social: [
-        { speaker: 0, text: "Zoom ve Google Meet toplantısı arka plan ses servisiyle dinleniyor." },
-        { speaker: 1, text: "WhatsApp sesli görüşmesindeki karşı tarafın sesi net şekilde kaydedildi." },
-        { speaker: 2, text: "Uygulamalar arası geçiş yapılsa dahi bildirim çubuğunda kayıt devam eder." },
-        { speaker: 3, text: "Toplantı tutanağı için katılımcı konuşma süreleri hesaplanıyor." }
-      ],
-      call: [
-        { speaker: 0, text: "Gelen telefon görüşmesi algılandı, çağrı kaydı başlatıldı." },
-        { speaker: 1, text: "Kişi 2: Merhaba, sözleşme maddelerini görüşmek için aramıştım." },
-        { speaker: 0, text: "Kişi 1: Evet dinliyorum, görüşme notlarımız otomatik metne dökülüyor." },
-        { speaker: 1, text: "Kişi 2: Harika, görüşme bitiminde PDF raporunu Drive üzerinden iletir misiniz?" }
-      ],
-      file: [
-        { speaker: 0, text: "Dahili depolamadan eklenen harici ses dosyası çözümleniyor." },
-        { speaker: 1, text: "MP3 / WAV formatındaki ses kaydı yüksek hızda transkribe edildi." },
-        { speaker: 2, text: "Farklı frekanslardaki ses tonları Kişi 1 ve Kişi 2 olarak ayrıştırıldı." }
-      ]
-    };
-    let dialogQueueIndex = 0;
 
     // Web Audio API & Visualizer
     let audioContext = null;
@@ -1832,9 +1697,9 @@
 
       const dbLabel = document.getElementById("canvasLevelLabel");
       if (dbLabel) {
-        if (isRecording) {
-          const simulatedDb = isMicMuted ? -60 : -14 - Math.floor(Math.random() * 12);
-          dbLabel.textContent = `${simulatedDb} dB`;
+        if (isRecording && !isMicMuted && realVol > 0) {
+          const db = Math.max(-60, Math.round(20 * Math.log10(realVol / 255)));
+          dbLabel.textContent = `${db} dB`;
         } else {
           dbLabel.textContent = "-∞ dB";
         }
@@ -1843,16 +1708,11 @@
       for (let i = 0; i < bars; i++) {
         let barHeight = 6;
         if (isRecording) {
-          if (isMicMuted) {
-            barHeight = 4; // Flat line when mic is muted
-          } else if (analyserNode && dataArray && realVol > 10) {
-            const freqVal = dataArray[i % dataArray.length] / 255;
-            barHeight = Math.max(8, freqVal * (height * 0.85));
+          if (isMicMuted || !analyserNode || !dataArray) {
+            barHeight = 4;
           } else {
-            // Simulated realistic human speech envelope
-            const time = Date.now() / 200;
-            const wave = Math.sin(time + i * 0.35) * Math.cos(time * 0.5 + i * 0.2);
-            barHeight = Math.max(8, (Math.abs(wave) * 0.65 + Math.random() * 0.35) * (height * 0.75));
+            const freqVal = dataArray[i % dataArray.length] / 255;
+            barHeight = Math.max(4, freqVal * (height * 0.85));
           }
         }
 
@@ -1973,13 +1833,14 @@
       document.getElementById("btn-demo-rec").textContent = "⏸️ Kaydı Durdur";
       document.getElementById("rec-dot").style.display = "inline-block";
       document.getElementById("recStatusLabel").textContent = isMicMuted
-        ? "🔇 Sessiz Mod (Mikrofon Kapalı • Uygulama Kaydı)"
-        : `🔴 Kayıt yapılıyor (${getSourceLabel(currentSource)})`;
-      if (!SpeechRecognition && !isMicMuted && currentSource === 'mic') {
-        setRecStatus("❌ Tarayıcınız konuşmayı metne çevirmeyi desteklemiyor — Chrome/Edge kullanın (simülasyon sürüyor)");
+        ? "🔇 Mikrofon kapalı"
+        : "🔴 Kayıt yapılıyor";
+      if (!SpeechRecognition && !isMicMuted) {
+        setRecStatus("❌ Tarayıcınız metne çevirmeyi desteklemiyor — Chrome/Edge kullanın (ses kaydı devam eder)");
       }
 
       await initWebAudio();
+      startAudioFileRecording();
 
       timerInterval = setInterval(() => {
         secondsElapsed++;
@@ -1987,19 +1848,8 @@
         updateStats();
       }, 1000);
 
-      // Automatic Realistic Diarization Flow
-      autoDialogInterval = setInterval(() => {
-        if (!isRecording) return;
-        if (recognitionActive) return; // gerçek tanıma aktifken hazır cümle girme
-        const list = sourceDialogues[currentSource] || sourceDialogues.mic;
-        const item = list[dialogQueueIndex % list.length];
-        dialogQueueIndex++;
-        setActiveSpeaker(item.speaker);
-        addTranscriptRow(item.text);
-      }, 7000);
-
       try {
-        if (recognition && !isMicMuted && currentSource === 'mic') {
+        if (recognition && !isMicMuted) {
           recognition.start();
         }
       } catch (err) {}
@@ -2010,8 +1860,7 @@
     function stopRecording() {
       isRecording = false;
       clearInterval(timerInterval);
-      clearInterval(autoDialogInterval);
-      document.getElementById("btn-demo-rec").textContent = "▶️ Canlı Kaydı Başlat";
+      document.getElementById("btn-demo-rec").textContent = "▶️ Kaydı Başlat";
       document.getElementById("rec-dot").style.display = "none";
       document.getElementById("recStatusLabel").textContent = "Kayıt durduruldu / hazır";
 
@@ -2021,6 +1870,7 @@
       clearTimeout(recognitionRestartTimer);
       recognitionActive = false;
       removeInterimRow();
+      stopAudioFileRecording();
 
       stopWaveform();
     }
@@ -2029,8 +1879,8 @@
       stopRecording();
       secondsElapsed = 0;
       updateTimerDisplay();
-      document.getElementById("transcriptBox").innerHTML = '';
-      dialogQueueIndex = 0;
+      document.getElementById("transcriptBox").innerHTML =
+        '<div id="transcriptEmptyHint" style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px 10px;">Kayda başladığınızda konuşmanız burada metne dökülecek.</div>';
       updateStats();
     }
 
@@ -2039,46 +1889,6 @@
       const mins = String(Math.floor((secondsElapsed % 3600) / 60)).padStart(2, '0');
       const secs = String(secondsElapsed % 60).padStart(2, '0');
       document.getElementById("timerText").textContent = `${hrs}:${mins}:${secs}`;
-    }
-
-    function getSourceLabel(src) {
-      if (src === 'mic') return "Mikrofon";
-      if (src === 'social') return "Zoom / WhatsApp";
-      if (src === 'call') return "Telefon Araması";
-      return "Ses Dosyası";
-    }
-
-    // Source Selection
-    function selectAudioSource(sourceKey) {
-      currentSource = sourceKey;
-      ['src-mic-btn', 'src-social-btn', 'src-call-btn', 'src-file-btn'].forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) btn.classList.remove('active');
-      });
-
-      const activeBtn = document.getElementById(`src-${sourceKey}-btn`);
-      if (activeBtn) activeBtn.classList.add('active');
-
-      const badge = document.getElementById("demo-mode-badge");
-      const canvasLabel = document.getElementById("canvasSourceLabel");
-
-      if (sourceKey === 'mic') {
-        badge.textContent = "Canlı Mikrofon Modu";
-        canvasLabel.textContent = "🎙️ Mikrofon (48 kHz)";
-      } else if (sourceKey === 'social') {
-        badge.textContent = "Zoom / Meet / WhatsApp Servisi";
-        canvasLabel.textContent = "💬 Ön Plan Yakalama";
-      } else if (sourceKey === 'call') {
-        badge.textContent = "Telefon Çağrı Modu";
-        canvasLabel.textContent = "📞 Çağrı Servisi";
-      } else if (sourceKey === 'file') {
-        badge.textContent = "Ses Dosyası Transkripsiyonu";
-        canvasLabel.textContent = "🎵 Ses Dosyası";
-      }
-
-      if (isRecording) {
-        document.getElementById("recStatusLabel").textContent = `🔴 Kayıt yapılıyor (${getSourceLabel(sourceKey)})`;
-      }
     }
 
     // Microphone On/Off Toggle (User Requirement #1)
@@ -2093,14 +1903,14 @@
         icon.textContent = "🔇";
         text.textContent = "Cihaz Mikrofonu: Kapalı";
         if (isRecording) {
-          document.getElementById("recStatusLabel").textContent = "🔇 Mikrofon Kapalı (Sadece Karşı Taraf Kaydediliyor)";
+          document.getElementById("recStatusLabel").textContent = "🔇 Mikrofon kapalı";
         }
       } else {
         btn.classList.remove('muted');
         icon.textContent = "🎤";
         text.textContent = "Cihaz Mikrofonu: Açık";
         if (isRecording) {
-          document.getElementById("recStatusLabel").textContent = `🔴 Kayıt yapılıyor (${getSourceLabel(currentSource)})`;
+          document.getElementById("recStatusLabel").textContent = "🔴 Kayıt yapılıyor";
         }
       }
       drawWave();
@@ -2143,13 +1953,11 @@
         </div>
         <div class="speaker-content">"${escapeHtml(text.trim())}"</div>
       `;
+      const hint = document.getElementById("transcriptEmptyHint");
+      if (hint) hint.remove();
       box.appendChild(div);
       box.scrollTop = box.scrollHeight;
       updateStats();
-    }
-
-    function addSampleQuote(text) {
-      addTranscriptRow(text);
     }
 
     // Live (interim) speech text — shown grayed until the sentence finalizes
@@ -2185,13 +1993,6 @@
       if (row) row.remove();
     }
 
-    function addCustomSpeech() {
-      const input = document.getElementById("custom-speech-input");
-      if (!input || !input.value.trim()) return;
-      addTranscriptRow(input.value.trim());
-      input.value = '';
-    }
-
     function filterTranscript(query) {
       const rows = document.querySelectorAll(".transcript-row");
       const q = query.toLowerCase().trim();
@@ -2225,36 +2026,51 @@
       document.getElementById("statWords").textContent = words;
     }
 
-    // Handle Uploaded Audio
-    function handleAudioUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    const recordings = [];
 
-      selectAudioSource('file');
-      const wrap = document.getElementById("audioPlayerWrap");
-      wrap.style.display = "flex";
-      document.getElementById("audioFileName").textContent = file.name;
-      document.getElementById("audioFileMeta").textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB • Hazır`;
-
-      const audioEl = document.getElementById("demoAudioElement");
-      audioEl.src = URL.createObjectURL(file);
-
-      addTranscriptRow(`Harici ses dosyası başarıyla yüklendi: "${file.name}"`);
-      addTranscriptRow("SesYazOku transkripsiyon motoru dosyayı konuşmacı ayrımıyla işledi.");
+    function startAudioFileRecording() {
+      if (!microphoneStream || typeof MediaRecorder === 'undefined') return;
+      try {
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(microphoneStream);
+        mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
+        mediaRecorder.onstop = saveRecordingFile;
+        mediaRecorder.start();
+      } catch (err) { mediaRecorder = null; }
     }
 
-    function toggleAudioFilePlayback() {
-      const audioEl = document.getElementById("demoAudioElement");
-      const btn = document.getElementById("audioPlayerBtn");
-      if (audioEl.paused) {
-        audioEl.play();
-        btn.textContent = "⏸️ Duraklat";
-        startRecording();
-      } else {
-        audioEl.pause();
-        btn.textContent = "▶️ Oynat";
-        stopRecording();
+    function stopAudioFileRecording() {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        try { mediaRecorder.stop(); } catch (err) {}
       }
+    }
+
+    function saveRecordingFile() {
+      if (!recordedChunks.length) return;
+      const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      recordedChunks = [];
+      const stamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-');
+      const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
+      recordings.unshift({ name: `Kayit_${stamp}.${ext}`, url: URL.createObjectURL(blob) });
+      renderRecordings();
+    }
+
+    function renderRecordings() {
+      const wrap = document.getElementById("recordingsWrap");
+      const list = document.getElementById("recordingsList");
+      if (!wrap || !list) return;
+      wrap.style.display = recordings.length ? 'block' : 'none';
+      list.innerHTML = recordings.map((r) => `
+        <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 8px 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <strong style="color: #FFF; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${r.name}</strong>
+            <a href="${r.url}" download="${r.name}" style="color: var(--cyan); font-size: 0.75rem; text-decoration: none; flex-shrink: 0;">⬇ İndir</a>
+          </div>
+          <audio controls preload="none" src="${r.url}" style="width: 100%; height: 32px;"></audio>
+        </div>
+      `).join('');
     }
 
     // Cover Photo Upload & Camera (Requirement #3)
