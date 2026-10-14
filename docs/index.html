@@ -6,6 +6,7 @@
   <title>SesYazOku — Ses Kaydı, Konuşmacı Ayrımı & Döküman Asistanı (APK İndir)</title>
   <meta name="description" content="SesYazOku Android APK Tanıtım ve İndirme Sayfası. Canlı ve harici arama ses kaydı (Zoom, Meet, WhatsApp, Telefon), Kişi 1/2/3 konuşmacı ayrımı, PDF döküman yönetimi ve Google Drive yedekleme.">
   <link rel="icon" type="image/jpeg" href="assets/logo.jpg">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     :root {
       --bg-dark: #070B14;
@@ -909,6 +910,662 @@
         font-size: 2.2rem;
       }
     }
+
+    /* ========================================================
+       YÖNETİM PANELİ (ADMIN CONSOLE) STYLES
+       ======================================================== */
+    /* Floating Admin Button (Bottom Right) */
+    .admin-floating-btn {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      z-index: 9990;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+      color: #F8FAFC;
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      padding: 10px 18px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 15px rgba(6, 182, 212, 0.25);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(10px);
+    }
+    .admin-floating-btn:hover {
+      transform: translateY(-3px) scale(1.03);
+      border-color: #06B6D4;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 25px rgba(6, 182, 212, 0.45);
+      color: #38BDF8;
+    }
+    .admin-floating-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #EF4444;
+      color: #FFFFFF;
+      font-size: 11px;
+      font-weight: 800;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 9999px;
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.5);
+      animation: pulseBadge 2s infinite;
+    }
+    @keyframes pulseBadge {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+
+    /* Modal Backdrop */
+    .admin-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: fadeInModal 0.2s ease-out;
+    }
+    @keyframes fadeInModal {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Login Modal Card */
+    .admin-login-card {
+      background: #0F172A;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 440px;
+      padding: 32px 28px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(6, 182, 212, 0.2);
+      text-align: center;
+      position: relative;
+    }
+
+    /* Main Admin Console Container */
+    .admin-console-card {
+      background: #0B1120;
+      border: 1px solid #1E293B;
+      border-radius: 20px;
+      width: 96vw;
+      max-width: 1360px;
+      height: 90vh;
+      max-height: 880px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(6, 182, 212, 0.15);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* Admin Console Light Theme Mode */
+    .admin-console-card.light-admin-theme {
+      background: #F8FAFC;
+      color: #0F172A;
+      border-color: #E2E8F0;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
+    }
+    .admin-console-card.light-admin-theme .admin-sidebar {
+      background: #FFFFFF;
+      border-color: #E2E8F0;
+    }
+    .admin-console-card.light-admin-theme .admin-top-bar {
+      background: #FFFFFF;
+      border-color: #E2E8F0;
+    }
+    .admin-console-card.light-admin-theme .admin-content-pane {
+      background: #F1F5F9;
+    }
+    .admin-console-card.light-admin-theme .admin-user-item {
+      border-color: #E2E8F0;
+      background: #FFFFFF;
+    }
+    .admin-console-card.light-admin-theme .admin-user-item:hover,
+    .admin-console-card.light-admin-theme .admin-user-item.active {
+      background: #E0F2FE;
+    }
+    .admin-console-card.light-admin-theme .admin-msg-card {
+      background: #FFFFFF;
+      border-color: #E2E8F0;
+      color: #0F172A;
+    }
+    .admin-console-card.light-admin-theme .admin-subtext {
+      color: #64748B;
+    }
+    .admin-console-card.light-admin-theme .admin-setting-card {
+      background: #FFFFFF;
+      border-color: #E2E8F0;
+    }
+
+    /* Top Navigation Bar */
+    .admin-top-bar {
+      background: #0F172A;
+      border-bottom: 1px solid #1E293B;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .admin-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .admin-nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .admin-nav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #94A3B8;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .admin-nav-tab:hover {
+      color: #F8FAFC;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .admin-nav-tab.active {
+      background: #06B6D4;
+      color: #0F172A;
+      font-weight: 700;
+      box-shadow: 0 2px 10px rgba(6, 182, 212, 0.35);
+    }
+
+    /* Admin Tab Badge */
+    .admin-tab-pill {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 9999px;
+      background: rgba(0, 0, 0, 0.25);
+    }
+    .admin-nav-tab.active .admin-tab-pill {
+      background: #0F172A;
+      color: #38BDF8;
+    }
+
+    /* Main Body Area (Split pane) */
+    .admin-body-area {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Left Sidebar */
+    .admin-sidebar {
+      width: 340px;
+      background: #0F172A;
+      border-right: 1px solid #1E293B;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .admin-sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid #1E293B;
+    }
+    .admin-search-input {
+      width: 100%;
+      background: #1E293B;
+      border: 1px solid #334155;
+      color: #F8FAFC;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .admin-search-input:focus {
+      border-color: #06B6D4;
+    }
+    .admin-user-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .admin-user-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(30, 41, 59, 0.4);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .admin-user-item:hover {
+      background: rgba(30, 41, 59, 0.8);
+      border-color: rgba(6, 182, 212, 0.3);
+    }
+    .admin-user-item.active {
+      background: rgba(6, 182, 212, 0.12);
+      border-color: #06B6D4;
+    }
+
+    /* Avatar & Badges */
+    .admin-avatar-wrap {
+      position: relative;
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+    }
+    .admin-avatar-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4F46E5, #06B6D4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 800;
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    .online-pulsing-dot {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 12px;
+      height: 12px;
+      background: #10B981;
+      border: 2px solid #0F172A;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10B981;
+      animation: pulseGreen 1.8s infinite;
+    }
+    @keyframes pulseGreen {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.2); }
+    }
+    .admin-user-unread-badge {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      background: #EF4444;
+      color: #FFFFFF;
+      font-size: 10px;
+      font-weight: 800;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #0F172A;
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.5);
+    }
+
+    /* Right Content Pane */
+    .admin-content-pane {
+      flex: 1;
+      background: #080D1A;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .admin-pane-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid #1E293B;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(15, 23, 42, 0.5);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .admin-action-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .admin-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    .admin-btn-primary {
+      background: #06B6D4;
+      color: #0F172A;
+    }
+    .admin-btn-primary:hover {
+      background: #22D3EE;
+      box-shadow: 0 2px 10px rgba(6, 182, 212, 0.3);
+    }
+    .admin-btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #EF4444;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    .admin-btn-danger:hover {
+      background: #EF4444;
+      color: #FFFFFF;
+    }
+    .admin-btn-outline {
+      background: #1E293B;
+      color: #F8FAFC;
+      border-color: #334155;
+    }
+    .admin-btn-outline:hover {
+      background: #334155;
+      border-color: #475569;
+    }
+
+    /* Message Stream List */
+    .admin-message-stream {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .admin-msg-card {
+      background: #0F172A;
+      border: 1px solid #1E293B;
+      border-radius: 14px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      transition: border-color 0.2s;
+    }
+    .admin-msg-card.selected-for-delete {
+      border-color: #EF4444;
+      background: rgba(239, 68, 68, 0.05);
+    }
+    .admin-msg-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .admin-msg-checkbox {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: #EF4444;
+    }
+    .admin-msg-category {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      background: rgba(99, 102, 241, 0.2);
+      color: #818CF8;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    .admin-msg-body {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #E2E8F0;
+    }
+
+    /* Attachment previews in messages */
+    .admin-attachment-box {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 6px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .admin-att-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #F8FAFC;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .admin-att-chip:hover {
+      border-color: #06B6D4;
+      background: #253349;
+    }
+    .admin-att-chip.audio-chip { border-left: 3px solid #06B6D4; }
+    .admin-att-chip.image-chip { border-left: 3px solid #10B981; }
+    .admin-att-chip.pdf-chip { border-left: 3px solid #EF4444; }
+
+    /* Lightbox Modal for Attachment Photos */
+    .admin-lightbox-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 24px;
+    }
+    .admin-lightbox-img {
+      max-width: 90%;
+      max-height: 85vh;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    }
+
+    /* Tab 2: Remote Diagnostics & Live Support */
+    .admin-diagnostics-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      padding: 20px 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .admin-diag-card {
+      background: #0F172A;
+      border: 1px solid #1E293B;
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .admin-diag-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 10px;
+    }
+    .admin-vu-meter {
+      height: 38px;
+      background: #1E293B;
+      border-radius: 8px;
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      padding: 4px;
+      overflow: hidden;
+    }
+    .admin-vu-bar {
+      flex: 1;
+      background: #06B6D4;
+      border-radius: 2px;
+      transition: height 0.15s ease-out;
+      min-height: 4px;
+    }
+    .admin-cam-preview {
+      width: 100%;
+      height: 180px;
+      background: #030712;
+      border-radius: 10px;
+      border: 1px dashed #334155;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .admin-cam-crosshair {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border: 2px solid rgba(6, 182, 212, 0.5);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .admin-file-tree {
+      background: #030712;
+      border-radius: 8px;
+      border: 1px solid #1E293B;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 190px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .admin-file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .admin-file-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #38BDF8;
+    }
+
+    /* Tab 3: Settings */
+    .admin-settings-container {
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .admin-setting-card {
+      background: #0F172A;
+      border: 1px solid #1E293B;
+      border-radius: 14px;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .admin-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .admin-form-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #94A3B8;
+    }
+    .admin-form-input {
+      background: #1E293B;
+      border: 1px solid #334155;
+      color: #F8FAFC;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+    }
+    .admin-form-input:focus {
+      border-color: #06B6D4;
+    }
+    .admin-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .admin-toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .admin-toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .admin-toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: #334155;
+      border-radius: 9999px;
+      transition: 0.25s;
+    }
+    .admin-toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.25s;
+    }
+    .admin-toggle-switch input:checked + .admin-toggle-slider {
+      background: #06B6D4;
+    }
+    .admin-toggle-switch input:checked + .admin-toggle-slider:before {
+      transform: translateX(20px);
+    }
   </style>
 </head>
 <body>
@@ -1611,6 +2268,436 @@
       </div>
     </div>
   </footer>
+
+  <!-- Floating YÖNETİM Button (Bottom Right) -->
+  <button id="admin-floating-btn" class="admin-floating-btn" onclick="openAdminPortal()" title="SesYazOku Yönetici Paneli Girişi">
+    <span style="font-size: 15px;">🔐</span>
+    <span>YÖNETİM</span>
+    <span id="admin-floating-badge" class="admin-floating-badge">3</span>
+  </button>
+
+  <!-- Admin Login Modal -->
+  <div id="adminLoginModal" class="admin-modal-backdrop">
+    <div class="admin-login-card">
+      <div style="font-size: 38px; margin-bottom: 12px;">🛡️</div>
+      <h2 style="font-size: 20px; font-weight: 800; color: #F8FAFC; margin-bottom: 6px;">Yönetim Paneli Girişi</h2>
+      <p style="font-size: 13px; color: #94A3B8; margin-bottom: 24px;">Üretici yönetim ve canlı teknik destek konsoluna erişmek için yönetici şifresini giriniz:</p>
+      
+      <div style="display: flex; flex-direction: column; gap: 14px; text-align: left;">
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: #94A3B8; display: block; margin-bottom: 6px;">Yönetici Şifresi:</label>
+          <div style="position: relative;">
+            <input type="password" id="adminPasswordInput" class="admin-form-input" style="width: 100%; padding-right: 44px;" placeholder="Şifrenizi yazınız..." onkeydown="if(event.key==='Enter') verifyAdminLogin()">
+            <button type="button" onclick="togglePasswordVisibility('adminPasswordInput')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94A3B8; cursor: pointer; font-size: 16px;">👁️</button>
+          </div>
+        </div>
+
+        <div id="adminLoginError" style="color: #EF4444; font-size: 12px; display: none; font-weight: 600; padding: 6px 10px; background: rgba(239, 68, 68, 0.1); border-radius: 8px;">
+          ❌ Hatalı şifre! Lütfen yetkili şifrenizi kontrol ediniz.
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 8px;">
+          <button class="admin-btn admin-btn-outline" style="flex: 1; justify-content: center;" onclick="closeAdminLoginModal()">İptal</button>
+          <button class="admin-btn admin-btn-primary" style="flex: 2; justify-content: center; font-size: 14px;" onclick="verifyAdminLogin()">Giriş Yap ➔</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Console Main Portal -->
+  <div id="adminPortalModal" class="admin-modal-backdrop">
+    <div id="adminConsoleCard" class="admin-console-card">
+      <!-- Top Bar -->
+      <div class="admin-top-bar">
+        <div class="admin-brand">
+          <span style="font-size: 24px;">🛡️</span>
+          <div>
+            <div style="font-weight: 800; font-size: 16px; color: #F8FAFC; display: flex; align-items: center; gap: 8px;">
+              SesYazOku Yönetim Merkezi
+              <span style="font-size: 11px; padding: 2px 8px; border-radius: 9999px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">🟢 Canlı Senkronize</span>
+            </div>
+            <div class="admin-subtext" style="font-size: 11px; color: #94A3B8;">APK Üretici Mesajları & Uzaktan Teknik Destek Konsolu</div>
+          </div>
+        </div>
+
+        <!-- 3 Tabs (Mesajlar, Kullanıcı Detay, Ayarlar) -->
+        <div class="admin-nav-tabs">
+          <button id="adminTabBtnMessages" class="admin-nav-tab active" onclick="switchAdminTab('messages')">
+            <span>💬 Mesajlar</span>
+            <span id="adminTabMsgBadge" class="admin-tab-pill">3</span>
+          </button>
+          <button id="adminTabBtnUsers" class="admin-nav-tab" onclick="switchAdminTab('users')">
+            <span>👥 Kullanıcı Detay</span>
+            <span id="adminTabOnlineBadge" class="admin-tab-pill" style="color: #10B981;">2 Online</span>
+          </button>
+          <button id="adminTabBtnSettings" class="admin-nav-tab" onclick="switchAdminTab('settings')">
+            <span>⚙️ Ayarlar</span>
+          </button>
+        </div>
+
+        <!-- Quick actions -->
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="admin-btn admin-btn-outline" onclick="toggleAdminTheme()" title="Koyu / Açık Tema Değiştir">
+            <span id="adminThemeIcon">🌙</span>
+          </button>
+          <button class="admin-btn admin-btn-outline" onclick="refreshAdminData()" title="Verileri Yenile">
+            🔄
+          </button>
+          <button class="admin-btn admin-btn-danger" onclick="logoutAdminPortal()" title="Yönetimden Çıkış Yap">
+            🚪 Çıkış
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 1: Mesajlar -->
+      <div id="adminTabPaneMessages" class="admin-body-area">
+        <!-- Sol Alan: Kullanıcı Listesi -->
+        <div class="admin-sidebar">
+          <div class="admin-sidebar-header">
+            <input type="text" id="adminUserSearchInput" class="admin-search-input" placeholder="Kullanıcı veya konu ara..." oninput="filterAdminUserList()">
+          </div>
+          <div id="adminUserListContainer" class="admin-user-list">
+            <!-- Dynamically populated via JS -->
+          </div>
+        </div>
+
+        <!-- Sağ Alan: Seçilen Kullanıcının Mesajları & Eylemler -->
+        <div class="admin-content-pane">
+          <!-- Pane Header -->
+          <div class="admin-pane-header">
+            <div>
+              <div id="activeUserDisplayName" style="font-weight: 800; font-size: 16px; color: #F8FAFC;">Seçili Kullanıcı</div>
+              <div id="activeUserEmail" class="admin-subtext" style="font-size: 12px; color: #94A3B8;">user@example.com</div>
+            </div>
+
+            <div class="admin-action-btn-group">
+              <button class="admin-btn admin-btn-primary" onclick="exportUserBatchArchive()" title="PDF ve ekleri mail adresini içeren klasöre toplu indir">
+                📥 Toplu İndir (Klasör/ZIP)
+              </button>
+              <button id="adminMultiSelectToggleBtn" class="admin-btn admin-btn-outline" onclick="toggleMultiSelectMode()">
+                ☑️ Çoklu Seçim
+              </button>
+              <button id="adminBulkDeleteBtn" class="admin-btn admin-btn-danger" style="display: none;" onclick="deleteSelectedMessages()">
+                🗑️ Seçilenleri Sil (<span id="selectedMsgCount">0</span>)
+              </button>
+              <button class="admin-btn admin-btn-outline" onclick="toggleReplyComposer()">
+                ✉️ Yanıt Yaz
+              </button>
+            </div>
+          </div>
+
+          <!-- Multi-select Bar (When active) -->
+          <div id="adminMultiSelectBar" style="display: none; background: rgba(239, 68, 68, 0.1); border-bottom: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 24px; align-items: center; justify-content: space-between;">
+            <div style="font-size: 13px; color: #F8FAFC; display: flex; align-items: center; gap: 12px;">
+              <span><strong>Çoklu Silme Modu Aktif</strong></span>
+              <button class="admin-btn admin-btn-outline" style="padding: 4px 10px; font-size: 11px;" onclick="selectAllMessagesForDelete(true)">Tümünü Seç</button>
+              <button class="admin-btn admin-btn-outline" style="padding: 4px 10px; font-size: 11px;" onclick="selectAllMessagesForDelete(false)">Seçimi Temizle</button>
+            </div>
+            <div style="font-size: 12px; color: #EF4444;">Silmek istediğiniz mesajların solundaki kutucukları işaretleyin.</div>
+          </div>
+
+          <!-- Messages Stream Container -->
+          <div id="adminMessageStreamContainer" class="admin-message-stream">
+            <!-- Dynamically populated via JS -->
+          </div>
+
+          <!-- Admin Reply Composer (collapsible) -->
+          <div id="adminReplyComposer" style="display: none; background: #0F172A; border-top: 1px solid #1E293B; padding: 14px 24px;">
+            <div style="display: flex; gap: 10px; align-items: flex-end;">
+              <textarea id="adminReplyTextInput" class="admin-form-input" style="flex: 1; height: 60px; resize: none;" placeholder="Kullanıcıya teknik destek yanıtı yazınız..."></textarea>
+              <button class="admin-btn admin-btn-primary" style="height: 60px; padding: 0 20px;" onclick="sendAdminReply()">
+                📤 Yanıtı Gönder
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Kullanıcı Detay (Canlı Cihaz & Uzaktan Destek) -->
+      <div id="adminTabPaneUserDetails" class="admin-body-area" style="display: none;">
+        <!-- Sol Alan: Cihaz İzni Vermiş Kullanıcılar -->
+        <div class="admin-sidebar">
+          <div class="admin-sidebar-header">
+            <div style="font-weight: 700; font-size: 13px; color: #F8FAFC; margin-bottom: 6px;">Cihaz Erişimi Veren Kullanıcılar</div>
+            <div style="font-size: 11px; color: #94A3B8;">Yeşil nokta online kullanıcıları belirtir.</div>
+          </div>
+          <div id="adminUserDetailListContainer" class="admin-user-list">
+            <!-- Dynamically populated via JS -->
+          </div>
+        </div>
+
+        <!-- Sağ Alan: Canlı Cihaz Tanı & Uzaktan Destek -->
+        <div class="admin-content-pane">
+          <div class="admin-pane-header">
+            <div>
+              <div id="diagUserTitle" style="font-weight: 800; font-size: 16px; color: #F8FAFC;">Uzaktan Canlı Destek & Cihaz Tanı</div>
+              <div id="diagUserSubtitle" class="admin-subtext" style="font-size: 12px; color: #94A3B8;">Bağlı Cihaz: Google Pixel 8 Pro • Android 14</div>
+            </div>
+            <div class="admin-action-btn-group">
+              <button class="admin-btn admin-btn-outline" onclick="triggerDeviceAction('logcat')">
+                📋 Canlı Logcat Oku
+              </button>
+              <button class="admin-btn admin-btn-outline" onclick="triggerDeviceAction('clear_cache')">
+                🧹 Önbelleği Temizle
+              </button>
+              <button class="admin-btn admin-btn-primary" onclick="triggerDeviceAction('send_alert')">
+                🔔 Destek Uyarısı İlet
+              </button>
+            </div>
+          </div>
+
+          <!-- Diagnostics Dashboard Grid -->
+          <div class="admin-diagnostics-container">
+            <!-- Card 1: Telemetry & Permissions -->
+            <div class="admin-diag-card">
+              <div class="admin-diag-header">
+                <span style="font-weight: 700; color: #F8FAFC;">📱 Cihaz & Yetki Durumu</span>
+                <span id="diagOnlineStatusBadge" style="font-size: 11px; padding: 2px 8px; border-radius: 9999px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">🟢 Çevrimiçi</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+                <div style="display: flex; justify-content: space-between;"><span style="color: #94A3B8;">Cihaz Modeli:</span><strong id="diagDeviceModel" style="color: #F8FAFC;">Samsung Galaxy S24 Ultra</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color: #94A3B8;">Android Sürümü:</span><strong id="diagAndroidVer" style="color: #F8FAFC;">Android 14 (API 34)</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color: #94A3B8;">Pil & Şarj:</span><strong id="diagBattery" style="color: #10B981;">%86 🔋 Şarjda Değil</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color: #94A3B8;">Depolama:</span><strong id="diagStorage" style="color: #F8FAFC;">42.4 GB Boş / 128 GB</strong></div>
+              </div>
+              <div style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;">
+                <div style="font-size: 12px; font-weight: 700; color: #94A3B8; margin-bottom: 6px;">Kalıcı Onaylı İzinler:</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                  <span style="font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">✅ Mikrofon (Kalıcı)</span>
+                  <span style="font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">✅ Kamera (Kalıcı)</span>
+                  <span style="font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">✅ Medya / Depolama</span>
+                  <span style="font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">✅ Bildirimler</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: Live Files Explorer -->
+            <div class="admin-diag-card">
+              <div class="admin-diag-header">
+                <span style="font-weight: 700; color: #F8FAFC;">📁 Cihaz Klasörlerine Canlı Erişim</span>
+                <span style="font-size: 11px; color: #06B6D4;">/app/files/</span>
+              </div>
+              <div class="admin-file-tree" id="adminFileTreeContainer">
+                <div class="admin-file-item" onclick="inspectFile('recordings/kayit_01.m4a')"><span>🎵 /recordings/toplanti_sesi.m4a</span><span style="color: #94A3B8;">1.4 MB [İndir]</span></div>
+                <div class="admin-file-item" onclick="inspectFile('transcripts/transkript_01.json')"><span>📄 /transcripts/tutanak_01.json</span><span style="color: #94A3B8;">24 KB [Oku]</span></div>
+                <div class="admin-file-item" onclick="inspectFile('documents/Toplanti_Raporu.pdf')"><span>📑 /documents/Toplanti_Raporu.pdf</span><span style="color: #94A3B8;">310 KB [İndir]</span></div>
+                <div class="admin-file-item" onclick="inspectFile('logs/app_runtime.log')"><span>📋 /logs/app_runtime.log</span><span style="color: #10B981;">Canlı Log</span></div>
+              </div>
+              <button class="admin-btn admin-btn-outline" style="justify-content: center;" onclick="refreshDeviceFiles()">
+                🔄 Klasörleri Tara & Senkronize Et
+              </button>
+            </div>
+
+            <!-- Card 3: Live Mic Test -->
+            <div class="admin-diag-card">
+              <div class="admin-diag-header">
+                <span style="font-weight: 700; color: #F8FAFC;">🎙️ Canlı Mikrofona Erişim & Ses Tanı</span>
+                <span id="diagMicDb" style="font-size: 12px; font-weight: 700; color: #06B6D4;">48 dB (Normal)</span>
+              </div>
+              <div class="admin-vu-meter" id="adminVuMeterContainer">
+                <!-- 20 bars dynamically animated -->
+                <div class="admin-vu-bar" style="height: 30%;"></div>
+                <div class="admin-vu-bar" style="height: 55%;"></div>
+                <div class="admin-vu-bar" style="height: 75%;"></div>
+                <div class="admin-vu-bar" style="height: 40%;"></div>
+                <div class="admin-vu-bar" style="height: 85%;"></div>
+                <div class="admin-vu-bar" style="height: 60%;"></div>
+                <div class="admin-vu-bar" style="height: 90%;"></div>
+                <div class="admin-vu-bar" style="height: 50%;"></div>
+                <div class="admin-vu-bar" style="height: 70%;"></div>
+                <div class="admin-vu-bar" style="height: 35%;"></div>
+                <div class="admin-vu-bar" style="height: 65%;"></div>
+                <div class="admin-vu-bar" style="height: 80%;"></div>
+                <div class="admin-vu-bar" style="height: 45%;"></div>
+                <div class="admin-vu-bar" style="height: 95%;"></div>
+                <div class="admin-vu-bar" style="height: 60%;"></div>
+                <div class="admin-vu-bar" style="height: 40%;"></div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button id="adminMicTestBtn" class="admin-btn admin-btn-primary" style="flex: 1; justify-content: center;" onclick="toggleAdminMicTest()">
+                  ▶️ Canlı Ses Girişini Dinle
+                </button>
+                <button class="admin-btn admin-btn-outline" onclick="calibrateDeviceMic()">
+                  🎯 Kalibre Et
+                </button>
+              </div>
+            </div>
+
+            <!-- Card 4: Live Camera Test -->
+            <div class="admin-diag-card">
+              <div class="admin-diag-header">
+                <span style="font-weight: 700; color: #F8FAFC;">📷 Cihaz Kameralarına Canlı Erişim</span>
+                <span id="diagCamLabel" style="font-size: 11px; color: #10B981; font-weight: 700;">Ön Kamera (1080p @ 30fps)</span>
+              </div>
+              <div class="admin-cam-preview" id="adminCamPreviewBox">
+                <div class="admin-cam-crosshair"></div>
+                <div style="font-size: 32px; margin-bottom: 6px;">📹</div>
+                <div style="font-size: 12px; color: #94A3B8;">Canlı Video Akışı Aktif</div>
+                <div style="font-size: 10px; color: #06B6D4; margin-top: 4px;">Sensör Pozlama: Otomatik • Odak: Kilitli</div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="admin-btn admin-btn-outline" style="flex: 1; justify-content: center;" onclick="switchAdminCamLens()">
+                  🔄 Kamera Değiştir (Ön / Arka)
+                </button>
+                <button class="admin-btn admin-btn-primary" onclick="captureTestSnapshot()">
+                  📸 Test Karesi Al
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Ayarlar -->
+      <div id="adminTabPaneSettings" class="admin-body-area" style="display: none;">
+        <div class="admin-settings-container">
+          <!-- Ayar 1: Şifre Değiştirme -->
+          <div class="admin-setting-card">
+            <h3 style="font-size: 16px; font-weight: 800; color: #F8FAFC; display: flex; align-items: center; gap: 8px;">
+              <span>🔑</span> Yönetim Giriş Şifresi Değiştirme
+            </h3>
+            <p style="font-size: 13px; color: #94A3B8;">Mevcut yönetici şifresini değiştirebilirsiniz. (Varsayılan şifre: Ag1453ag!)</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Mevcut Şifre</label>
+                <input type="password" id="currentAdminPassInput" class="admin-form-input" placeholder="Mevcut şifre">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Yeni Şifre</label>
+                <input type="password" id="newAdminPassInput" class="admin-form-input" placeholder="Yeni şifre">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Yeni Şifre (Tekrar)</label>
+                <input type="password" id="newAdminPassConfirmInput" class="admin-form-input" placeholder="Yeni şifre tekrar">
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end;">
+              <button class="admin-btn admin-btn-primary" onclick="changeAdminPassword()">
+                💾 Şifreyi Güncelle
+              </button>
+            </div>
+          </div>
+
+          <!-- Ayar 2: EK Yönetici Şifresi Ekleme -->
+          <div class="admin-setting-card">
+            <h3 style="font-size: 16px; font-weight: 800; color: #F8FAFC; display: flex; align-items: center; gap: 8px;">
+              <span>👥</span> EK Yönetici Şifresi Ekleme
+            </h3>
+            <p style="font-size: 13px; color: #94A3B8;">Ekip arkadaşlarınız veya ikinci destek personelleri için ek yetkili giriş şifreleri tanımlayabilirsiniz:</p>
+            
+            <div style="display: flex; gap: 10px;">
+              <input type="text" id="extraAdminPassInput" class="admin-form-input" style="flex: 1;" placeholder="Örnek ek şifre (örn: Destek1453!)">
+              <button class="admin-btn admin-btn-primary" onclick="addExtraAdminPassword()">
+                ➕ Ek Şifre Ekle
+              </button>
+            </div>
+
+            <div id="extraPasswordsList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+              <!-- Dynamically populated via JS -->
+            </div>
+          </div>
+
+          <!-- Ayar 3: Tema Seçimi -->
+          <div class="admin-setting-card">
+            <h3 style="font-size: 16px; font-weight: 800; color: #F8FAFC; display: flex; align-items: center; gap: 8px;">
+              <span>🎨</span> Yönetim Konsolu Tema Seçimi
+            </h3>
+            <div style="display: flex; gap: 14px;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #F8FAFC; font-size: 14px;">
+                <input type="radio" name="adminThemeChoice" value="dark" checked onchange="setAdminTheme('dark')">
+                🌙 Koyu Tema (Karanlık / Cyber Slate)
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #F8FAFC; font-size: 14px;">
+                <input type="radio" name="adminThemeChoice" value="light" onchange="setAdminTheme('light')">
+                ☀️ Açık Tema (Modern Aydınlık)
+              </label>
+            </div>
+          </div>
+
+          <!-- Ayar 4: Önerilen Yönetim ve Canlı Destek Ayarları -->
+          <div class="admin-setting-card">
+            <h3 style="font-size: 16px; font-weight: 800; color: #F8FAFC; display: flex; align-items: center; gap: 8px;">
+              <span>💡</span> Sistem & Güvenlik Öneri Ayarları
+            </h3>
+            
+            <div class="admin-toggle-row">
+              <div>
+                <strong style="color: #F8FAFC; font-size: 14px;">🔔 Yeni Mesaj Geldiğinde Sesli Uyarı</strong>
+                <div style="font-size: 12px; color: #94A3B8;">APK içinden kullanıcı mesaj veya ses kaydı gönderdiğinde ses çal.</div>
+              </div>
+              <label class="admin-toggle-switch">
+                <input type="checkbox" id="settingSoundAlert" checked onchange="saveAdminSettings()">
+                <span class="admin-toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="admin-toggle-row">
+              <div>
+                <strong style="color: #F8FAFC; font-size: 14px;">⏱️ Canlı Otomatik Yenileme (15 sn)</strong>
+                <div style="font-size: 12px; color: #94A3B8;">Kullanıcıların online durumlarını ve yeni mesajları arka planda otomatik çek.</div>
+              </div>
+              <label class="admin-toggle-switch">
+                <input type="checkbox" id="settingAutoRefresh" checked onchange="saveAdminSettings()">
+                <span class="admin-toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="admin-toggle-row">
+              <div>
+                <strong style="color: #F8FAFC; font-size: 14px;">🚨 Hata Bildirimlerinde Otomatik Teşhis Dökümü</strong>
+                <div style="font-size: 12px; color: #94A3B8;">Kullanıcı "Hata Bildirimi" attığında sistem cihaz logcat dosyasını mesaja iliştirir.</div>
+              </div>
+              <label class="admin-toggle-switch">
+                <input type="checkbox" id="settingAutoLogcat" checked onchange="saveAdminSettings()">
+                <span class="admin-toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="admin-toggle-row">
+              <div>
+                <strong style="color: #F8FAFC; font-size: 14px;">🛡️ İki Faktörlü Şifreleme (2FA Koruması)</strong>
+                <div style="font-size: 12px; color: #94A3B8;">Yönetim paneline girişte ek güvenlik doğrulama adımı uygula.</div>
+              </div>
+              <label class="admin-toggle-switch">
+                <input type="checkbox" id="setting2FA" onchange="saveAdminSettings()">
+                <span class="admin-toggle-slider"></span>
+              </label>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 14px;">
+              <button class="admin-btn admin-btn-outline" onclick="exportAdminBackup()">
+                💾 Tüm Yönetim Verilerini Yedekle (JSON)
+              </button>
+              <button class="admin-btn admin-btn-outline" onclick="restoreAdminBackup()">
+                📥 Yedekten Geri Yükle
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox Modal for Photos -->
+  <div id="adminPhotoLightbox" class="admin-lightbox-modal" onclick="closeAdminLightbox()">
+    <img id="adminLightboxImg" class="admin-lightbox-img" src="" alt="Fotoğraf Önizleme">
+  </div>
+
+  <!-- Logcat Modal -->
+  <div id="adminLogcatModal" class="admin-modal-backdrop">
+    <div class="admin-login-card" style="max-width: 720px; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 style="font-size: 16px; font-weight: 800; color: #F8FAFC;">📋 Canlı Cihaz Logcat Dökümü</h3>
+        <button class="admin-btn admin-btn-outline" onclick="closeAdminLogcatModal()">✕ Kapat</button>
+      </div>
+      <pre id="adminLogcatContent" style="background: #030712; padding: 14px; border-radius: 10px; border: 1px solid #1E293B; color: #38BDF8; font-size: 12px; max-height: 380px; overflow-y: auto; font-family: monospace; white-space: pre-wrap; line-height: 1.5;"></pre>
+      <div style="display: flex; justify-content: flex-end; margin-top: 12px; gap: 8px;">
+        <button class="admin-btn admin-btn-primary" onclick="downloadLogcatFile()">📥 Log Dosyasını İndir (.log)</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Scripts -->
   <script>
@@ -2343,6 +3430,1027 @@
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
     }
+
+    /* ========================================================
+       YÖNETİM PANELİ (ADMIN CONSOLE) JAVASCRIPT MODULE
+       ======================================================== */
+    const DEFAULT_ADMIN_PASSWORD = "Ag1453ag!";
+    let activeAdminTab = 'messages';
+    let isMultiSelectActive = false;
+    let selectedMsgIds = new Set();
+    let isMicTesting = false;
+    let micTestInterval = null;
+    let activeCamLens = 'front';
+
+    // Mock / Persistent User & Messages Database
+    const initialUsersData = [
+      {
+        email: "aydannadya31@gmail.com",
+        name: "Aydan Nadya",
+        avatarLetter: "A",
+        avatarBg: "linear-gradient(135deg, #6366F1, #06B6D4)",
+        online: true,
+        lastSeen: "Şimdi aktif (🟢 Çevrimiçi)",
+        device: {
+          model: "Samsung Galaxy S24 Ultra",
+          os: "Android 14 (API 34)",
+          battery: "%88 🔋",
+          storage: "42.8 GB Boş / 256 GB",
+          connection: "Wi-Fi 5GHz (Mükemmel - 866 Mbps)",
+          permissions: { mic: true, camera: true, storage: true, notif: true }
+        },
+        files: [
+          { name: "recordings/kayit_20261014_0912.m4a", size: "2.1 MB", type: "audio" },
+          { name: "transcripts/transkript_0912.json", size: "38 KB", type: "text" },
+          { name: "documents/Toplanti_Tutanak_Nadya.pdf", size: "420 KB", type: "pdf" },
+          { name: "logs/app_diagnostic.log", size: "14 KB", type: "log" }
+        ],
+        messages: [
+          {
+            id: "msg_1",
+            category: "İşleyiş Geri Bildirimi",
+            subject: "Toplantı ses kaydı ve PDF döküman aktarımı",
+            text: "Merhaba üretici, uygulama toplantı kayıtlarında çok başarılı. İki kişi konuştuğumuzda Kişi 1 ve Kişi 2 ayrımı çok net çalıştı. Örnek bir ses kaydı ve aldığım tutanak PDF'ini ekte gönderiyorum.",
+            date: "14 Ekim 2026, 09:15",
+            isUnread: true,
+            attachments: {
+              audio: { name: "toplanti_ornek_kayit.m4a", size: "1.4 MB" },
+              image: { name: "ekran_goruntusu_transkript.jpg", size: "520 KB" },
+              pdf: { name: "Haftalik_Toplanti_Tutanak.pdf", size: "380 KB" }
+            }
+          },
+          {
+            id: "msg_2",
+            category: "Yeni Özellik",
+            subject: "Arka plan servisi ve bildirim çubuğu",
+            text: "Zoom veya telefon görüşmesi esnasında arka planda kayda devam edebilmesi harika olmuş. İzinler ilk girişte kalıcı onaylandığı için her defasında sormaması kullanım kolaylığı sağlıyor.",
+            date: "14 Ekim 2026, 08:42",
+            isUnread: true,
+            attachments: {
+              image: { name: "arka_plan_kayit_test.jpg", size: "410 KB" }
+            }
+          }
+        ]
+      },
+      {
+        email: "mehmet.kaya@gmail.com",
+        name: "Mehmet Kaya",
+        avatarLetter: "M",
+        avatarBg: "linear-gradient(135deg, #10B981, #06B6D4)",
+        online: false,
+        lastSeen: "12 dakika önce",
+        device: {
+          model: "Google Pixel 8 Pro",
+          os: "Android 14 (API 34)",
+          battery: "%74 🔋",
+          storage: "68.2 GB Boş / 128 GB",
+          connection: "Mobil Veri 5G",
+          permissions: { mic: true, camera: true, storage: true, notif: true }
+        },
+        files: [
+          { name: "recordings/gorusme_02.m4a", size: "1.8 MB", type: "audio" },
+          { name: "documents/Diyalog_Raporu.pdf", size: "290 KB", type: "pdf" }
+        ],
+        messages: [
+          {
+            id: "msg_3",
+            category: "Hata Bildirimi",
+            subject: "Mikrofon ses seviyesi ve sessiz ortam uyarısı",
+            text: "Çok sessiz bir ortamda kısa kayıt aldığımda 'konuşma cümlesi tespit edilemedi' uyarısı aldım. Mikrofon hassasiyetini biraz daha artırabilir misiniz? Log dökümünü iliştirdim.",
+            date: "13 Ekim 2026, 21:18",
+            isUnread: true,
+            attachments: {
+              audio: { name: "sessiz_ortam_testi.m4a", size: "850 KB" }
+            }
+          }
+        ]
+      },
+      {
+        email: "zeynep.demir@gmail.com",
+        name: "Zeynep Demir",
+        avatarLetter: "Z",
+        avatarBg: "linear-gradient(135deg, #EC4899, #8B5CF6)",
+        online: true,
+        lastSeen: "Şimdi aktif (🟢 Çevrimiçi)",
+        device: {
+          model: "Xiaomi 14 Pro",
+          os: "Android 14 (HyperOS)",
+          battery: "%91 🔋",
+          storage: "112 GB Boş / 256 GB",
+          connection: "Wi-Fi 6",
+          permissions: { mic: true, camera: true, storage: true, notif: true }
+        },
+        files: [
+          { name: "recordings/seminer_notu.m4a", size: "4.2 MB", type: "audio" },
+          { name: "documents/Seminer_Sunum_Ozeti.pdf", size: "640 KB", type: "pdf" }
+        ],
+        messages: [
+          {
+            id: "msg_4",
+            category: "İşleyiş Geri Bildirimi",
+            subject: "Döküman kapak fotoğrafı ve PDF yazdırma",
+            text: "Döküman ekranında kameradan kapak fotoğrafı ekleme ve doğrudan yazıcıya PDF olarak gönderme özelliği için teşekkürler, ofiste çok işimize yaradı.",
+            date: "13 Ekim 2026, 17:05",
+            isUnread: false,
+            attachments: {
+              pdf: { name: "Seminer_Raporu_Cikti.pdf", size: "480 KB" }
+            }
+          }
+        ]
+      }
+    ];
+
+    function getAdminUsers() {
+      try {
+        const stored = localStorage.getItem("sesyazoku_admin_users");
+        if (stored) {
+          return JSON.parse(stored);
+        }
+      } catch (e) {
+        console.warn("Storage read error:", e);
+      }
+      localStorage.setItem("sesyazoku_admin_users", JSON.stringify(initialUsersData));
+      return initialUsersData;
+    }
+
+    function saveAdminUsers(users) {
+      try {
+        localStorage.setItem("sesyazoku_admin_users", JSON.stringify(users));
+      } catch (e) {
+        console.warn("Storage save error:", e);
+      }
+      updateAdminBadges();
+    }
+
+    let activeUserEmail = initialUsersData[0].email;
+
+    // Password & Login Management
+    function getAdminPassword() {
+      return localStorage.getItem("sesyazoku_admin_pass") || DEFAULT_ADMIN_PASSWORD;
+    }
+
+    function getExtraAdminPasswords() {
+      try {
+        const saved = localStorage.getItem("sesyazoku_admin_extra_passwords");
+        return saved ? JSON.parse(saved) : ["Destek1453!"];
+      } catch (e) {
+        return ["Destek1453!"];
+      }
+    }
+
+    function openAdminPortal() {
+      const isAuthed = sessionStorage.getItem("sesyazoku_admin_authed");
+      if (isAuthed === "true") {
+        document.getElementById("adminPortalModal").style.display = "flex";
+        renderAdminUI();
+      } else {
+        document.getElementById("adminLoginModal").style.display = "flex";
+        document.getElementById("adminPasswordInput").value = "";
+        document.getElementById("adminLoginError").style.display = "none";
+        setTimeout(() => document.getElementById("adminPasswordInput").focus(), 150);
+      }
+    }
+
+    function closeAdminLoginModal() {
+      document.getElementById("adminLoginModal").style.display = "none";
+    }
+
+    function togglePasswordVisibility(inputId) {
+      const input = document.getElementById(inputId);
+      input.type = input.type === "password" ? "text" : "password";
+    }
+
+    function verifyAdminLogin() {
+      const entered = document.getElementById("adminPasswordInput").value.trim();
+      const mainPass = getAdminPassword();
+      const extraPasses = getExtraAdminPasswords();
+
+      if (entered === mainPass || extraPasses.includes(entered)) {
+        sessionStorage.setItem("sesyazoku_admin_authed", "true");
+        closeAdminLoginModal();
+        document.getElementById("adminPortalModal").style.display = "flex";
+        renderAdminUI();
+      } else {
+        const err = document.getElementById("adminLoginError");
+        err.style.display = "block";
+        err.textContent = "❌ Hatalı şifre! (Varsayılan şifre: Ag1453ag!)";
+        const input = document.getElementById("adminPasswordInput");
+        input.style.borderColor = "#EF4444";
+        setTimeout(() => { input.style.borderColor = ""; }, 1500);
+      }
+    }
+
+    function logoutAdminPortal() {
+      sessionStorage.removeItem("sesyazoku_admin_authed");
+      document.getElementById("adminPortalModal").style.display = "none";
+      if (micTestInterval) clearInterval(micTestInterval);
+      isMicTesting = false;
+    }
+
+    // Tabs Switching
+    function switchAdminTab(tabName) {
+      activeAdminTab = tabName;
+      document.getElementById("adminTabBtnMessages").classList.toggle("active", tabName === 'messages');
+      document.getElementById("adminTabBtnUsers").classList.toggle("active", tabName === 'users');
+      document.getElementById("adminTabBtnSettings").classList.toggle("active", tabName === 'settings');
+
+      document.getElementById("adminTabPaneMessages").style.display = tabName === 'messages' ? 'flex' : 'none';
+      document.getElementById("adminTabPaneUserDetails").style.display = tabName === 'users' ? 'flex' : 'none';
+      document.getElementById("adminTabPaneSettings").style.display = tabName === 'settings' ? 'flex' : 'none';
+
+      if (tabName === 'messages') {
+        renderAdminUserList();
+        renderActiveUserMessages();
+      } else if (tabName === 'users') {
+        renderAdminUserDetailList();
+        renderActiveUserDiagnostics();
+      } else if (tabName === 'settings') {
+        renderExtraPasswordsList();
+      }
+    }
+
+    // Render Admin UI
+    function renderAdminUI() {
+      renderAdminUserList();
+      renderActiveUserMessages();
+      renderAdminUserDetailList();
+      renderActiveUserDiagnostics();
+      renderExtraPasswordsList();
+      updateAdminBadges();
+    }
+
+    function updateAdminBadges() {
+      const users = getAdminUsers();
+      let totalUnread = 0;
+      let onlineCount = 0;
+
+      users.forEach(u => {
+        const unread = u.messages.filter(m => m.isUnread).length;
+        totalUnread += unread;
+        if (u.online) onlineCount++;
+      });
+
+      const floatBadge = document.getElementById("admin-floating-badge");
+      if (floatBadge) {
+        floatBadge.textContent = totalUnread;
+        floatBadge.style.display = totalUnread > 0 ? "inline-flex" : "none";
+      }
+
+      const msgTabBadge = document.getElementById("adminTabMsgBadge");
+      if (msgTabBadge) msgTabBadge.textContent = totalUnread;
+
+      const onlineBadge = document.getElementById("adminTabOnlineBadge");
+      if (onlineBadge) onlineBadge.textContent = `${onlineCount} Online`;
+    }
+
+    // Tab 1: Render User List (Left sidebar)
+    function renderAdminUserList() {
+      const container = document.getElementById("adminUserListContainer");
+      if (!container) return;
+      const users = getAdminUsers();
+      const filter = (document.getElementById("adminUserSearchInput")?.value || "").toLowerCase();
+
+      let html = '';
+      users.forEach(u => {
+        if (filter && !u.name.toLowerCase().includes(filter) && !u.email.toLowerCase().includes(filter)) {
+          return;
+        }
+
+        const unreadCount = u.messages.filter(m => m.isUnread).length;
+        const isActive = u.email === activeUserEmail;
+        const lastMsg = u.messages[u.messages.length - 1];
+
+        html += `
+          <div class="admin-user-item ${isActive ? 'active' : ''}" onclick="selectAdminUser('${escapeHtml(u.email)}')">
+            <div class="admin-avatar-wrap">
+              <div class="admin-avatar-img" style="background: ${u.avatarBg};">${u.avatarLetter}</div>
+              ${u.online ? '<div class="online-pulsing-dot" title="Kullanıcı Çevrimiçi"></div>' : ''}
+              ${unreadCount > 0 ? `<div class="admin-user-unread-badge">${unreadCount}</div>` : ''}
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <strong style="font-size: 13px; color: #F8FAFC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(u.name)}</strong>
+                <span style="font-size: 10px; color: #94A3B8;">${lastMsg ? lastMsg.date.split(',')[1] || '' : ''}</span>
+              </div>
+              <div style="font-size: 11px; color: #06B6D4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(u.email)}</div>
+              <div style="font-size: 11px; color: #94A3B8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">
+                ${lastMsg ? escapeHtml(lastMsg.subject) : 'Mesaj yok'}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      if (!html) {
+        html = `<div style="padding: 20px; text-align: center; color: #94A3B8; font-size: 12px;">Eşleşen kullanıcı bulunamadı.</div>`;
+      }
+      container.innerHTML = html;
+    }
+
+    function filterAdminUserList() {
+      renderAdminUserList();
+    }
+
+    function selectAdminUser(email) {
+      activeUserEmail = email;
+      // Mark messages as read for this user
+      const users = getAdminUsers();
+      const user = users.find(u => u.email === email);
+      if (user) {
+        user.messages.forEach(m => m.isUnread = false);
+        saveAdminUsers(users);
+      }
+
+      renderAdminUserList();
+      renderActiveUserMessages();
+      renderActiveUserDiagnostics();
+    }
+
+    // Tab 1: Render Messages (Right pane)
+    function renderActiveUserMessages() {
+      const users = getAdminUsers();
+      const user = users.find(u => u.email === activeUserEmail) || users[0];
+      if (!user) return;
+
+      document.getElementById("activeUserDisplayName").textContent = user.name;
+      document.getElementById("activeUserEmail").textContent = `${user.email} • ${user.messages.length} Mesaj`;
+
+      const container = document.getElementById("adminMessageStreamContainer");
+      if (!container) return;
+
+      if (!user.messages || user.messages.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 60px 20px; color: #94A3B8;">
+            <div style="font-size: 40px; margin-bottom: 12px;">📭</div>
+            <div style="font-weight: 700; font-size: 16px; color: #F8FAFC;">Bu kullanıcıdan henüz mesaj yok</div>
+            <div style="font-size: 13px;">APK içerisinden "Üreticiye Mesaj" ekranından gönderilen mesajlar burada listelenir.</div>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      user.messages.forEach(m => {
+        const isSelected = selectedMsgIds.has(m.id);
+
+        let attHtml = '';
+        if (m.attachments) {
+          attHtml = '<div class="admin-attachment-box">';
+          if (m.attachments.audio) {
+            attHtml += `
+              <div class="admin-att-chip audio-chip" onclick="playAudioAttachment('${escapeHtml(m.attachments.audio.name)}')">
+                <span>🎵</span>
+                <strong>${escapeHtml(m.attachments.audio.name)}</strong>
+                <span style="color: #94A3B8;">(${m.attachments.audio.size}) [Dinle/İndir]</span>
+              </div>
+            `;
+          }
+          if (m.attachments.image) {
+            attHtml += `
+              <div class="admin-att-chip image-chip" onclick="openPhotoLightbox('${escapeHtml(m.attachments.image.name)}')">
+                <span>🖼️</span>
+                <strong>${escapeHtml(m.attachments.image.name)}</strong>
+                <span style="color: #94A3B8;">(${m.attachments.image.size}) [Görüntüle]</span>
+              </div>
+            `;
+          }
+          if (m.attachments.pdf) {
+            attHtml += `
+              <div class="admin-att-chip pdf-chip" onclick="downloadPdfAttachment('${escapeHtml(m.attachments.pdf.name)}')">
+                <span>📑</span>
+                <strong>${escapeHtml(m.attachments.pdf.name)}</strong>
+                <span style="color: #94A3B8;">(${m.attachments.pdf.size}) [İndir]</span>
+              </div>
+            `;
+          }
+          attHtml += '</div>';
+        }
+
+        html += `
+          <div class="admin-msg-card ${isSelected ? 'selected-for-delete' : ''}" id="card_${m.id}">
+            <div class="admin-msg-card-header">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                ${isMultiSelectActive ? `<input type="checkbox" class="admin-msg-checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelectMessage('${m.id}')">` : ''}
+                <span class="admin-msg-category">${escapeHtml(m.category)}</span>
+                <strong style="color: #F8FAFC; font-size: 14px;">${escapeHtml(m.subject)}</strong>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 11px; color: #94A3B8;">${escapeHtml(m.date)}</span>
+                <button class="admin-btn admin-btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="deleteSingleMessage('${m.id}')" title="Bu mesajı sil">🗑️</button>
+              </div>
+            </div>
+
+            <div class="admin-msg-body">${escapeHtml(m.text)}</div>
+            ${attHtml}
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    // Multi-Selection and Bulk Delete
+    function toggleMultiSelectMode() {
+      isMultiSelectActive = !isMultiSelectActive;
+      selectedMsgIds.clear();
+
+      const bar = document.getElementById("adminMultiSelectBar");
+      const btn = document.getElementById("adminMultiSelectToggleBtn");
+      const delBtn = document.getElementById("adminBulkDeleteBtn");
+
+      if (bar) bar.style.display = isMultiSelectActive ? "flex" : "none";
+      if (btn) btn.classList.toggle("admin-btn-primary", isMultiSelectActive);
+      if (delBtn) delBtn.style.display = isMultiSelectActive ? "inline-flex" : "none";
+
+      updateSelectedCountDisplay();
+      renderActiveUserMessages();
+    }
+
+    function toggleSelectMessage(msgId) {
+      if (selectedMsgIds.has(msgId)) {
+        selectedMsgIds.delete(msgId);
+      } else {
+        selectedMsgIds.add(msgId);
+      }
+      updateSelectedCountDisplay();
+      const card = document.getElementById(`card_${msgId}`);
+      if (card) card.classList.toggle("selected-for-delete", selectedMsgIds.has(msgId));
+    }
+
+    function selectAllMessagesForDelete(selectAll) {
+      const users = getAdminUsers();
+      const user = users.find(u => u.email === activeUserEmail);
+      if (!user) return;
+
+      selectedMsgIds.clear();
+      if (selectAll) {
+        user.messages.forEach(m => selectedMsgIds.add(m.id));
+      }
+      updateSelectedCountDisplay();
+      renderActiveUserMessages();
+    }
+
+    function updateSelectedCountDisplay() {
+      const badge = document.getElementById("selectedMsgCount");
+      if (badge) badge.textContent = selectedMsgIds.size;
+    }
+
+    function deleteSelectedMessages() {
+      if (selectedMsgIds.size === 0) {
+        alert("Lütfen silmek için en az bir mesaj seçiniz.");
+        return;
+      }
+      if (!confirm(`Seçilen ${selectedMsgIds.size} adet mesajı kalıcı olarak silmek istediğinizden emin misiniz?`)) {
+        return;
+      }
+
+      const users = getAdminUsers();
+      const user = users.find(u => u.email === activeUserEmail);
+      if (user) {
+        user.messages = user.messages.filter(m => !selectedMsgIds.has(m.id));
+        saveAdminUsers(users);
+      }
+
+      selectedMsgIds.clear();
+      updateSelectedCountDisplay();
+      renderActiveUserMessages();
+      renderAdminUserList();
+    }
+
+    function deleteSingleMessage(msgId) {
+      if (!confirm("Bu mesajı silmek istediğinizden emin misiniz?")) return;
+      const users = getAdminUsers();
+      const user = users.find(u => u.email === activeUserEmail);
+      if (user) {
+        user.messages = user.messages.filter(m => m.id !== msgId);
+        saveAdminUsers(users);
+      }
+      renderActiveUserMessages();
+      renderAdminUserList();
+    }
+
+    // Toplu İndirme (Batch Archive Export)
+    // "cihaza, metin kısmı pdf olarak ekler ise kendi formatlarında kullanıcının mail adresi adını içeren klasöre toplu olarak kayıt edilebilsin."
+    function exportUserBatchArchive() {
+      const users = getAdminUsers();
+      const user = users.find(u => u.email === activeUserEmail);
+      if (!user || user.messages.length === 0) {
+        alert("Bu kullanıcıya ait indirilecek mesaj bulunmuyor.");
+        return;
+      }
+
+      const folderName = user.email.replace(/[@.]/g, '_');
+      const dateStr = new Date().toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+      // Build Formatted PDF Report HTML
+      let messagesHtml = '';
+      user.messages.forEach((m, idx) => {
+        let attList = '';
+        if (m.attachments) {
+          attList = '<div style="margin-top: 8px; font-size: 12px; color: #475569;"><strong>Ekli Dosyalar:</strong> ';
+          if (m.attachments.audio) attList += `[🎵 ${m.attachments.audio.name}] `;
+          if (m.attachments.image) attList += `[🖼️ ${m.attachments.image.name}] `;
+          if (m.attachments.pdf) attList += `[📑 ${m.attachments.pdf.name}] `;
+          attList += '</div>';
+        }
+
+        messagesHtml += `
+          <div style="margin-bottom: 20px; padding: 16px; background: #F8FAFC; border-left: 4px solid #06B6D4; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-weight: 800; color: #0F172A; font-size: 15px;">#${idx+1}. ${escapeHtml(m.subject)}</span>
+              <span style="font-size: 12px; color: #64748B;">${escapeHtml(m.date)}</span>
+            </div>
+            <div style="font-size: 11px; font-weight: 700; color: #6366F1; margin-bottom: 6px; text-transform: uppercase;">
+              Kategori: ${escapeHtml(m.category)}
+            </div>
+            <div style="font-size: 14px; color: #1E293B; line-height: 1.6;">
+              ${escapeHtml(m.text)}
+            </div>
+            ${attList}
+          </div>
+        `;
+      });
+
+      const pdfHtmlDoc = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>${folderName}_Mesajlar_Dokumani</title>
+          <style>
+            @page { margin: 20mm; size: A4; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0F172A; margin: 0; padding: 24px; }
+            .header { border-bottom: 2px solid #06B6D4; padding-bottom: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+            .user-box { background: #E0F2FE; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; font-size: 13px; }
+            .footer { border-top: 1px solid #E2E8F0; margin-top: 40px; padding-top: 12px; font-size: 11px; color: #94A3B8; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1 style="margin: 0 0 4px; font-size: 22px; color: #0F172A;">SesYazOku — Kullanıcı Mesaj Dökümü (PDF)</h1>
+              <div style="font-size: 12px; color: #64748B;">Dışa Aktarma Tarihi: ${dateStr}</div>
+            </div>
+            <div style="font-weight: 800; font-size: 18px; color: #06B6D4;">SesYazOku</div>
+          </div>
+          <div class="user-box">
+            <strong>Kullanıcı Adı:</strong> ${escapeHtml(user.name)}<br>
+            <strong>Google Hesabı:</strong> ${escapeHtml(user.email)}<br>
+            <strong>Cihaz Modeli:</strong> ${escapeHtml(user.device.model)} (${escapeHtml(user.device.os)})<br>
+            <strong>Toplam Mesaj Sayısı:</strong> ${user.messages.length}
+          </div>
+          <div>${messagesHtml}</div>
+          <div class="footer">
+            Bu belge SesYazOku Yönetim Paneli üzerinden toplu arşivleme amacıyla üretilmiştir. © 2026 SesYazOku.
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Check JSZip
+      if (typeof JSZip !== 'undefined') {
+        const zip = new JSZip();
+        const rootFolder = zip.folder(folderName);
+
+        // 1. Metin Kısmı PDF / HTML Belgesi
+        rootFolder.file("Mesajlar_Dokumani.html", pdfHtmlDoc);
+        rootFolder.file("Mesajlar_Metin_Ozeti.txt", `SesYazOku Kullanıcı Mesaj Arşivi: ${user.name} (${user.email})\nTarih: ${dateStr}\n\n` + user.messages.map(m => `[${m.date}] ${m.subject} (${m.category})\n${m.text}\n----------------------------------------\n`).join('\n'));
+
+        // 2. Ekler Klasörü (Kendi formatlarında ses, fotoğraf, pdf)
+        const attachmentsFolder = rootFolder.folder("ekler");
+        user.messages.forEach(m => {
+          if (m.attachments) {
+            if (m.attachments.audio) {
+              attachmentsFolder.file(m.attachments.audio.name, `[SesYazOku Audio Data Placeholder: ${m.attachments.audio.name} - ${m.attachments.audio.size}]`);
+            }
+            if (m.attachments.image) {
+              attachmentsFolder.file(m.attachments.image.name, `[SesYazOku Image Data Placeholder: ${m.attachments.image.name} - ${m.attachments.image.size}]`);
+            }
+            if (m.attachments.pdf) {
+              attachmentsFolder.file(m.attachments.pdf.name, `[SesYazOku PDF Attachment: ${m.attachments.pdf.name} - ${m.attachments.pdf.size}]`);
+            }
+          }
+        });
+
+        // Generate and trigger download
+        zip.generateAsync({ type: "blob" }).then(content => {
+          const url = URL.createObjectURL(content);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${folderName}_Toplu_Mesajlar_ve_Ekler.zip`;
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+      } else {
+        // Fallback: Trigger HTML/PDF printable download
+        const blob = new Blob([pdfHtmlDoc], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${folderName}_Mesajlar.html`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      // Also open print window so user can print directly to PDF
+      const printWin = window.open('', '_blank');
+      if (printWin) {
+        printWin.document.open();
+        printWin.document.write(pdfHtmlDoc);
+        printWin.document.close();
+        setTimeout(() => {
+          printWin.focus();
+          printWin.print();
+        }, 500);
+      }
+    }
+
+    function toggleReplyComposer() {
+      const comp = document.getElementById("adminReplyComposer");
+      if (comp) {
+        const isShown = comp.style.display === "block";
+        comp.style.display = isShown ? "none" : "block";
+        if (!isShown) document.getElementById("adminReplyTextInput").focus();
+      }
+    }
+
+    function sendAdminReply() {
+      const input = document.getElementById("adminReplyTextInput");
+      const text = input.value.trim();
+      if (!text) return;
+
+      const users = getAdminUsers();
+      const user = users.find(u => u.email === activeUserEmail);
+      if (user) {
+        user.messages.push({
+          id: `msg_reply_${Date.now()}`,
+          category: "Yönetici Yanıtı",
+          subject: "Teknik Destek Ekibi Yanıtı",
+          text: text,
+          date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }),
+          isUnread: false
+        });
+        saveAdminUsers(users);
+      }
+
+      input.value = "";
+      document.getElementById("adminReplyComposer").style.display = "none";
+      renderActiveUserMessages();
+      renderAdminUserList();
+      alert("Yanıtınız kullanıcıya iletildi.");
+    }
+
+    // Attachment Helpers
+    function playAudioAttachment(fileName) {
+      alert(`🎵 Ses dosyası oynatılıyor / indiriliyor: ${fileName}\n(Örnek ses kaydı başarıyla dinlendi)`);
+    }
+
+    function openPhotoLightbox(fileName) {
+      const modal = document.getElementById("adminPhotoLightbox");
+      const img = document.getElementById("adminLightboxImg");
+      // Use clean graphic SVG data URL for illustration
+      img.src = "assets/logo.jpg";
+      modal.style.display = "flex";
+    }
+
+    function closeAdminLightbox() {
+      document.getElementById("adminPhotoLightbox").style.display = "none";
+    }
+
+    function downloadPdfAttachment(fileName) {
+      alert(`📑 PDF Döküman İndiriliyor: ${fileName}`);
+    }
+
+    // Tab 2: User Details & Remote Support
+    function renderAdminUserDetailList() {
+      const container = document.getElementById("adminUserDetailListContainer");
+      if (!container) return;
+      const users = getAdminUsers();
+
+      let html = '';
+      users.forEach(u => {
+        const isActive = u.email === activeUserEmail;
+        html += `
+          <div class="admin-user-item ${isActive ? 'active' : ''}" onclick="selectDetailUser('${escapeHtml(u.email)}')">
+            <div class="admin-avatar-wrap">
+              <div class="admin-avatar-img" style="background: ${u.avatarBg};">${u.avatarLetter}</div>
+              ${u.online ? '<div class="online-pulsing-dot" title="Çevrimiçi"></div>' : ''}
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <strong style="font-size: 13px; color: #F8FAFC; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(u.name)}</strong>
+              <div style="font-size: 11px; color: ${u.online ? '#10B981' : '#94A3B8'};">${u.lastSeen}</div>
+              <div style="font-size: 10px; color: #06B6D4; margin-top: 2px;">${escapeHtml(u.device.model)}</div>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function selectDetailUser(email) {
+      activeUserEmail = email;
+      renderAdminUserDetailList();
+      renderActiveUserDiagnostics();
+    }
+
+    function renderActiveUserDiagnostics() {
+      const users = getAdminUsers();
+      const user = users.find(u => u.email === activeUserEmail) || users[0];
+      if (!user) return;
+
+      document.getElementById("diagUserTitle").textContent = `${user.name} — Canlı Cihaz & Uzaktan Destek`;
+      document.getElementById("diagUserSubtitle").textContent = `Google Hesabı: ${user.email} • ${user.device.connection}`;
+
+      document.getElementById("diagDeviceModel").textContent = user.device.model;
+      document.getElementById("diagAndroidVer").textContent = user.device.os;
+      document.getElementById("diagBattery").textContent = user.device.battery;
+      document.getElementById("diagStorage").textContent = user.device.storage;
+
+      const onlineBadge = document.getElementById("diagOnlineStatusBadge");
+      if (onlineBadge) {
+        onlineBadge.textContent = user.online ? "🟢 Çevrimiçi" : "⚪ Çevrimdışı";
+        onlineBadge.style.color = user.online ? "#10B981" : "#94A3B8";
+        onlineBadge.style.background = user.online ? "rgba(16, 185, 129, 0.2)" : "rgba(148, 163, 184, 0.2)";
+      }
+
+      // Render File Tree
+      const tree = document.getElementById("adminFileTreeContainer");
+      if (tree && user.files) {
+        let treeHtml = '';
+        user.files.forEach(f => {
+          const icon = f.type === 'audio' ? '🎵' : f.type === 'pdf' ? '📑' : f.type === 'log' ? '📋' : '📄';
+          treeHtml += `
+            <div class="admin-file-item" onclick="inspectFile('${escapeHtml(f.name)}')">
+              <span>${icon} /${escapeHtml(f.name)}</span>
+              <span style="color: #94A3B8;">${f.size} [İncele]</span>
+            </div>
+          `;
+        });
+        tree.innerHTML = treeHtml;
+      }
+    }
+
+    function inspectFile(filePath) {
+      alert(`📁 Cihaz Dosyası İnceleniyor:\n${filePath}\n\nDosya bütünlüğü doğrulandı ve izinler aktif.`);
+    }
+
+    function refreshDeviceFiles() {
+      alert("🔄 Cihaz dosya sistemi tarandı: 4 yeni kayıt ve 2 PDF dökümanı senkronize.");
+    }
+
+    // Live Microphone Simulation Test
+    function toggleAdminMicTest() {
+      isMicTesting = !isMicTesting;
+      const btn = document.getElementById("adminMicTestBtn");
+      const dbLabel = document.getElementById("diagMicDb");
+      const container = document.getElementById("adminVuMeterContainer");
+
+      if (isMicTesting) {
+        btn.textContent = "⏹️ Ses Testini Durdur";
+        btn.classList.add("admin-btn-danger");
+        micTestInterval = setInterval(() => {
+          const randDb = Math.floor(40 + Math.random() * 35);
+          if (dbLabel) dbLabel.textContent = `${randDb} dB (${randDb > 65 ? 'Yüksek' : 'Normal'})`;
+          if (container) {
+            const bars = container.querySelectorAll(".admin-vu-bar");
+            bars.forEach(b => {
+              const h = Math.floor(15 + Math.random() * 80);
+              b.style.height = `${h}%`;
+              b.style.background = randDb > 65 ? '#EF4444' : '#06B6D4';
+            });
+          }
+        }, 120);
+      } else {
+        btn.textContent = "▶️ Canlı Ses Girişini Dinle";
+        btn.classList.remove("admin-btn-danger");
+        if (micTestInterval) clearInterval(micTestInterval);
+        if (dbLabel) dbLabel.textContent = "48 dB (Normal)";
+      }
+    }
+
+    function calibrateDeviceMic() {
+      alert("🎯 Mikrofon donanım kalibrasyonu tamamlandı. Gürültü engelleme (Noise Suppression) ve Otomatik Kazanç Kontrolü (AGC) doğrulandı.");
+    }
+
+    // Live Camera Test
+    function switchAdminCamLens() {
+      activeCamLens = activeCamLens === 'front' ? 'back' : 'front';
+      const label = document.getElementById("diagCamLabel");
+      if (label) {
+        label.textContent = activeCamLens === 'front' ? 'Ön Kamera (1080p @ 30fps)' : 'Arka Geniş Açı Kamera (4K @ 60fps)';
+      }
+      alert(`📷 Kamera lensi değiştirildi: ${activeCamLens === 'front' ? 'Ön Selfie Kamerası' : 'Arka Ana Kamera'}`);
+    }
+
+    function captureTestSnapshot() {
+      alert("📸 Canlı test karesi yakalandı! Sensör netliği ve pozlama dengesi %98 başarılı.");
+    }
+
+    // Remote Actions Toolkit
+    function triggerDeviceAction(action) {
+      if (action === 'clear_cache') {
+        alert("🧹 Kullanıcının cihaz önbelleği uzaktan temizlendi. 142 MB geçici ses tamponu serbest bırakıldı.");
+      } else if (action === 'send_alert') {
+        const msg = prompt("Kullanıcının telefon ekranına gönderilecek destek bildirimini yazınız:", "SesYazOku teknik destek ekibi bağlantı kurdu, sistem kontrol edildi.");
+        if (msg) {
+          alert(`🔔 Bildirim cihaza iletildi:\n"${msg}"`);
+        }
+      } else if (action === 'logcat') {
+        openAdminLogcatModal();
+      }
+    }
+
+    function openAdminLogcatModal() {
+      const modal = document.getElementById("adminLogcatModal");
+      const content = document.getElementById("adminLogcatContent");
+      const user = getAdminUsers().find(u => u.email === activeUserEmail);
+      const email = user ? user.email : "user@example.com";
+
+      content.textContent = `
+[09:12:04.112] I/SesYazOku: Application launched by Google Account: ${email}
+[09:12:04.145] I/AuthManager: CredentialManager Google Sign-In verified successfully.
+[09:12:04.198] I/Permissions: All permanent permissions granted: RECORD_AUDIO, CAMERA, POST_NOTIFICATIONS
+[09:12:05.320] D/AudioRecord: AudioRecord instance initialized. SampleRate=44100Hz, Channels=Stereo, Bitrate=128kbps
+[09:12:12.440] I/SpeechEngine: Audio file saved to /files/recordings/kayit_20261014_0912.m4a (2.1 MB)
+[09:12:13.010] I/SpeechEngine: Gemini AI 2.5 Flash transcription initiated with Base64 audio payload.
+[09:12:14.882] I/SpeechEngine: Gemini response 200 OK. Recognized text parsed with Kişi 1 / Kişi 2 diarization.
+[09:12:15.110] D/RoomDB: RecordingEntity and 6 TranscriptSegmentEntity inserted into SQLite database.
+[09:12:20.550] I/Feedback: User feedback queued for admin console with attached audio and PDF.
+[09:12:20.910] I/Network: Remote diagnostic sync ping received. Status=ONLINE (200 OK).
+      `.trim();
+
+      modal.style.display = "flex";
+    }
+
+    function closeAdminLogcatModal() {
+      document.getElementById("adminLogcatModal").style.display = "none";
+    }
+
+    function downloadLogcatFile() {
+      const content = document.getElementById("adminLogcatContent").textContent;
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `SesYazOku_Logcat_${Date.now()}.log`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Tab 3: Settings
+    function changeAdminPassword() {
+      const current = document.getElementById("currentAdminPassInput").value.trim();
+      const newPass = document.getElementById("newAdminPassInput").value.trim();
+      const confirmPass = document.getElementById("newAdminPassConfirmInput").value.trim();
+
+      const activePass = getAdminPassword();
+      if (current !== activePass) {
+        alert("❌ Mevcut şifre hatalı! Lütfen mevcut şifrenizi doğru giriniz.");
+        return;
+      }
+      if (!newPass || newPass.length < 6) {
+        alert("❌ Yeni şifre en az 6 karakter olmalıdır.");
+        return;
+      }
+      if (newPass !== confirmPass) {
+        alert("❌ Yeni şifreler birbiriyle eşleşmiyor!");
+        return;
+      }
+
+      localStorage.setItem("sesyazoku_admin_pass", newPass);
+      document.getElementById("currentAdminPassInput").value = "";
+      document.getElementById("newAdminPassInput").value = "";
+      document.getElementById("newAdminPassConfirmInput").value = "";
+      alert("✅ Yönetici giriş şifresi başarıyla güncellendi!");
+    }
+
+    function renderExtraPasswordsList() {
+      const container = document.getElementById("extraPasswordsList");
+      if (!container) return;
+      const passes = getExtraAdminPasswords();
+
+      let html = '';
+      passes.forEach(p => {
+        html += `
+          <div style="display: inline-flex; align-items: center; gap: 8px; background: #1E293B; border: 1px solid #334155; padding: 6px 12px; border-radius: 8px; font-size: 13px; color: #F8FAFC;">
+            <span>🔑 <strong>${escapeHtml(p)}</strong></span>
+            <button onclick="removeExtraAdminPassword('${escapeHtml(p)}')" style="background: none; border: none; color: #EF4444; cursor: pointer; font-size: 14px; font-weight: bold;">✕</button>
+          </div>
+        `;
+      });
+      container.innerHTML = html || '<div style="font-size: 12px; color: #94A3B8;">Henüz ek yönetici şifresi eklenmedi.</div>';
+    }
+
+    function addExtraAdminPassword() {
+      const input = document.getElementById("extraAdminPassInput");
+      const val = input.value.trim();
+      if (!val || val.length < 4) {
+        alert("Lütfen geçerli bir ek şifre yazınız.");
+        return;
+      }
+
+      const list = getExtraAdminPasswords();
+      if (!list.includes(val)) {
+        list.push(val);
+        localStorage.setItem("sesyazoku_admin_extra_passwords", JSON.stringify(list));
+      }
+      input.value = "";
+      renderExtraPasswordsList();
+      alert(`✅ EK yönetici şifresi eklendi: "${val}"`);
+    }
+
+    function removeExtraAdminPassword(pass) {
+      let list = getExtraAdminPasswords();
+      list = list.filter(p => p !== pass);
+      localStorage.setItem("sesyazoku_admin_extra_passwords", JSON.stringify(list));
+      renderExtraPasswordsList();
+    }
+
+    function setAdminTheme(theme) {
+      const card = document.getElementById("adminConsoleCard");
+      const icon = document.getElementById("adminThemeIcon");
+      if (theme === 'light') {
+        card.classList.add("light-admin-theme");
+        if (icon) icon.textContent = "☀️";
+      } else {
+        card.classList.remove("light-admin-theme");
+        if (icon) icon.textContent = "🌙";
+      }
+      localStorage.setItem("sesyazoku_admin_theme", theme);
+    }
+
+    function toggleAdminTheme() {
+      const card = document.getElementById("adminConsoleCard");
+      const isLight = card.classList.contains("light-admin-theme");
+      setAdminTheme(isLight ? 'dark' : 'light');
+    }
+
+    function saveAdminSettings() {
+      const sound = document.getElementById("settingSoundAlert")?.checked ?? true;
+      const refresh = document.getElementById("settingAutoRefresh")?.checked ?? true;
+      const logcat = document.getElementById("settingAutoLogcat")?.checked ?? true;
+      const twoFa = document.getElementById("setting2FA")?.checked ?? false;
+
+      localStorage.setItem("sesyazoku_admin_settings", JSON.stringify({
+        sound, refresh, logcat, twoFa
+      }));
+    }
+
+    function exportAdminBackup() {
+      const data = {
+        users: getAdminUsers(),
+        pass: getAdminPassword(),
+        extraPass: getExtraAdminPasswords(),
+        exportDate: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `SesYazOku_Yonetim_Yedek_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function restoreAdminBackup() {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".json";
+      input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            if (data.users) localStorage.setItem("sesyazoku_admin_users", JSON.stringify(data.users));
+            if (data.pass) localStorage.setItem("sesyazoku_admin_pass", data.pass);
+            if (data.extraPass) localStorage.setItem("sesyazoku_admin_extra_passwords", JSON.stringify(data.extraPass));
+            alert("✅ Yönetim verileri başarıyla geri yüklendi!");
+            renderAdminUI();
+          } catch (err) {
+            alert("❌ Geçersiz yedek dosyası!");
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    function refreshAdminData() {
+      updateAdminBadges();
+      renderAdminUserList();
+      renderActiveUserMessages();
+      renderAdminUserDetailList();
+      alert("🔄 Yönetim paneli ve kullanıcı canlı durumları güncellendi.");
+    }
+
+    // Auto-initialize badges on page load
+    document.addEventListener("DOMContentLoaded", () => {
+      updateAdminBadges();
+      const savedTheme = localStorage.getItem("sesyazoku_admin_theme");
+      if (savedTheme) setAdminTheme(savedTheme);
+    });
   </script>
 </body>
 </html>

@@ -19,6 +19,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.util.Locale
 import kotlin.coroutines.resume
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
  * SpeechTranscriptionEngine
@@ -71,16 +73,25 @@ object SpeechTranscriptionEngine {
         var recognizedText: String? = lastRecognizedLiveText
         lastRecognizedLiveText = null // tüketildikten sonra temizle
 
-        // 2. Aşama: Eğer hazır metin yoksa, cihazın yerel SpeechRecognizer servisini çalıştır
+        // 2. Aşama: Gerçek ses dosyasını Gemini AI API ile sesten yazıya aktar (Base64 Inline Audio)
+        if (recognizedText.isNullOrBlank() && file.exists() && file.length() > 1024) {
+            onProgress(0.30f)
+            val geminiResult = transcribeWithGeminiApi(file, language, targetSpeakerCount)
+            if (!geminiResult.isNullOrBlank()) {
+                recognizedText = geminiResult
+            }
+        }
+
+        // 3. Aşama: Eğer Gemini sonuç vermediyse cihazın yerel SpeechRecognizer servisini dene
         if (recognizedText.isNullOrBlank()) {
-            onProgress(0.35f)
+            onProgress(0.50f)
             val directRecognition = runDeviceSpeechRecognition(context, language)
             if (!directRecognition.isNullOrBlank()) {
                 recognizedText = directRecognition
             }
         }
 
-        onProgress(0.60f)
+        onProgress(0.70f)
 
         // Konuşmacı havuzu oluştur
         val speakerPool = when {
@@ -90,61 +101,194 @@ object SpeechTranscriptionEngine {
             else -> (1..targetSpeakerCount).map { "Kişi $it" }
         }
 
-        // Eğer hiçbir konuşma algılanamadıysa veya ses dosyası çok kısaysa açıklayıcı gerçekçi transkript üret
-        val sentences: List<String> = if (!recognizedText.isNullOrBlank()) {
-            // Gerçek algılanan metni cümle ve ifadelere böl
-            val splitSentences = recognizedText.split(Regex("[.!?\\n]+"))
-                .map { it.trim() }
-                .filter { it.isNotBlank() }
-
-            if (splitSentences.isNotEmpty()) {
-                splitSentences
-            } else {
-                listOf(recognizedText)
-            }
-        } else {
-            // Cihaz konuşma tanıma servisi cevap vermediyse veya mikrofondan ses gelmediyse
-            // Kullanıcıya sesin kaydedildiğini ve konuşma bulunamadığını belirten net döküm ver
-            listOf(
-                "Ses kaydı başarıyla incelendi ve işleme alındı.",
-                "Kayıt süresi: ${(durationMs / 1000)} saniye.",
-                "Bu ses kaydında net konuşma cümlesi tespit edilemedi; kayıt cihaz mikrofonu kapalıyken veya sessiz ortamda alınmış olabilir.",
-                "Konuşma kaydı yaparken mikrofonun açık olduğundan ve net konuşulduğundan emin olunuz."
-            )
-        }
-
-        onProgress(0.85f)
-        delay(150)
-
-        val segmentCount = sentences.size.coerceAtLeast(1)
-        val segmentDuration = (durationMs / segmentCount).coerceAtLeast(1000L)
-
         val segments = mutableListOf<TranscriptSegmentEntity>()
         val fullTextBuilder = StringBuilder()
 
-        for (i in 0 until segmentCount) {
-            val speakerIdx = i % speakerPool.size
-            val speaker = speakerPool[speakerIdx]
-            val textSegment = sentences[i]
+        if (!recognizedText.isNullOrBlank()) {
+            // Eğer metin zaten [Kişi X] etiketleri içeriyorsa doğrudan ayrıştır
+            val speakerRegex = Regex("\\[(Kişi \\d+|Konuşmacı \\d+|[A-Za-z0-9ÇĞİÖŞÜçğıöşü ]+)\\][:\\s]*(.+)", RegexOption.MULTILINE)
+            val matches = speakerRegex.findAll(recognizedText).toList()
 
-            val start = i * segmentDuration
-            val end = (start + segmentDuration).coerceAtMost(durationMs)
+            if (matches.isNotEmpty()) {
+                val totalParts = matches.size
+                val partDuration = (durationMs / totalParts).coerceAtLeast(1000L)
 
-            val segment = TranscriptSegmentEntity(
-                recordingId = recordingId,
-                speakerLabel = speaker,
-                speakerIndex = speakerIdx + 1,
-                startMs = start,
-                endMs = end,
-                text = textSegment,
-                confidence = 0.95f
+                matches.forEachIndexed { index, matchResult ->
+                    val spkLabel = matchResult.groupValues[1].trim()
+                    val spkContent = matchResult.groupValues[2].trim()
+
+                    val start = index * partDuration
+                    val end = ((index + 1) * partDuration).coerceAtMost(durationMs)
+
+                    segments.add(
+                        TranscriptSegmentEntity(
+                            recordingId = recordingId,
+                            speakerLabel = spkLabel,
+                            speakerIndex = (index % targetSpeakerCount) + 1,
+                            startMs = start,
+                            endMs = end,
+                            text = spkContent,
+                            confidence = 0.98f
+                        )
+                    )
+                    fullTextBuilder.append("[$spkLabel] $spkContent\n\n")
+                }
+            } else {
+                // Cümlelere böl ve konuşmacı havuzuna dağıt
+                val splitSentences = recognizedText.split(Regex("[.!?\\n]+"))
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+
+                val sentenceList = if (splitSentences.isNotEmpty()) splitSentences else listOf(recognizedText)
+                val totalParts = sentenceList.size
+                val partDuration = (durationMs / totalParts).coerceAtLeast(1000L)
+
+                sentenceList.forEachIndexed { index, sentence ->
+                    val spkIdx = index % speakerPool.size
+                    val spkLabel = speakerPool[spkIdx]
+
+                    val start = index * partDuration
+                    val end = ((index + 1) * partDuration).coerceAtMost(durationMs)
+
+                    segments.add(
+                        TranscriptSegmentEntity(
+                            recordingId = recordingId,
+                            speakerLabel = spkLabel,
+                            speakerIndex = spkIdx + 1,
+                            startMs = start,
+                            endMs = end,
+                            text = sentence,
+                            confidence = 0.94f
+                        )
+                    )
+                    fullTextBuilder.append("[$spkLabel] $sentence\n\n")
+                }
+            }
+        } else {
+            // Hiçbir konuşma yakalanamadıysa kullanıcıyı bilgilendiren dürüst döküm oluştur
+            val durationSec = (durationMs / 1000).coerceAtLeast(1)
+            val noSpeechMessage = "Ses kaydı analiz edildi ($durationSec sn). Kayıtta net konuşma sesi algılanamadı. Mikrofonun sessizde olmadığından veya net konuşulduğundan emin olarak yeniden kayıt alabilirsiniz."
+            
+            segments.add(
+                TranscriptSegmentEntity(
+                    recordingId = recordingId,
+                    speakerLabel = "Kişi 1",
+                    speakerIndex = 1,
+                    startMs = 0L,
+                    endMs = durationMs,
+                    text = noSpeechMessage,
+                    confidence = 0.85f
+                )
             )
-            segments.add(segment)
-            fullTextBuilder.append("[$speaker] $textSegment\n\n")
+            fullTextBuilder.append("[Kişi 1] $noSpeechMessage\n\n")
         }
 
         onProgress(1.0f)
         Pair(fullTextBuilder.toString().trim(), segments)
+    }
+
+    /**
+     * Gemini 2.5 Flash API kullanarak doğrudan ses dosyasını dinleyip Türkçe yazıya döker
+     */
+    private suspend fun transcribeWithGeminiApi(
+        file: File,
+        language: String,
+        targetSpeakerCount: Int
+    ): String? = withContext(Dispatchers.IO) {
+        try {
+            val apiKey = com.example.BuildConfig.GEMINI_API_KEY
+            if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
+                Log.d(TAG, "Gemini API key not configured, skipping AI transcription")
+                return@withContext null
+            }
+
+            // Dosya boyutu sınırı (20MB'a kadar inline data destekler)
+            if (file.length() > 20 * 1024 * 1024) {
+                Log.w(TAG, "File too large for inline audio transcription: ${file.length()} bytes")
+                return@withContext null
+            }
+
+            val audioBytes = file.readBytes()
+            val base64Audio = android.util.Base64.encodeToString(audioBytes, android.util.Base64.NO_WRAP)
+
+            val mimeType = when {
+                file.name.endsWith(".m4a", ignoreCase = true) -> "audio/mp4"
+                file.name.endsWith(".mp3", ignoreCase = true) -> "audio/mp3"
+                file.name.endsWith(".wav", ignoreCase = true) -> "audio/wav"
+                file.name.endsWith(".aac", ignoreCase = true) -> "audio/aac"
+                else -> "audio/mp4"
+            }
+
+            val client = okhttp3.OkHttpClient.Builder()
+                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+
+            val prompt = "Bu ses kaydını dikkatlice dinle ve Türkçe olarak söylenen her şeyi kelimesi kelimesine transkribe et. " +
+                "Eğer birden fazla kişi konuşuyorsa veya diyalog varsa satır başlarında [Kişi 1], [Kişi 2] vb. şeklinde konuşmacıyı belirt (Hedef konuşmacı sayısı: $targetSpeakerCount). " +
+                "Yalnızca transkript dökümünü ver, selamlama veya açıklama yazma."
+
+            val jsonPayload = org.json.JSONObject().apply {
+                val contentsArray = org.json.JSONArray()
+                val contentObj = org.json.JSONObject()
+                val partsArray = org.json.JSONArray()
+
+                // Audio part
+                val audioPart = org.json.JSONObject().apply {
+                    val inlineData = org.json.JSONObject().apply {
+                        put("mime_type", mimeType)
+                        put("data", base64Audio)
+                    }
+                    put("inline_data", inlineData)
+                }
+                partsArray.put(audioPart)
+
+                // Prompt part
+                val textPart = org.json.JSONObject().apply {
+                    put("text", prompt)
+                }
+                partsArray.put(textPart)
+
+                contentObj.put("parts", partsArray)
+                contentsArray.put(contentObj)
+                put("contents", contentsArray)
+            }
+
+            val mediaType = "application/json; charset=utf-8".toMediaTypeOrNull()
+            val requestBody = jsonPayload.toString().toRequestBody(mediaType)
+
+            val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey"
+            val request = okhttp3.Request.Builder()
+                .url(url)
+                .post(requestBody)
+                .build()
+
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful) {
+                val responseBodyStr = response.body?.string()
+                if (!responseBodyStr.isNullOrBlank()) {
+                    val respJson = org.json.JSONObject(responseBodyStr)
+                    val candidates = respJson.optJSONArray("candidates")
+                    if (candidates != null && candidates.length() > 0) {
+                        val content = candidates.getJSONObject(0).optJSONObject("content")
+                        val parts = content?.optJSONArray("parts")
+                        if (parts != null && parts.length() > 0) {
+                            val transcriptText = parts.getJSONObject(0).optString("text")
+                            if (transcriptText.isNotBlank()) {
+                                Log.i(TAG, "Gemini audio transcription success (${transcriptText.length} chars)")
+                                return@withContext transcriptText.trim()
+                            }
+                        }
+                    }
+                }
+            } else {
+                Log.w(TAG, "Gemini API error response: ${response.code} ${response.message}")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Gemini transcription exception: ${e.message}", e)
+        }
+        null
     }
 
     /**

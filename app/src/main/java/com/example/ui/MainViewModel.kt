@@ -210,17 +210,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun sendFeedback(subject: String, category: String, message: String, userEmail: String, onComplete: () -> Unit) {
+    fun sendFeedback(
+        subject: String,
+        category: String,
+        message: String,
+        userEmail: String,
+        audioUri: String? = null,
+        imageUri: String? = null,
+        pdfUri: String? = null,
+        onComplete: () -> Unit
+    ) {
         viewModelScope.launch {
             val feedback = FeedbackEntity(
                 subject = subject,
                 category = category,
                 message = message,
                 timestamp = System.currentTimeMillis(),
-                userEmail = userEmail
+                userEmail = userEmail,
+                audioUri = audioUri,
+                imageUri = imageUri,
+                pdfUri = pdfUri
             )
             feedbackDao.insertFeedback(feedback)
-            Toast.makeText(getApplication(), "Mesajınız üreticiye iletildi. Teşekkürler!", Toast.LENGTH_LONG).show()
+            Toast.makeText(getApplication(), "Mesajınız üretici yönetim paneline iletildi. Teşekkürler!", Toast.LENGTH_LONG).show()
             onComplete()
         }
     }

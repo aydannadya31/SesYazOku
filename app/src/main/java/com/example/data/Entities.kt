@@ -43,5 +43,8 @@ data class FeedbackEntity(
     val message: String,
     val timestamp: Long,
     val userEmail: String,
-    val status: String = "İletildi"
+    val status: String = "İletildi",
+    val audioUri: String? = null,
+    val imageUri: String? = null,
+    val pdfUri: String? = null
 )
