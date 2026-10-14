@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.security.MessageDigest
+import java.util.Locale
 import java.util.UUID
 
 data class UserProfile(
@@ -113,6 +114,14 @@ class AuthManager(private val context: Context) {
             photoUrl = photoUrl,
             isSignedIn = true
         )
+    }
+
+    fun setCustomGoogleAccount(email: String, name: String = "") {
+        val cleanEmail = email.trim()
+        val cleanName = name.trim().ifBlank {
+            cleanEmail.substringBefore('@').replace('.', ' ').replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+        }
+        saveUser(cleanEmail, cleanName, null)
     }
 
     fun signOut() {

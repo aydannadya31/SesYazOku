@@ -18,11 +18,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -30,8 +32,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +63,9 @@ fun GoogleSignInScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(false) }
+    var showManualAccountDialog by remember { mutableStateOf(false) }
+    var manualEmail by remember { mutableStateOf("") }
+    var manualName by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -226,13 +234,98 @@ fun GoogleSignInScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Option to enter personal Google Account
+            OutlinedButton(
+                onClick = { showManualAccountDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .testTag("custom_google_account_button"),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFF94A3B8)
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = Color(0xFF38BDF8)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Kendi Google Hesabını Tanımla",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White
+                )
+            }
+
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "Giriş yapmadan programın ana ekranlarına geçilemez.",
+                text = "Her kullanıcı kendi Google Hesabının Drive kısmına yedekleme yapar.",
                 fontSize = 12.sp,
                 color = Color(0xFF64748B),
                 textAlign = TextAlign.Center
+            )
+        }
+
+        if (showManualAccountDialog) {
+            AlertDialog(
+                onDismissRequest = { showManualAccountDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.AccountCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Google Hesabı Tanımla")
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "Döküman ve transkripsiyonlarınız doğrudan bu Google hesabının Drive alanına yedeklenecektir. Lütfen Google e-posta adresinizi giriniz:",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OutlinedTextField(
+                            value = manualEmail,
+                            onValueChange = { manualEmail = it },
+                            label = { Text("Google E-posta Adresi") },
+                            placeholder = { Text("ornek@gmail.com") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = manualName,
+                            onValueChange = { manualName = it },
+                            label = { Text("Ad Soyad (İsteğe Bağlı)") },
+                            placeholder = { Text("Kullanıcı Adı") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (manualEmail.isNotBlank()) {
+                                authManager.setCustomGoogleAccount(manualEmail, manualName)
+                                showManualAccountDialog = false
+                                onSignInSuccess()
+                            }
+                        }
+                    ) {
+                        Text("Giriş Yap & Başla")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showManualAccountDialog = false }) {
+                        Text("Vazgeç")
+                    }
+                }
             )
         }
     }

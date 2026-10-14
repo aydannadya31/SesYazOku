@@ -1599,7 +1599,7 @@
           <polyline points="7 10 12 15 17 10"></polyline>
           <line x1="12" y1="15" x2="12" y2="3"></line>
         </svg>
-        <span>APK İndir (v1.0.0)</span>
+        <span>APK İndir (v1.0.1)</span>
       </a>
     </div>
   </header>
@@ -1611,7 +1611,7 @@
     <section class="hero">
       <div>
         <div class="badge-pill">
-          <span>⚡ Yeni Sürüm v1.0.0</span>
+          <span>⚡ Yeni Sürüm v1.0.1</span>
           <span>•</span>
           <span>Android 8.0 ve Üzeri</span>
         </div>
@@ -1654,7 +1654,7 @@
           <div class="apk-meta">
             <h3>SesYazOku</h3>
             <p>SCG SoundWave Edition</p>
-            <span>com.aistudio.sesyazoku • v1.0.0</span>
+            <span>com.aistudio.sesyazoku • v1.0.1</span>
           </div>
         </div>
 
@@ -2115,12 +2115,20 @@
           <button class="sim-modal-close" onclick="closeDriveModal()">&times;</button>
         </div>
 
-        <div style="background: rgba(66, 133, 244, 0.1); border: 1px solid rgba(66, 133, 244, 0.3); border-radius: 12px; padding: 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
-          <div style="font-size: 1.8rem;">🔑</div>
-          <div>
-            <strong style="color: #FFF; font-size: 0.9rem;">Google Hesabı Bağlı</strong><br>
-            <span style="font-size: 0.8rem; color: #93C5FD;" id="driveUserEmail">aydannadya31@gmail.com</span>
+        <div style="background: rgba(66, 133, 244, 0.1); border: 1px solid rgba(66, 133, 244, 0.3); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.3rem;">👤</span>
+              <strong style="color: #FFF; font-size: 0.9rem;">Yedeklenecek Google Hesabı</strong>
+            </div>
+            <span style="font-size: 0.72rem; color: #38BDF8; background: rgba(56, 189, 248, 0.15); padding: 2px 8px; border-radius: 6px;">Kullanıcıya Özel</span>
           </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="email" id="driveUserEmailInput" value="aydannadya31@gmail.com" placeholder="Kendi Google hesabınız (örn: ahmet@gmail.com)" style="flex: 1; background: #070B14; border: 1px solid rgba(66, 133, 244, 0.4); border-radius: 8px; padding: 8px 12px; color: #FFF; font-size: 0.85rem;" oninput="updateDriveUserEmail(this.value)">
+          </div>
+          <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 6px;">
+            🔒 Her kullanıcı döküman ve transkripsiyonlarını kendi Google hesabının Drive kısmına yedekler.
+          </span>
         </div>
 
         <div style="margin-bottom: 16px;" id="driveProgressWrap">
@@ -2138,13 +2146,18 @@
             ✅ Başarıyla Google Drive'a Kaydedildi!
           </strong>
           <span style="font-size: 0.78rem; color: #CBD5E1; display: block; margin-top: 4px;" id="driveFilePath">
-            /Google Drive/SesYazOku/2026/SesYazOku_Toplanti_Kaydi_01.pdf
+            /Google Drive/aydannadya31@gmail.com/SesYazOku Dökümanları/SesYazOku_Toplanti_Kaydi_01.pdf
           </span>
         </div>
 
-        <button class="btn btn-download" style="width: 100%;" onclick="closeDriveModal()">
-          Tamam
-        </button>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-outline" style="flex: 1;" id="openUserDriveBtn" onclick="openUserDriveInNewTab()">
+            🌐 Drive'da Aç
+          </button>
+          <button class="btn btn-download" style="flex: 1;" onclick="closeDriveModal()">
+            Tamam
+          </button>
+        </div>
       </div>
     </div>
 
@@ -2239,7 +2252,7 @@
     <div class="cta-banner">
       <h2>Seslerinizi Akıllı Metne Dönüştürmeye Hazır Mısınız?</h2>
       <p>
-        SesYazOku v1.0.0 sürümünü şimdi ücretsiz indirin ve güçlü ses kaydı ile konuşmacı ayrımının keyfini çıkarın.
+        SesYazOku v1.0.1 sürümünü şimdi ücretsiz indirin ve güçlü ses kaydı ile konuşmacı ayrımının keyfini çıkarın.
       </p>
       <a href="SesYazOku.apk" download="SesYazOku.apk" class="btn btn-download btn-lg">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -3371,13 +3384,32 @@
       });
     }
 
-    // Google Drive Backup Modal
+    // Google Drive Backup Modal with Per-User Account
+    let currentDriveEmail = "aydannadya31@gmail.com";
+
+    function updateDriveUserEmail(val) {
+      currentDriveEmail = val.trim() || "kullanici@gmail.com";
+      const title = document.getElementById("doc-title-input").value.trim() || "SesYazOku_Döküman";
+      const filePathEl = document.getElementById("driveFilePath");
+      if (filePathEl) {
+        filePathEl.textContent = `/Google Drive/${currentDriveEmail}/SesYazOku Dökümanları/${title}.pdf & ${title}_Transkript.txt`;
+      }
+    }
+
+    function openUserDriveInNewTab() {
+      const email = document.getElementById("driveUserEmailInput")?.value.trim() || currentDriveEmail;
+      const url = `https://drive.google.com/drive/my-drive?authuser=${encodeURIComponent(email)}`;
+      window.open(url, "_blank");
+    }
+
     function openDriveBackupModal() {
       const backdrop = document.getElementById("driveModalBackdrop");
       backdrop.style.display = "flex";
 
+      const emailInput = document.getElementById("driveUserEmailInput");
+      const userEmail = emailInput?.value.trim() || currentDriveEmail;
       const title = document.getElementById("doc-title-input").value.trim() || "SesYazOku_Döküman";
-      document.getElementById("driveFilePath").textContent = `/Google Drive/SesYazOku/2026/${title}.pdf`;
+      document.getElementById("driveFilePath").textContent = `/Google Drive/${userEmail}/SesYazOku Dökümanları/${title}.pdf & ${title}_Transkript.txt`;
 
       const bar = document.getElementById("driveProgressBar");
       const pct = document.getElementById("drivePercentText");
@@ -3387,7 +3419,7 @@
       successBox.style.display = "none";
       bar.style.width = "0%";
       pct.textContent = "0%";
-      status.textContent = "Google Drive bağlantısı kuruluyor...";
+      status.textContent = `[${userEmail}] Google Drive bağlantısı kuruluyor...`;
 
       let progress = 0;
       const interval = setInterval(() => {
@@ -3395,13 +3427,13 @@
         bar.style.width = `${progress}%`;
         pct.textContent = `${progress}%`;
         if (progress === 50) {
-          status.textContent = "PDF dosyası şifreli olarak yükleniyor...";
+          status.textContent = `[${userEmail}] SesYazOku Dökümanları klasörüne PDF ve Transkript aktarılıyor...`;
         } else if (progress === 100) {
           clearInterval(interval);
-          status.textContent = "Senkronizasyon tamamlandı!";
+          status.textContent = `[${userEmail}] Drive yedeği başarıyla tamamlandı!`;
           successBox.style.display = "block";
         }
-      }, 400);
+      }, 350);
     }
 
     function closeDriveModal() {

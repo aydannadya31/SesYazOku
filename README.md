@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="../../actions"><img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue?logo=githubactions" alt="CI/CD" /></a>
-  <a href="docs/SesYazOku.apk"><img src="https://img.shields.io/badge/APK-SesYazOku.apk%20(v1.0.0)-success?logo=android" alt="Download APK" /></a>
+  <a href="docs/SesYazOku.apk"><img src="https://img.shields.io/badge/APK-SesYazOku.apk%20(v1.0.1)-success?logo=android" alt="Download APK" /></a>
   <img src="https://img.shields.io/badge/Kotlin-2.2.10-purple?logo=kotlin" alt="Kotlin" />
   <img src="https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-brightgreen?logo=jetpackcompose" alt="Compose" />
   <img src="https://img.shields.io/badge/License-Apache%202.0-lightgrey" alt="License" />

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,12 +28,17 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -51,6 +57,10 @@ fun SettingsScreen(viewModel: MainViewModel) {
     val audioFormat by viewModel.audioFormat.collectAsState()
     val audioBitrate by viewModel.audioBitrate.collectAsState()
     val audioSampleRate by viewModel.audioSampleRate.collectAsState()
+
+    var showChangeAccountDialog by remember { mutableStateOf(false) }
+    var editEmail by remember { mutableStateOf("") }
+    var editName by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -128,9 +138,9 @@ fun SettingsScreen(viewModel: MainViewModel) {
                     ) {
                         OutlinedButton(
                             onClick = {
-                                coroutineScope.launch {
-                                    viewModel.authManager.signInWithGoogle()
-                                }
+                                editEmail = authProfile.email
+                                editName = authProfile.name
+                                showChangeAccountDialog = true
                             },
                             shape = RoundedCornerShape(10.dp)
                         ) {
@@ -145,6 +155,60 @@ fun SettingsScreen(viewModel: MainViewModel) {
                     }
                 }
             }
+        }
+
+        if (showChangeAccountDialog) {
+            AlertDialog(
+                onDismissRequest = { showChangeAccountDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.AccountCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Google Hesabını Belirle")
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "Her kullanıcı dökümanlarını kendi Google hesabının Drive kısmına yedekler. Aktif Google hesabınızı güncelleyin:",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OutlinedTextField(
+                            value = editEmail,
+                            onValueChange = { editEmail = it },
+                            label = { Text("Google E-posta") },
+                            placeholder = { Text("kullanici@gmail.com") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = editName,
+                            onValueChange = { editName = it },
+                            label = { Text("Kullanıcı Adı") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (editEmail.isNotBlank()) {
+                                viewModel.updateGoogleAccount(editEmail, editName)
+                                showChangeAccountDialog = false
+                            }
+                        }
+                    ) {
+                        Text("Kaydet")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showChangeAccountDialog = false }) {
+                        Text("Vazgeç")
+                    }
+                }
+            )
         }
 
         // 4. Theme Setting Card

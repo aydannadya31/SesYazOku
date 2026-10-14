@@ -14,6 +14,8 @@ import com.example.data.AppDatabase
 import com.example.data.FeedbackEntity
 import com.example.data.RecordingEntity
 import com.example.data.TranscriptSegmentEntity
+import com.example.drive.GoogleDriveBackupManager
+import com.example.drive.DriveBackupUiState
 import com.example.export.PdfManager
 import com.example.transcription.SpeechTranscriptionEngine
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +36,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val recorderManager = AudioRecorderManager(application)
     val playerManager = AudioPlayerManager(application)
     val authManager = AuthManager(application)
+    val driveBackupManager = GoogleDriveBackupManager(recordingDao, segmentDao)
+    val driveBackupUiState: StateFlow<DriveBackupUiState> = driveBackupManager.uiState
 
     val recordings: StateFlow<List<RecordingEntity>> = recordingDao.getAllRecordings()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -220,14 +224,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun backupRecordingToDrive(context: Context, recording: RecordingEntity) {
-        viewModelScope.launch {
-            val segments = segmentDao.getSegmentsForRecordingDirect(recording.id)
-            val pdfFile = PdfManager.generatePdf(context, recording, segments)
-            recordingDao.updateDriveBackupStatus(recording.id, true)
-            PdfManager.backupToDrive(context, recording, pdfFile)
-            Toast.makeText(context, "Google Drive yedekleme başlatıldı!", Toast.LENGTH_SHORT).show()
+    fun backupSelectedRecordingsToDrive(context: Context, items: List<RecordingEntity>) {
+        if (items.isEmpty()) {
+            Toast.makeText(context, "Lütfen yedeklemek için en az bir döküman seçin", Toast.LENGTH_SHORT).show()
+            return
         }
+        viewModelScope.launch {
+            val userEmail = authManager.userProfile.value.email
+            driveBackupManager.backupRecordings(context, items, userEmail)
+        }
+    }
+
+    fun backupRecordingToDrive(context: Context, recording: RecordingEntity) {
+        backupSelectedRecordingsToDrive(context, listOf(recording))
+    }
+
+    fun resetDriveBackupState() {
+        driveBackupManager.resetState()
+    }
+
+    fun openGoogleDrive(context: Context) {
+        val userEmail = authManager.userProfile.value.email
+        driveBackupManager.openGoogleDrive(context, userEmail)
+    }
+
+    fun shareBackupToDriveApp(context: Context, items: List<RecordingEntity>) {
+        val userEmail = authManager.userProfile.value.email
+        driveBackupManager.shareBackupToDeviceDriveApp(context, items, userEmail)
+    }
+
+    fun updateGoogleAccount(email: String, name: String = "") {
+        authManager.setCustomGoogleAccount(email, name)
     }
 
     fun sendFeedback(
