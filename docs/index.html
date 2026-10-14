@@ -1759,6 +1759,8 @@
     let recognition = null;
     let recognitionActive = false;
     let recognitionRestartTimer = null;
+    let noSpeechCount = 0;
+    let recWarned = false;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     function setRecStatus(msg) {
@@ -1775,13 +1777,18 @@
 
         recognition.onstart = () => {
           recognitionActive = true;
-          if (isRecording && !isMicMuted && currentSource === 'mic') {
+          if (isRecording && !isMicMuted && currentSource === 'mic' && !recWarned) {
             setRecStatus("🎙️ Dinleniyor... (canlı yazı aktif)");
           }
         };
 
         recognition.onresult = (event) => {
           if (isMicMuted) return;
+          noSpeechCount = 0;
+          if (recWarned) {
+            recWarned = false;
+            setRecStatus("🎙️ Dinleniyor... (canlı yazı aktif)");
+          }
           for (let i = event.resultIndex; i < event.results.length; ++i) {
             const text = event.results[i][0].transcript;
             if (!text || text.trim().length <= 1) continue;
@@ -1796,12 +1803,26 @@
 
         recognition.onerror = (e) => {
           console.warn("Konuşma tanıma uyarısı:", e.error);
-          if (!isRecording) return;
+          if (!isRecording || e.error === 'aborted') return;
           if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
             recognitionActive = false;
+            recWarned = true;
             setRecStatus("🔇 Mikrofon izni verilmedi — tarayıcı ayarından izin verin");
           } else if (e.error === 'network') {
+            recWarned = true;
             setRecStatus("⚠️ Bağlantı hatası — internet bağlantınızı kontrol edin");
+          } else if (e.error === 'language-not-supported') {
+            recWarned = true;
+            setRecStatus("❌ Tarayıcınız bu dilde (tr-TR) konuşmayı tanıyamıyor — Chrome kullanın");
+          } else if (e.error === 'audio-capture') {
+            recWarned = true;
+            setRecStatus("🔇 Mikrofon sesi alınamıyor — mikrofon seçiminizi kontrol edin");
+          } else if (e.error === 'no-speech') {
+            noSpeechCount++;
+            if (noSpeechCount >= 2) {
+              recWarned = true;
+              setRecStatus("🔇 Ses algılanamıyor — konuşun veya mikrofonu kontrol edin");
+            }
           }
         };
 
@@ -1869,6 +1890,8 @@
       } catch (err) {}
       clearTimeout(recognitionRestartTimer);
       recognitionActive = false;
+      noSpeechCount = 0;
+      recWarned = false;
       removeInterimRow();
       stopAudioFileRecording();
 
