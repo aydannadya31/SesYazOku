@@ -79,6 +79,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updateSpeakerLabel(recordingId: Long, speakerIndex: Int, newLabel: String) {
+        viewModelScope.launch {
+            segmentDao.updateSpeakerLabel(recordingId, speakerIndex, newLabel.trim())
+            val updatedSegments = segmentDao.getSegmentsForRecordingDirect(recordingId)
+            if (_selectedRecordingId.value == recordingId) {
+                _selectedSegments.value = updatedSegments
+            }
+            val updatedFullText = updatedSegments.joinToString("\n\n") { "${it.speakerLabel}: ${it.text}" }
+            val speakerCount = updatedSegments.map { it.speakerIndex }.distinct().size
+            recordingDao.updateTranscriptionResult(recordingId, updatedFullText, speakerCount)
+        }
+    }
+
+    fun getSegmentsForRecording(recordingId: Long, onResult: (List<TranscriptSegmentEntity>) -> Unit) {
+        viewModelScope.launch {
+            val segments = segmentDao.getSegmentsForRecordingDirect(recordingId)
+            onResult(segments)
+        }
+    }
+
     fun startLiveRecording() {
         recorderManager.startRecording(
             audioFormat = _audioFormat.value,

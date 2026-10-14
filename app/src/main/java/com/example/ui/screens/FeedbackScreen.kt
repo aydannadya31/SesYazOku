@@ -335,7 +335,7 @@ fun FeedbackScreen(viewModel: MainViewModel) {
                     ) {
                         Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Yönetim Paneline Gönder", fontWeight = FontWeight.Bold)
+                        Text("Gönder", fontWeight = FontWeight.Bold)
                     }
                 }
             }

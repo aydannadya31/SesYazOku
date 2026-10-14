@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Pause
@@ -68,7 +69,8 @@ import java.util.Locale
 @Composable
 fun TranscriptsScreen(
     viewModel: MainViewModel,
-    onNavigateToDocuments: () -> Unit
+    onNavigateToDocuments: () -> Unit,
+    onNavigateToEditor: (() -> Unit)? = null
 ) {
     val recordings by viewModel.recordings.collectAsState()
     val isTranscribing by viewModel.isTranscribing.collectAsState()
@@ -310,15 +312,28 @@ fun TranscriptsScreen(
                                         Text("Yeniden Dönüştür", fontSize = 12.sp)
                                     }
 
+                                    OutlinedButton(
+                                        onClick = {
+                                            viewModel.selectRecordingForView(item.id)
+                                            onNavigateToEditor?.invoke() ?: onNavigateToDocuments()
+                                        },
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Düzenle", fontSize = 11.sp)
+                                    }
+
                                     Button(
                                         onClick = {
                                             viewModel.selectRecordingForView(item.id)
                                             onNavigateToDocuments()
                                         },
                                         shape = RoundedCornerShape(10.dp),
-                                        modifier = Modifier.weight(1.3f)
+                                        modifier = Modifier.weight(1.2f)
                                     ) {
-                                        Text("Döküman & PDF Al", fontSize = 12.sp)
+                                        Text("Döküman & PDF", fontSize = 11.sp)
                                     }
                                 }
                             }

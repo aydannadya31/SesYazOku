@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.RecordVoiceOver
@@ -36,6 +37,7 @@ import com.example.ui.MainViewModel
 import com.example.ui.components.PermissionsDialog
 import com.example.ui.components.SplashScreen
 import com.example.ui.screens.DocumentsScreen
+import com.example.ui.screens.EditorScreen
 import com.example.ui.screens.FeedbackScreen
 import com.example.ui.screens.RecordScreen
 import com.example.ui.screens.SettingsScreen
@@ -132,20 +134,27 @@ fun AppRootContent(viewModel: MainViewModel) {
                 NavigationBarItem(
                     selected = selectedTabIndex == 2,
                     onClick = { selectedTabIndex = 2 },
+                    icon = { Icon(Icons.Default.Edit, contentDescription = "Düzenleyici") },
+                    label = { Text("Düzenleyici") },
+                    modifier = Modifier.testTag("nav_editor")
+                )
+                NavigationBarItem(
+                    selected = selectedTabIndex == 3,
+                    onClick = { selectedTabIndex = 3 },
                     icon = { Icon(Icons.Default.Description, contentDescription = "Döküman") },
                     label = { Text("Döküman") },
                     modifier = Modifier.testTag("nav_documents")
                 )
                 NavigationBarItem(
-                    selected = selectedTabIndex == 3,
-                    onClick = { selectedTabIndex = 3 },
+                    selected = selectedTabIndex == 4,
+                    onClick = { selectedTabIndex = 4 },
                     icon = { Icon(Icons.Default.Feedback, contentDescription = "Üreticiye Mesaj") },
                     label = { Text("Mesaj") },
                     modifier = Modifier.testTag("nav_feedback")
                 )
                 NavigationBarItem(
-                    selected = selectedTabIndex == 4,
-                    onClick = { selectedTabIndex = 4 },
+                    selected = selectedTabIndex == 5,
+                    onClick = { selectedTabIndex = 5 },
                     icon = { Icon(Icons.Default.Settings, contentDescription = "Ayarlar") },
                     label = { Text("Ayarlar") },
                     modifier = Modifier.testTag("nav_settings")
@@ -165,11 +174,16 @@ fun AppRootContent(viewModel: MainViewModel) {
                 )
                 1 -> TranscriptsScreen(
                     viewModel = viewModel,
-                    onNavigateToDocuments = { selectedTabIndex = 2 }
+                    onNavigateToDocuments = { selectedTabIndex = 3 },
+                    onNavigateToEditor = { selectedTabIndex = 2 }
                 )
-                2 -> DocumentsScreen(viewModel = viewModel)
-                3 -> FeedbackScreen(viewModel = viewModel)
-                4 -> SettingsScreen(viewModel = viewModel)
+                2 -> EditorScreen(
+                    viewModel = viewModel,
+                    onNavigateToDocuments = { selectedTabIndex = 3 }
+                )
+                3 -> DocumentsScreen(viewModel = viewModel)
+                4 -> FeedbackScreen(viewModel = viewModel)
+                5 -> SettingsScreen(viewModel = viewModel)
             }
         }
     }
