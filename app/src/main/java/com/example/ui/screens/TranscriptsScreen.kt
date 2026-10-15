@@ -79,6 +79,7 @@ fun TranscriptsScreen(
     val segments by viewModel.selectedSegments.collectAsState()
 
     val playerManager = viewModel.playerManager
+    val playbackSpeed by playerManager.playbackSpeed.collectAsState()
     val isPlaying by playerManager.isPlaying.collectAsState()
     val playingPath by playerManager.currentPlayingPath.collectAsState()
     val currentPositionMs by playerManager.currentPositionMs.collectAsState()
@@ -236,13 +237,74 @@ fun TranscriptsScreen(
                                 }
                             }
 
-                            // Audio progress indicator when playing
-                            if (isAudioPlayingThis && durationMs > 0) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                LinearProgressIndicator(
-                                    progress = { (currentPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) },
+                            // Audio progress indicator & Speed Selector when playing
+                            if (isAudioPlayingThis) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
                                     modifier = Modifier.fillMaxWidth()
-                                )
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        if (durationMs > 0) {
+                                            LinearProgressIndicator(
+                                                progress = { (currentPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(4.dp)
+                                                    .clip(RoundedCornerShape(2.dp))
+                                            )
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                        }
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            val currentSec = currentPositionMs / 1000
+                                            val totalSec = if (durationMs > 0) durationMs / 1000 else item.durationMs / 1000
+                                            Text(
+                                                text = String.format(
+                                                    Locale.getDefault(),
+                                                    "%02d:%02d / %02d:%02d (%s)",
+                                                    currentSec / 60, currentSec % 60,
+                                                    totalSec / 60, totalSec % 60,
+                                                    if (playbackSpeed == 1.0f) "1x" else "${playbackSpeed}x"
+                                                ),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+
+                                            // Fast listening speed selector chips (0.5x, 1x, 1.5x, 2x)
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                listOf(
+                                                    0.5f to "0.5x",
+                                                    1.0f to "1x",
+                                                    1.5f to "1.5x",
+                                                    2.0f to "2x"
+                                                ).forEach { (spd, lbl) ->
+                                                    FilterChip(
+                                                        selected = playbackSpeed == spd,
+                                                        onClick = { playerManager.setPlaybackSpeed(spd) },
+                                                        label = {
+                                                            Text(
+                                                                text = lbl,
+                                                                fontSize = 11.sp,
+                                                                fontWeight = if (playbackSpeed == spd) FontWeight.Bold else FontWeight.Normal
+                                                            )
+                                                        },
+                                                        modifier = Modifier.height(28.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             Spacer(modifier = Modifier.height(12.dp))

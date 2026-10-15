@@ -48,6 +48,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val justUpdated = intent?.getBooleanExtra("EXTRA_APP_JUST_UPDATED", false) ?: false
+        if (justUpdated) {
+            android.widget.Toast.makeText(
+                this,
+                "SesYazOku başarıyla güncellendi ve yeniden başlatıldı! (v${BuildConfig.VERSION_NAME})",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+        }
+
         setContent {
             val mainViewModel: MainViewModel = viewModel()
             val themeMode by mainViewModel.themeMode.collectAsState()

@@ -18,6 +18,8 @@ import com.example.drive.GoogleDriveBackupManager
 import com.example.drive.DriveBackupUiState
 import com.example.export.PdfManager
 import com.example.transcription.SpeechTranscriptionEngine
+import com.example.update.UpdateManager
+import com.example.update.UpdateUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +40,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val authManager = AuthManager(application)
     val driveBackupManager = GoogleDriveBackupManager(recordingDao, segmentDao)
     val driveBackupUiState: StateFlow<DriveBackupUiState> = driveBackupManager.uiState
+    val updateManager = UpdateManager(application)
+    val updateUiState: StateFlow<UpdateUiState> = updateManager.uiState
 
     val recordings: StateFlow<List<RecordingEntity>> = recordingDao.getAllRecordings()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -255,6 +259,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateGoogleAccount(email: String, name: String = "") {
         authManager.setCustomGoogleAccount(email, name)
+    }
+
+    fun checkForUpdates(customUrl: String? = null) {
+        viewModelScope.launch {
+            updateManager.checkForUpdates(customUrl)
+        }
+    }
+
+    fun downloadAndInstallUpdate(context: Context) {
+        viewModelScope.launch {
+            updateManager.downloadAndInstallUpdate(context)
+        }
+    }
+
+    fun simulateUpdateCheck() {
+        updateManager.simulateUpdateNotification("1.0.2")
+    }
+
+    fun openWebDownloadPage(context: Context) {
+        updateManager.openWebDownloadPage(context)
     }
 
     fun sendFeedback(

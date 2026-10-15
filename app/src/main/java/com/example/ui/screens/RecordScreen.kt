@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,10 +27,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.Button
@@ -38,12 +42,15 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -80,6 +87,14 @@ fun RecordScreen(
 
     val isServiceRunning by FloatingRecordingService.isRunning.collectAsState()
     val serviceDurationSec by FloatingRecordingService.recordedDurationSeconds.collectAsState()
+
+    val playerManager = viewModel.playerManager
+    val playbackSpeed by playerManager.playbackSpeed.collectAsState()
+    val isPlaying by playerManager.isPlaying.collectAsState()
+    val currentPlayingPath by playerManager.currentPlayingPath.collectAsState()
+    val currentPositionMs by playerManager.currentPositionMs.collectAsState()
+    val durationMs by playerManager.durationMs.collectAsState()
+    val recordings by viewModel.recordings.collectAsState()
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -298,6 +313,202 @@ fun RecordScreen(
                                 contentDescription = "Kaydı Tamamla",
                                 modifier = Modifier.size(32.dp)
                             )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // Playback Speed & Fast Meeting Listening Card (0.5x, 1x, 1.5x, 2x)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("playback_speed_card"),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(42.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Speed,
+                                    contentDescription = "Oynatma Hızı",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Oynatma Hızı & Hızlı Dinleme",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Uzun toplantı ve transkript kayıtları için",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Active Speed Badge
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = "${if (playbackSpeed == 1.0f) "1" else playbackSpeed.toString()}x Hız",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "Ses oynatma hızını seçiniz (Uzun toplantıları 1.5x veya 2x ile daha hızlı tamamlayın):",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Playback speed selector chips (0.5x, 1x, 1.5x, 2x)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    listOf(
+                        0.5f to "0.5x Yavaş",
+                        1.0f to "1x Normal",
+                        1.5f to "1.5x Hızlı",
+                        2.0f to "2x Süper"
+                    ).forEach { (speed, label) ->
+                        FilterChip(
+                            selected = playbackSpeed == speed,
+                            onClick = { playerManager.setPlaybackSpeed(speed) },
+                            label = {
+                                Text(
+                                    text = label,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (playbackSpeed == speed) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            modifier = Modifier.testTag("speed_chip_${speed}x")
+                        )
+                    }
+                }
+
+                // If any recording is active / playing or if recordings exist
+                val latestRecording = recordings.firstOrNull { it.filePath == currentPlayingPath } ?: recordings.firstOrNull()
+                if (latestRecording != null) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (isPlaying && currentPlayingPath == latestRecording.filePath) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceVariant
+                                    },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    IconButton(
+                                        onClick = {
+                                            playerManager.playOrPause(latestRecording.filePath)
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isPlaying && currentPlayingPath == latestRecording.filePath) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                            contentDescription = "Oynat / Durdur",
+                                            tint = if (isPlaying && currentPlayingPath == latestRecording.filePath) Color.White else MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.width(10.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = latestRecording.title,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1
+                                    )
+                                    val isCurrentPlaying = currentPlayingPath == latestRecording.filePath
+                                    val currentSec = if (isCurrentPlaying) currentPositionMs / 1000 else 0L
+                                    val totalSec = if (isCurrentPlaying && durationMs > 0) durationMs / 1000 else latestRecording.durationMs / 1000
+                                    val progressTime = String.format(
+                                        Locale.getDefault(),
+                                        "%02d:%02d / %02d:%02d (%s Hız)",
+                                        currentSec / 60, currentSec % 60,
+                                        totalSec / 60, totalSec % 60,
+                                        if (playbackSpeed == 1.0f) "1x" else "${playbackSpeed}x"
+                                    )
+                                    Text(
+                                        text = progressTime,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+
+                                TextButton(
+                                    onClick = onNavigateToTranscripts,
+                                    contentPadding = PaddingValues(horizontal = 8.dp)
+                                ) {
+                                    Text("Transkriptor", fontSize = 11.sp)
+                                }
+                            }
+
+                            if (isPlaying && currentPlayingPath == latestRecording.filePath && durationMs > 0) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                LinearProgressIndicator(
+                                    progress = { (currentPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(4.dp)
+                                        .clip(RoundedCornerShape(2.dp))
+                                )
+                            }
                         }
                     }
                 }

@@ -33,6 +33,28 @@ class AudioPlayerManager(private val context: Context) {
     private val _durationMs = MutableStateFlow(0L)
     val durationMs: StateFlow<Long> = _durationMs.asStateFlow()
 
+    private val _playbackSpeed = MutableStateFlow(1.0f)
+    val playbackSpeed: StateFlow<Float> = _playbackSpeed.asStateFlow()
+
+    fun setPlaybackSpeed(speed: Float) {
+        _playbackSpeed.value = speed
+        try {
+            mediaPlayer?.let { player ->
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                    val wasPlaying = player.isPlaying
+                    val params = player.playbackParams
+                    params.speed = speed
+                    player.playbackParams = params
+                    if (!wasPlaying) {
+                        player.pause()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("AudioPlayerManager", "Failed to change playback speed to $speed", e)
+        }
+    }
+
     fun playOrPause(filePath: String) {
         if (_currentPlayingPath.value == filePath && mediaPlayer != null) {
             if (_isPlaying.value) {
@@ -59,6 +81,15 @@ class AudioPlayerManager(private val context: Context) {
             val player = MediaPlayer().apply {
                 setDataSource(context, Uri.fromFile(file))
                 prepare()
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                    try {
+                        val params = playbackParams
+                        params.speed = _playbackSpeed.value
+                        playbackParams = params
+                    } catch (e: Exception) {
+                        Log.w("AudioPlayerManager", "Could not set playback speed: ${e.message}")
+                    }
+                }
                 if (startPositionMs > 0 && startPositionMs < duration) {
                     seekTo(startPositionMs.toInt())
                 }
