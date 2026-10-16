@@ -1,9 +1,9 @@
 {
-  "versionCode": 3,
-  "versionName": "1.0.2",
+  "versionCode": 30,
+  "versionName": "1.0.30",
   "apkUrl": "SesYazOku.apk",
-  "webPageUrl": "index.html",
-  "releaseNotes": "GitHub CI/CD otomatik versiyonlama sistemi, kullanıcıya özel Google Drive yedekleme ve oynatma hızı optimizasyonu.",
-  "publishedAt": "2026-10-15",
+  "webPageUrl": "https://aydannadya31.github.io/SesYazOku/",
+  "releaseNotes": "GitHub Güncellemesi (9085461): build: implement dynamic versioning and improve audio safety",
+  "publishedAt": "2026-10-16 08:26 UTC",
   "minSdkVersion": 24
 }
