@@ -1,6 +1,6 @@
 {
   "name": "SesYazOku",
-  "description": "Canlı ses kaydı, diğer uygulamalardan ses yakalama, konuşmacı ayrımıyla (Kişi 1, Kişi 2) transkripsiyon, PDF ve görsel önizlemeli döküman yönetimi.",
+  "description": "Canlı ses kaydı, diğer uygulamalardan ses yakalama, konuşmacı ayrımıyla transkripsiyon, tarih/proje/kategori bazlı Dosya Yöneticisi, PDF ve Google Drive yedekleme.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

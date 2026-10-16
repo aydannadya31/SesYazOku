@@ -1,11 +1,15 @@
 package com.example.ui.screens
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
@@ -28,6 +32,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
@@ -75,7 +80,8 @@ import java.util.Locale
 @Composable
 fun RecordScreen(
     viewModel: MainViewModel,
-    onNavigateToTranscripts: () -> Unit
+    onNavigateToTranscripts: () -> Unit,
+    onNavigateToFileManager: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val recorderManager = viewModel.recorderManager
@@ -105,6 +111,19 @@ fun RecordScreen(
         }
     }
 
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            val ok = viewModel.startLiveRecording()
+            if (!ok) {
+                Toast.makeText(context, "Kayıt başlatılamadı. Mikrofon hazır değil.", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(context, "Ses kaydı başlatmak için mikrofon izni gereklidir.", Toast.LENGTH_LONG).show()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -114,19 +133,36 @@ fun RecordScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Top Header
-        Text(
-            text = "Ses Kayıt Merkezi",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Text(
-            text = "Canlı mikrofon kaydı, diğer uygulamalar ve harici ses dosyaları",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Ses Kayıt Merkezi",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Canlı mikrofon kaydı, diğer uygulamalar ve harici ses dosyaları",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            OutlinedButton(
+                onClick = onNavigateToFileManager,
+                shape = RoundedCornerShape(10.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                modifier = Modifier.testTag("nav_to_file_manager_from_record")
+            ) {
+                Icon(Icons.Default.Folder, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Dosyalar", fontSize = 12.sp)
+            }
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -240,9 +276,17 @@ fun RecordScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (!isRecording) {
-                        // Start Record Button
                         Button(
-                            onClick = { viewModel.startLiveRecording() },
+                            onClick = {
+                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                    val ok = viewModel.startLiveRecording()
+                                    if (!ok) {
+                                        Toast.makeText(context, "Kayıt başlatılamadı. Mikrofon hazır değil.", Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                }
+                            },
                             modifier = Modifier
                                 .size(72.dp)
                                 .testTag("start_record_button"),
@@ -582,6 +626,10 @@ fun RecordScreen(
                 if (!isServiceRunning) {
                     FilledTonalButton(
                         onClick = {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                                audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                return@FilledTonalButton
+                            }
                             val serviceIntent = Intent(context, FloatingRecordingService::class.java).apply {
                                 action = FloatingRecordingService.ACTION_START_CALL_RECORDING
                             }

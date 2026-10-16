@@ -13,12 +13,14 @@ permissions:
 
 jobs:
   build:
-    name: Build & Test Android App
+    name: Build & Test Android App with Dynamic Version
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -36,21 +38,78 @@ jobs:
             keytool -genkeypair -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
 
+      - name: Calculate Dynamic Version on Every GitHub Change
+        id: versioning
+        run: |
+          # Use github.run_number which strictly increments on every single run (1, 2, 3...)
+          RUN_NUM=${{ github.run_number }}
+          VERSION_CODE=$((10 + RUN_NUM))
+          VERSION_NAME="1.0.${VERSION_CODE}"
+          SHORT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "${{ github.sha }}")
+          COMMIT_MSG=$(git log -1 --pretty=%B 2>/dev/null | head -n 1 | tr -d '"\r\n' || echo "Yeni sürüm")
+          if [ -z "$COMMIT_MSG" ]; then
+            COMMIT_MSG="GitHub güncellemesi ve ses transkripsiyon optimizasyonları."
+          fi
+          BUILD_DATE=$(date -u +"%Y-%m-%d %H:%M UTC")
+
+          echo "VERSION_CODE=${VERSION_CODE}" >> $GITHUB_ENV
+          echo "VERSION_NAME=${VERSION_NAME}" >> $GITHUB_ENV
+          echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_ENV
+          echo "COMMIT_MSG=${COMMIT_MSG}" >> $GITHUB_ENV
+          echo "BUILD_DATE=${BUILD_DATE}" >> $GITHUB_ENV
+
+          echo "=========================================="
+          echo "🚀 Otomatik Artan GitHub Versiyonu:"
+          echo "   Version Code: ${VERSION_CODE}"
+          echo "   Version Name: v${VERSION_NAME}"
+          echo "   Commit SHA:   ${SHORT_SHA}"
+          echo "   Tarih:        ${BUILD_DATE}"
+          echo "=========================================="
+
       - name: Run Local Unit & Robolectric Tests
         run: ./gradlew testDebugUnitTest --continue
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
+      - name: Build Debug APK with Dynamic Version
+        run: ./gradlew assembleDebug -PversionCode=${{ env.VERSION_CODE }} -PversionName=${{ env.VERSION_NAME }}
 
-      - name: Copy Built APK to Docs for GitHub Pages
+      - name: Copy Built APK & Update version.json for Web Download Page
         run: |
           mkdir -p docs
-          cp app/build/outputs/apk/debug/app-debug.apk docs/SesYazOku.apk || true
+          cp app/build/outputs/apk/debug/app-debug.apk docs/SesYazOku.apk
+
+          cat <<EOF > docs/version.json
+          {
+            "versionCode": ${{ env.VERSION_CODE }},
+            "versionName": "${{ env.VERSION_NAME }}",
+            "apkUrl": "SesYazOku.apk",
+            "webPageUrl": "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/",
+            "releaseNotes": "GitHub Güncellemesi (${{ env.SHORT_SHA }}): ${{ env.COMMIT_MSG }}",
+            "publishedAt": "${{ env.BUILD_DATE }}",
+            "minSdkVersion": 24
+          }
+          EOF
+
+          # Update all version labels across docs/index.html
+          sed -i -E "s/v1\.[0-9]+(\.[0-9]+)?/v${{ env.VERSION_NAME }}/g" docs/index.html || true
+          sed -i -E "s/1\.0\.[0-9]+/${{ env.VERSION_NAME }}/g" docs/index.html || true
+
+      - name: Commit and Push Updated APK & Version Metadata to GitHub
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions Build Bot"
+          git add docs/SesYazOku.apk docs/version.json docs/index.html
+          if git diff --staged --quiet; then
+            echo "No changes to commit in docs/"
+          else
+            git commit -m "chore(release): auto-increment APK version v${{ env.VERSION_NAME }} [skip ci]"
+            git push origin HEAD:${{ github.ref_name }} || echo "Push skipped or branch protected"
+          fi
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SesYazOku-Debug-APK
+          name: SesYazOku-v${{ env.VERSION_NAME }}-APK
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
@@ -59,6 +118,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: app/build/outputs/apk/debug/*.apk
+          name: "SesYazOku v${{ env.VERSION_NAME }}"
+          body: "Otomatik GitHub sürümü: v${{ env.VERSION_NAME }}\nCommit: ${{ env.SHORT_SHA }}\n${{ env.COMMIT_MSG }}"
           generate_release_notes: true
           draft: false
           prerelease: false

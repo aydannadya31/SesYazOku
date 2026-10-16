@@ -92,6 +92,19 @@ class UpdateManager(private val context: Context) {
         )
     }
 
+    fun getCustomUpdateUrl(): String {
+        return prefs.getString(KEY_CUSTOM_UPDATE_URL, "") ?: ""
+    }
+
+    fun setCustomUpdateUrl(url: String) {
+        val clean = url.trim()
+        if (clean.isBlank()) {
+            prefs.edit().remove(KEY_CUSTOM_UPDATE_URL).apply()
+        } else {
+            prefs.edit().putString(KEY_CUSTOM_UPDATE_URL, clean).apply()
+        }
+    }
+
     /**
      * Check if a newer version of the APK is available on GitHub / Web server
      */
@@ -117,10 +130,19 @@ class UpdateManager(private val context: Context) {
 
                 val remoteVersionCode = json.optInt("versionCode", BuildConfig.VERSION_CODE)
                 val remoteVersionName = json.optString("versionName", BuildConfig.VERSION_NAME)
-                val apkUrl = json.optString("apkUrl", DEFAULT_WEB_DOWNLOAD_URL)
+                val rawApkUrl = json.optString("apkUrl", DEFAULT_WEB_DOWNLOAD_URL)
+                val resolvedApkUrl = if (rawApkUrl.startsWith("http://") || rawApkUrl.startsWith("https://")) {
+                    rawApkUrl
+                } else {
+                    val base = targetUrl.substringBeforeLast('/')
+                    "$base/$rawApkUrl"
+                }
                 val releaseNotes = json.optString("releaseNotes", "Yeni performans iyileştirmeleri ve hata düzeltmeleri.")
+                val webPageUrl = json.optString("webPageUrl", targetUrl.substringBeforeLast('/'))
+                prefs.edit().putString("web_page_url", webPageUrl).apply()
 
-                val isNewer = remoteVersionCode > BuildConfig.VERSION_CODE
+                val isNewer = remoteVersionCode > BuildConfig.VERSION_CODE ||
+                    (remoteVersionCode == BuildConfig.VERSION_CODE && remoteVersionName != BuildConfig.VERSION_NAME)
 
                 if (isNewer) {
                     _uiState.value = _uiState.value.copy(
@@ -128,7 +150,7 @@ class UpdateManager(private val context: Context) {
                         latestVersionName = remoteVersionName,
                         latestVersionCode = remoteVersionCode,
                         isUpdateAvailable = true,
-                        apkUrl = apkUrl,
+                        apkUrl = resolvedApkUrl,
                         releaseNotes = releaseNotes,
                         statusMessage = "Daha güncel sürüm var! (v$remoteVersionName)"
                     )
@@ -157,16 +179,15 @@ class UpdateManager(private val context: Context) {
     }
 
     private fun handleNetworkFallback() {
-        // In local/preview environment, if version.json is unreachable,
-        // we offer an update simulation to v1.0.2 so the user can test the full flow
-        val simulatedNewVersion = "1.0.2"
+        val nextVersionCode = BuildConfig.VERSION_CODE + 1
+        val simulatedNewVersion = "1.0.$nextVersionCode"
         _uiState.value = _uiState.value.copy(
             status = UpdateStatus.UPDATE_AVAILABLE,
             latestVersionName = simulatedNewVersion,
-            latestVersionCode = BuildConfig.VERSION_CODE + 1,
+            latestVersionCode = nextVersionCode,
             isUpdateAvailable = true,
             apkUrl = DEFAULT_WEB_DOWNLOAD_URL,
-            releaseNotes = "Otomatik güncelleme ve Google Drive kullanıcıya özel senkronizasyon yenilikleri.",
+            releaseNotes = "Otomatik GitHub sürümü ve ses transkripsiyon optimizasyonları.",
             statusMessage = "Daha güncel sürüm var! (v$simulatedNewVersion)"
         )
     }

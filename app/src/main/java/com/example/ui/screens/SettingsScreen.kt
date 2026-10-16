@@ -44,9 +44,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
@@ -76,6 +78,9 @@ fun SettingsScreen(viewModel: MainViewModel) {
     var showChangeAccountDialog by remember { mutableStateOf(false) }
     var editEmail by remember { mutableStateOf("") }
     var editName by remember { mutableStateOf("") }
+
+    var showUpdateUrlDialog by remember { mutableStateOf(false) }
+    var customUrlInput by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -660,8 +665,93 @@ fun SettingsScreen(viewModel: MainViewModel) {
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Custom GitHub / Web Update URL settings link
+                    TextButton(
+                        onClick = {
+                            customUrlInput = viewModel.getCustomUpdateUrl()
+                            showUpdateUrlDialog = true
+                        },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (viewModel.getCustomUpdateUrl().isNotBlank()) "Özel GitHub URL Tanımlı" else "GitHub / Web URL Yapılandır",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
+        }
+
+        if (showUpdateUrlDialog) {
+            AlertDialog(
+                onDismissRequest = { showUpdateUrlDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.CloudSync, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("GitHub / Güncelleme URL'si")
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "GitHub Pages veya sunucudaki version.json adresinizi girin. Her GitHub commit/push işleminde APK sürüm numarası otomatik artırılır.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OutlinedTextField(
+                            value = customUrlInput,
+                            onValueChange = { customUrlInput = it },
+                            label = { Text("version.json URL") },
+                            placeholder = { Text("https://kullanici.github.io/repo/version.json") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = {
+                                    customUrlInput = "http://localhost:3000/version.json"
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Yerel Önizleme", fontSize = 11.sp)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    customUrlInput = ""
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Sıfırla", fontSize = 11.sp)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.setCustomUpdateUrl(customUrlInput)
+                            showUpdateUrlDialog = false
+                            viewModel.checkForUpdates()
+                        }
+                    ) {
+                        Text("Kaydet & Denetle")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showUpdateUrlDialog = false }) {
+                        Text("Kapat")
+                    }
+                }
+            )
         }
     }
 }

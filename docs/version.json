@@ -1,9 +1,9 @@
 {
   "versionCode": 3,
   "versionName": "1.0.2",
-  "apkUrl": "http://localhost:3000/SesYazOku.apk",
-  "webPageUrl": "http://localhost:3000",
-  "releaseNotes": "Otomatik güncelleme sistemi, Google Drive kullanıcıya özel yedekleme optimizasyonları ve ses işleme iyileştirmeleri.",
-  "publishedAt": "2026-10-14",
+  "apkUrl": "SesYazOku.apk",
+  "webPageUrl": "index.html",
+  "releaseNotes": "GitHub CI/CD otomatik versiyonlama sistemi, kullanıcıya özel Google Drive yedekleme ve oynatma hızı optimizasyonu.",
+  "publishedAt": "2026-10-15",
   "minSdkVersion": 24
 }

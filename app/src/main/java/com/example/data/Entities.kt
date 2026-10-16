@@ -18,7 +18,21 @@ data class RecordingEntity(
     val isTranscribed: Boolean = false,
     val transcriptFullText: String = "",
     val speakerCount: Int = 1,
-    val isBackedUpToDrive: Boolean = false
+    val isBackedUpToDrive: Boolean = false,
+    val folderName: String = "Genel",
+    val projectName: String = "Genel Kayıtlar",
+    val category: String = "Genel"
+)
+
+@Entity(tableName = "folders")
+data class FolderEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val name: String,
+    val type: String = "PROJECT", // "PROJECT", "CATEGORY"
+    val colorHex: String = "#2563EB",
+    val description: String = "",
+    val createdAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "transcript_segments")

@@ -8,12 +8,15 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Feedback
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Settings
@@ -22,7 +25,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
+import com.example.ui.screens.FileManagerScreen
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -151,8 +158,8 @@ fun AppRootContent(viewModel: MainViewModel) {
                 NavigationBarItem(
                     selected = selectedTabIndex == 3,
                     onClick = { selectedTabIndex = 3 },
-                    icon = { Icon(Icons.Default.Description, contentDescription = "Döküman") },
-                    label = { Text("Döküman") },
+                    icon = { Icon(Icons.Default.Folder, contentDescription = "Dosya Yöneticisi") },
+                    label = { Text("Dosyalar") },
                     modifier = Modifier.testTag("nav_documents")
                 )
                 NavigationBarItem(
@@ -172,6 +179,8 @@ fun AppRootContent(viewModel: MainViewModel) {
             }
         }
     ) { innerPadding ->
+        var filesSubTabIndex by remember { mutableIntStateOf(0) }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -180,18 +189,71 @@ fun AppRootContent(viewModel: MainViewModel) {
             when (selectedTabIndex) {
                 0 -> RecordScreen(
                     viewModel = viewModel,
-                    onNavigateToTranscripts = { selectedTabIndex = 1 }
+                    onNavigateToTranscripts = { selectedTabIndex = 1 },
+                    onNavigateToFileManager = {
+                        filesSubTabIndex = 0
+                        selectedTabIndex = 3
+                    }
                 )
                 1 -> TranscriptsScreen(
                     viewModel = viewModel,
-                    onNavigateToDocuments = { selectedTabIndex = 3 },
+                    onNavigateToDocuments = {
+                        filesSubTabIndex = 1
+                        selectedTabIndex = 3
+                    },
                     onNavigateToEditor = { selectedTabIndex = 2 }
                 )
                 2 -> EditorScreen(
                     viewModel = viewModel,
-                    onNavigateToDocuments = { selectedTabIndex = 3 }
+                    onNavigateToDocuments = {
+                        filesSubTabIndex = 1
+                        selectedTabIndex = 3
+                    }
                 )
-                3 -> DocumentsScreen(viewModel = viewModel)
+                3 -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        TabRow(
+                            selectedTabIndex = filesSubTabIndex,
+                            modifier = Modifier.fillMaxWidth().testTag("files_tab_row")
+                        ) {
+                            Tab(
+                                selected = filesSubTabIndex == 0,
+                                onClick = { filesSubTabIndex = 0 },
+                                text = {
+                                    Text(
+                                        text = "📁 Dosya Yöneticisi",
+                                        fontWeight = if (filesSubTabIndex == 0) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                modifier = Modifier.testTag("tab_file_manager")
+                            )
+                            Tab(
+                                selected = filesSubTabIndex == 1,
+                                onClick = { filesSubTabIndex = 1 },
+                                text = {
+                                    Text(
+                                        text = "📄 PDF & Drive",
+                                        fontWeight = if (filesSubTabIndex == 1) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                modifier = Modifier.testTag("tab_pdf_drive")
+                            )
+                        }
+                        when (filesSubTabIndex) {
+                            0 -> FileManagerScreen(
+                                viewModel = viewModel,
+                                onNavigateToTranscripts = { recId ->
+                                    viewModel.selectRecordingForView(recId)
+                                    selectedTabIndex = 1
+                                },
+                                onNavigateToDocuments = {
+                                    filesSubTabIndex = 1
+                                }
+                            )
+                            1 -> DocumentsScreen(viewModel = viewModel)
+                        }
+                    }
+                }
                 4 -> FeedbackScreen(viewModel = viewModel)
                 5 -> SettingsScreen(viewModel = viewModel)
             }

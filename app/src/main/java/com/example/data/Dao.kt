@@ -35,6 +35,45 @@ interface RecordingDao {
 
     @Query("UPDATE recordings SET isTranscribed = 1, transcriptFullText = :fullText, speakerCount = :speakerCount WHERE id = :id")
     suspend fun updateTranscriptionResult(id: Long, fullText: String, speakerCount: Int)
+
+    @Query("UPDATE recordings SET folderName = :folderName, projectName = :projectName WHERE id = :id")
+    suspend fun updateFolderAndProject(id: Long, folderName: String, projectName: String)
+
+    @Query("UPDATE recordings SET folderName = :folderName WHERE id = :id")
+    suspend fun updateFolder(id: Long, folderName: String)
+
+    @Query("UPDATE recordings SET projectName = :projectName WHERE id = :id")
+    suspend fun updateProject(id: Long, projectName: String)
+
+    @Query("UPDATE recordings SET category = :category WHERE id = :id")
+    suspend fun updateCategory(id: Long, category: String)
+
+    @Query("UPDATE recordings SET folderName = :newFolderName WHERE folderName = :oldFolderName")
+    suspend fun renameFolderInRecordings(oldFolderName: String, newFolderName: String)
+
+    @Query("UPDATE recordings SET projectName = :newProjectName WHERE projectName = :oldProjectName")
+    suspend fun renameProjectInRecordings(oldProjectName: String, newProjectName: String)
+
+    @Query("UPDATE recordings SET category = :newCategory WHERE category = :oldCategory")
+    suspend fun renameCategoryInRecordings(oldCategory: String, newCategory: String)
+
+    @Query("DELETE FROM recordings WHERE id IN (:ids)")
+    suspend fun deleteRecordingsByIds(ids: List<Long>)
+}
+
+@Dao
+interface FolderDao {
+    @Query("SELECT * FROM folders ORDER BY name ASC")
+    fun getAllFolders(): Flow<List<FolderEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFolder(folder: FolderEntity): Long
+
+    @Query("DELETE FROM folders WHERE id = :id")
+    suspend fun deleteFolder(id: Long)
+
+    @Query("UPDATE folders SET name = :name WHERE id = :id")
+    suspend fun updateFolderName(id: Long, name: String)
 }
 
 @Dao

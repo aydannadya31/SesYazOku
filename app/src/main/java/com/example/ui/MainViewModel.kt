@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
@@ -34,6 +35,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val recordingDao = db.recordingDao()
     private val segmentDao = db.transcriptSegmentDao()
     private val feedbackDao = db.feedbackDao()
+    private val folderDao = db.folderDao()
 
     val recorderManager = AudioRecorderManager(application)
     val playerManager = AudioPlayerManager(application)
@@ -46,8 +48,38 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val recordings: StateFlow<List<RecordingEntity>> = recordingDao.getAllRecordings()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val folders: StateFlow<List<com.example.data.FolderEntity>> = folderDao.getAllFolders()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val feedbacks: StateFlow<List<FeedbackEntity>> = feedbackDao.getAllFeedbacks()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    init {
+        viewModelScope.launch {
+            try {
+                kotlinx.coroutines.delay(300)
+                val current = folderDao.getAllFolders().first()
+                if (current.isEmpty()) {
+                    val initialFolders = listOf(
+                        com.example.data.FolderEntity(name = "Genel Kayıtlar", type = "PROJECT", colorHex = "#3B82F6", description = "Genel ses kayıtları"),
+                        com.example.data.FolderEntity(name = "Toplantılar", type = "PROJECT", colorHex = "#10B981", description = "İş ve ekip toplantıları"),
+                        com.example.data.FolderEntity(name = "Röportaj & Mülakatlar", type = "PROJECT", colorHex = "#8B5CF6", description = "Görüşme ve mülakat kayıtları"),
+                        com.example.data.FolderEntity(name = "Ders & Eğitim", type = "PROJECT", colorHex = "#F59E0B", description = "Seminer ve ders sesleri"),
+                        com.example.data.FolderEntity(name = "Fikirler & Notlar", type = "PROJECT", colorHex = "#EF4444", description = "Kişisel sesli notlar"),
+                        com.example.data.FolderEntity(name = "Genel", type = "CATEGORY", colorHex = "#3B82F6"),
+                        com.example.data.FolderEntity(name = "Toplantı", type = "CATEGORY", colorHex = "#10B981"),
+                        com.example.data.FolderEntity(name = "Ders & Konferans", type = "CATEGORY", colorHex = "#F59E0B"),
+                        com.example.data.FolderEntity(name = "Mülakat", type = "CATEGORY", colorHex = "#8B5CF6"),
+                        com.example.data.FolderEntity(name = "Sesli Not", type = "CATEGORY", colorHex = "#06B6D4"),
+                        com.example.data.FolderEntity(name = "Önemli", type = "CATEGORY", colorHex = "#EF4444")
+                    )
+                    for (f in initialFolders) {
+                        folderDao.insertFolder(f)
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+    }
 
     // Settings
     private val prefs = application.getSharedPreferences("sesyazoku_settings", Context.MODE_PRIVATE)
@@ -107,8 +139,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun startLiveRecording() {
-        recorderManager.startRecording(
+    fun startLiveRecording(): Boolean {
+        return recorderManager.startRecording(
             audioFormat = _audioFormat.value,
             audioBitrate = _audioBitrate.value,
             sampleRate = _audioSampleRate.value,
@@ -184,6 +216,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updateTitle(id: Long, newTitle: String) = renameRecording(id, newTitle)
+
     fun updateThumbnail(id: Long, uriString: String?) {
         viewModelScope.launch {
             recordingDao.updateThumbnail(id, uriString)
@@ -200,6 +234,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (_selectedRecordingId.value == recording.id) {
                 _selectedRecordingId.value = null
                 _selectedSegments.value = emptyList()
+            }
+        }
+    }
+
+    fun deleteRecording(id: Long) {
+        viewModelScope.launch {
+            val rec = recordingDao.getRecordingById(id)
+            if (rec != null) {
+                deleteRecording(rec)
+            } else {
+                recordingDao.deleteRecording(id)
+                segmentDao.deleteSegmentsForRecording(id)
             }
         }
     }
@@ -274,11 +320,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun simulateUpdateCheck() {
-        updateManager.simulateUpdateNotification("1.0.2")
+        val nextVersionCode = com.example.BuildConfig.VERSION_CODE + 1
+        updateManager.simulateUpdateNotification("1.0.$nextVersionCode")
     }
 
     fun openWebDownloadPage(context: Context) {
         updateManager.openWebDownloadPage(context)
+    }
+
+    fun getCustomUpdateUrl(): String {
+        return updateManager.getCustomUpdateUrl()
+    }
+
+    fun setCustomUpdateUrl(url: String) {
+        updateManager.setCustomUpdateUrl(url)
     }
 
     fun sendFeedback(
@@ -331,6 +386,89 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setAudioSampleRate(rate: Int) {
         _audioSampleRate.value = rate
         prefs.edit().putInt("audio_sample_rate", rate).apply()
+    }
+
+    fun createFolder(name: String, type: String = "PROJECT", colorHex: String = "#2563EB", description: String = "") {
+        viewModelScope.launch {
+            val trimmed = name.trim()
+            if (trimmed.isNotBlank()) {
+                folderDao.insertFolder(
+                    com.example.data.FolderEntity(
+                        name = trimmed,
+                        type = type,
+                        colorHex = colorHex,
+                        description = description
+                    )
+                )
+                Toast.makeText(getApplication(), "'$trimmed' klasörü oluşturuldu.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun deleteFolder(folderId: Long) {
+        viewModelScope.launch {
+            folderDao.deleteFolder(folderId)
+            Toast.makeText(getApplication(), "Klasör silindi.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun renameFolder(folderId: Long, newName: String, oldName: String, type: String) {
+        viewModelScope.launch {
+            val trimmed = newName.trim()
+            if (trimmed.isNotBlank()) {
+                folderDao.updateFolderName(folderId, trimmed)
+                if (type == "PROJECT") {
+                    recordingDao.renameProjectInRecordings(oldName, trimmed)
+                    recordingDao.renameFolderInRecordings(oldName, trimmed)
+                } else {
+                    recordingDao.renameCategoryInRecordings(oldName, trimmed)
+                }
+                Toast.makeText(getApplication(), "Klasör adı '$trimmed' olarak güncellendi.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun moveRecordingToFolder(recordingId: Long, projectName: String, category: String? = null) {
+        viewModelScope.launch {
+            recordingDao.updateFolderAndProject(recordingId, projectName, projectName)
+            if (category != null && category.isNotBlank()) {
+                recordingDao.updateCategory(recordingId, category)
+            }
+            Toast.makeText(getApplication(), "Kayıt '$projectName' klasörüne taşındı.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun moveRecordingsBatch(recordingIds: Set<Long>, projectName: String, category: String? = null) {
+        viewModelScope.launch {
+            for (id in recordingIds) {
+                recordingDao.updateFolderAndProject(id, projectName, projectName)
+                if (category != null && category.isNotBlank()) {
+                    recordingDao.updateCategory(id, category)
+                }
+            }
+            Toast.makeText(getApplication(), "${recordingIds.size} kayıt '$projectName' klasörüne taşındı.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun deleteRecordingsBatch(recordingIds: Set<Long>) {
+        viewModelScope.launch {
+            recordingDao.deleteRecordingsByIds(recordingIds.toList())
+            Toast.makeText(getApplication(), "${recordingIds.size} kayıt silindi.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun updateRecordingCategory(recordingId: Long, category: String) {
+        viewModelScope.launch {
+            recordingDao.updateCategory(recordingId, category)
+            Toast.makeText(getApplication(), "Kategori '$category' olarak güncellendi.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun updateRecordingProject(recordingId: Long, projectName: String) {
+        viewModelScope.launch {
+            recordingDao.updateFolderAndProject(recordingId, projectName, projectName)
+            Toast.makeText(getApplication(), "Proje '$projectName' olarak güncellendi.", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onCleared() {

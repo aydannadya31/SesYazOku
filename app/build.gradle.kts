@@ -12,12 +12,21 @@ android {
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
+  val dynamicVersionCode: Int = (project.findProperty("versionCode") as? String)?.toIntOrNull()
+    ?: System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()?.let { it + 10 }
+    ?: System.getenv("VERSION_CODE")?.toIntOrNull()
+    ?: 2
+
+  val dynamicVersionName: String = (project.findProperty("versionName") as? String)
+    ?: System.getenv("VERSION_NAME")
+    ?: "1.0.$dynamicVersionCode"
+
   defaultConfig {
     applicationId = "com.aistudio.sesyazici.vxtrnq"
     minSdk = 24
     targetSdk = 36
-    versionCode = 2
-    versionName = "1.0.1"
+    versionCode = dynamicVersionCode
+    versionName = dynamicVersionName
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
