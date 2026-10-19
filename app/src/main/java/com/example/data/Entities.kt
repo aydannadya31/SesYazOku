@@ -60,5 +60,6 @@ data class FeedbackEntity(
     val status: String = "İletildi",
     val audioUri: String? = null,
     val imageUri: String? = null,
-    val pdfUri: String? = null
+    val pdfUri: String? = null,
+    val attachmentsJson: String = ""
 )

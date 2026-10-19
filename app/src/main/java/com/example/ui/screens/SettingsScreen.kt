@@ -79,9 +79,6 @@ fun SettingsScreen(viewModel: MainViewModel) {
     var editEmail by remember { mutableStateOf("") }
     var editName by remember { mutableStateOf("") }
 
-    var showUpdateUrlDialog by remember { mutableStateOf(false) }
-    var customUrlInput by remember { mutableStateOf("") }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -621,137 +618,38 @@ fun SettingsScreen(viewModel: MainViewModel) {
                         }
                     } else {
                         // Check for Updates Button
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        Button(
+                            onClick = {
+                                viewModel.checkForUpdates()
+                            },
+                            enabled = updateState.status != UpdateStatus.CHECKING,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(46.dp)
+                                .testTag("check_updates_button"),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Button(
-                                onClick = {
-                                    viewModel.checkForUpdates()
-                                },
-                                enabled = updateState.status != UpdateStatus.CHECKING,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("check_updates_button"),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                if (updateState.status == UpdateStatus.CHECKING) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        strokeWidth = 2.dp
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Denetleniyor...")
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Default.Refresh,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Güncellemeleri Denetle")
-                                }
-                            }
-
-                            // Quick test button to verify the update notification and flow
-                            OutlinedButton(
-                                onClick = {
-                                    viewModel.simulateUpdateCheck()
-                                },
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Text("⚡ Güncellemeyi Test Et", fontSize = 12.sp)
+                            if (updateState.status == UpdateStatus.CHECKING) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Güncellemeler Denetleniyor...")
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Güncellemeleri Denetle", fontWeight = FontWeight.Bold)
                             }
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Custom GitHub / Web Update URL settings link
-                    TextButton(
-                        onClick = {
-                            customUrlInput = viewModel.getCustomUpdateUrl()
-                            showUpdateUrlDialog = true
-                        },
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = if (viewModel.getCustomUpdateUrl().isNotBlank()) "Özel GitHub URL Tanımlı" else "GitHub / Web URL Yapılandır",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
                     }
                 }
             }
-        }
-
-        if (showUpdateUrlDialog) {
-            AlertDialog(
-                onDismissRequest = { showUpdateUrlDialog = false },
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CloudSync, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("GitHub / Güncelleme URL'si")
-                    }
-                },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            text = "GitHub Pages veya sunucudaki version.json adresinizi girin. Her GitHub commit/push işleminde APK sürüm numarası otomatik artırılır.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        OutlinedTextField(
-                            value = customUrlInput,
-                            onValueChange = { customUrlInput = it },
-                            label = { Text("version.json URL") },
-                            placeholder = { Text("https://kullanici.github.io/repo/version.json") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(
-                                onClick = {
-                                    customUrlInput = "http://localhost:3000/version.json"
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Yerel Önizleme", fontSize = 11.sp)
-                            }
-                            OutlinedButton(
-                                onClick = {
-                                    customUrlInput = ""
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Sıfırla", fontSize = 11.sp)
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            viewModel.setCustomUpdateUrl(customUrlInput)
-                            showUpdateUrlDialog = false
-                            viewModel.checkForUpdates()
-                        }
-                    ) {
-                        Text("Kaydet & Denetle")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showUpdateUrlDialog = false }) {
-                        Text("Kapat")
-                    }
-                }
-            )
         }
     }
 }

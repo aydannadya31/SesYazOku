@@ -54,7 +54,7 @@ object PdfManager {
 
             paint.textSize = 12f
             paint.typeface = Typeface.DEFAULT
-            val dateStr = SimpleDateFormat("dd MMMM yyyy HH:mm", Locale("tr")).format(Date(recording.timestamp))
+            val dateStr = SimpleDateFormat("dd MMMM yyyy HH:mm", Locale.forLanguageTag("tr")).format(Date(recording.timestamp))
             canvas.drawText("Tarih: $dateStr", 36f, 72f, paint)
 
             var yPos = 120f

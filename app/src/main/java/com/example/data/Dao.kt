@@ -101,4 +101,7 @@ interface FeedbackDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFeedback(feedback: FeedbackEntity): Long
+
+    @Query("DELETE FROM feedbacks WHERE id = :id")
+    suspend fun deleteFeedback(id: Long)
 }

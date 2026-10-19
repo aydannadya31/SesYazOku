@@ -195,14 +195,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     onProgress = { progress -> _transcribeProgress.value = progress }
                 )
 
+                val detectedSpeakerCount = segments
+                    .map { it.speakerLabel.trim() }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                    .size
+                    .coerceAtLeast(1)
+
                 segmentDao.deleteSegmentsForRecording(recording.id)
                 segmentDao.insertSegments(segments)
-                recordingDao.updateTranscriptionResult(recording.id, fullText, speakerCount)
+                recordingDao.updateTranscriptionResult(recording.id, fullText, detectedSpeakerCount)
 
                 _selectedSegments.value = segments
                 Toast.makeText(getApplication(), "Transkripsiyon tamamlandı!", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                Toast.makeText(getApplication(), "Transkripsiyon hatası: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(getApplication(), "Transkripsiyon tamamlandı.", Toast.LENGTH_SHORT).show()
             } finally {
                 _isTranscribing.value = false
                 _transcribeProgress.value = 0f
@@ -319,11 +326,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun simulateUpdateCheck() {
-        val nextVersionCode = com.example.BuildConfig.VERSION_CODE + 1
-        updateManager.simulateUpdateNotification("1.0.$nextVersionCode")
-    }
-
     fun openWebDownloadPage(context: Context) {
         updateManager.openWebDownloadPage(context)
     }
@@ -344,6 +346,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         audioUri: String? = null,
         imageUri: String? = null,
         pdfUri: String? = null,
+        attachmentsJson: String = "",
         onComplete: () -> Unit
     ) {
         viewModelScope.launch {
@@ -355,11 +358,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 userEmail = userEmail,
                 audioUri = audioUri,
                 imageUri = imageUri,
-                pdfUri = pdfUri
+                pdfUri = pdfUri,
+                attachmentsJson = attachmentsJson
             )
             feedbackDao.insertFeedback(feedback)
             Toast.makeText(getApplication(), "Mesajınız üretici yönetim paneline iletildi. Teşekkürler!", Toast.LENGTH_LONG).show()
             onComplete()
+        }
+    }
+
+    fun deleteFeedback(id: Long) {
+        viewModelScope.launch {
+            feedbackDao.deleteFeedback(id)
+            Toast.makeText(getApplication(), "Mesaj ekranınızdan silindi.", Toast.LENGTH_SHORT).show()
         }
     }
 

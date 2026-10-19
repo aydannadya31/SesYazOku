@@ -215,7 +215,7 @@ fun TranscriptsScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
-                                    val dateStr = SimpleDateFormat("dd MMM yyyy HH:mm", Locale("tr")).format(Date(item.timestamp))
+                                    val dateStr = SimpleDateFormat("dd MMM yyyy HH:mm", Locale.forLanguageTag("tr")).format(Date(item.timestamp))
                                     Text(
                                         text = "$dateStr • ${if (item.isTranscribed) "${item.speakerCount} Konuşmacı Metni Hazır" else "Transkripsiyon Bekliyor"}",
                                         style = MaterialTheme.typography.bodySmall,
@@ -317,19 +317,11 @@ fun TranscriptsScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "Kişi Sayısı:",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            fontWeight = FontWeight.SemiBold
+                                            text = "Kişi Sayısı: ${item.speakerCount}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
                                         )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        listOf(1, 2, 3, 4).forEach { count ->
-                                            FilterChip(
-                                                selected = speakerCount == count,
-                                                onClick = { speakerCount = count },
-                                                label = { Text("$count Kişi") },
-                                                modifier = Modifier.padding(horizontal = 2.dp)
-                                            )
-                                        }
                                     }
 
                                     Spacer(modifier = Modifier.height(8.dp))
@@ -337,17 +329,24 @@ fun TranscriptsScreen(
                                     Button(
                                         onClick = {
                                             viewModel.selectRecordingForView(item.id)
-                                            viewModel.runTranscription(item, speakerCount = speakerCount)
+                                            viewModel.runTranscription(item, speakerCount = item.speakerCount.coerceAtLeast(1))
                                         },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(42.dp),
                                         shape = RoundedCornerShape(10.dp)
                                     ) {
-                                        Text("Sesten Yazıya Dönüştür (Kişi 1, Kişi 2...)")
+                                        Text("Sesten Yazıya Dönüştür")
                                     }
                                 }
                             } else {
+                                Text(
+                                    text = "Kişi Sayısı: ${item.speakerCount}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
                                 // If already transcribed, show preview snippet & view details button
                                 Text(
                                     text = item.transcriptFullText.take(160) + if (item.transcriptFullText.length > 160) "..." else "",

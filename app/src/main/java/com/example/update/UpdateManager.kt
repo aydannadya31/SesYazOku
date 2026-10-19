@@ -56,9 +56,9 @@ class UpdateManager(private val context: Context) {
         private const val PREFS_NAME = "sesyazoku_update_prefs"
         private const val KEY_CUSTOM_UPDATE_URL = "custom_update_url"
 
-        // Default remote check URLs (local web preview port 3000 / GitHub Pages)
-        const val DEFAULT_VERSION_URL = "http://localhost:3000/version.json"
-        const val DEFAULT_WEB_DOWNLOAD_URL = "http://localhost:3000/SesYazOku.apk"
+        // Default remote check URLs (GitHub Pages live production distribution)
+        const val DEFAULT_VERSION_URL = "https://aydannadya31.github.io/SesYazOku/version.json"
+        const val DEFAULT_WEB_DOWNLOAD_URL = "https://aydannadya31.github.io/SesYazOku/SesYazOku.apk"
     }
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -141,8 +141,12 @@ class UpdateManager(private val context: Context) {
                 val webPageUrl = json.optString("webPageUrl", targetUrl.substringBeforeLast('/'))
                 prefs.edit().putString("web_page_url", webPageUrl).apply()
 
-                val isNewer = remoteVersionCode > BuildConfig.VERSION_CODE ||
-                    (remoteVersionCode == BuildConfig.VERSION_CODE && remoteVersionName != BuildConfig.VERSION_NAME)
+                val isNewer = isRemoteVersionNewer(
+                    remoteName = remoteVersionName,
+                    remoteCode = remoteVersionCode,
+                    localName = BuildConfig.VERSION_NAME,
+                    localCode = BuildConfig.VERSION_CODE
+                )
 
                 if (isNewer) {
                     _uiState.value = _uiState.value.copy(
@@ -152,7 +156,7 @@ class UpdateManager(private val context: Context) {
                         isUpdateAvailable = true,
                         apkUrl = resolvedApkUrl,
                         releaseNotes = releaseNotes,
-                        statusMessage = "Daha güncel sürüm var! (v$remoteVersionName)"
+                        statusMessage = "Daha güncel bir sürüm mevcut! (v$remoteVersionName)\nŞimdi indirip güncelleyebilirsiniz."
                     )
                     return@withContext true
                 } else {
@@ -161,35 +165,46 @@ class UpdateManager(private val context: Context) {
                         latestVersionName = remoteVersionName,
                         latestVersionCode = remoteVersionCode,
                         isUpdateAvailable = false,
-                        statusMessage = "Harika! Uygulamanız en güncel sürümde (v${BuildConfig.VERSION_NAME})."
+                        statusMessage = "Mevcut sürümünüz güncel (v${BuildConfig.VERSION_NAME}). En son sürümü kullanıyorsunuz."
                     )
                     return@withContext false
                 }
             } else {
                 Log.w(TAG, "Server check response code: ${response.code}")
-                // Fallback simulation / notification if remote endpoint is offline
-                handleNetworkFallback()
-                return@withContext _uiState.value.isUpdateAvailable
+                _uiState.value = _uiState.value.copy(
+                    status = UpdateStatus.ERROR,
+                    isUpdateAvailable = false,
+                    errorMessage = "Güncelleme sunucusuna bağlanılamadı (${response.code}).",
+                    statusMessage = "Güncelleme denetlenemedi. İnternet bağlantınızı kontrol ediniz."
+                )
+                return@withContext false
             }
         } catch (e: Exception) {
             Log.e(TAG, "Update check failed: ${e.message}", e)
-            handleNetworkFallback()
-            return@withContext _uiState.value.isUpdateAvailable
+            _uiState.value = _uiState.value.copy(
+                status = UpdateStatus.ERROR,
+                isUpdateAvailable = false,
+                errorMessage = "Bağlantı hatası: ${e.message}",
+                statusMessage = "Güncelleme denetlenemedi. İnternet bağlantınızı kontrol ediniz."
+            )
+            return@withContext false
         }
     }
 
-    private fun handleNetworkFallback() {
-        val nextVersionCode = BuildConfig.VERSION_CODE + 1
-        val simulatedNewVersion = "1.0.$nextVersionCode"
-        _uiState.value = _uiState.value.copy(
-            status = UpdateStatus.UPDATE_AVAILABLE,
-            latestVersionName = simulatedNewVersion,
-            latestVersionCode = nextVersionCode,
-            isUpdateAvailable = true,
-            apkUrl = DEFAULT_WEB_DOWNLOAD_URL,
-            releaseNotes = "Otomatik GitHub sürümü ve ses transkripsiyon optimizasyonları.",
-            statusMessage = "Daha güncel sürüm var! (v$simulatedNewVersion)"
-        )
+    private fun isRemoteVersionNewer(remoteName: String, remoteCode: Int, localName: String, localCode: Int): Boolean {
+        if (remoteCode > localCode) return true
+        if (remoteCode < localCode) return false
+
+        val remoteDigits = remoteName.replace(Regex("[^0-9.]"), "").split('.').mapNotNull { it.toIntOrNull() }
+        val localDigits = localName.replace(Regex("[^0-9.]"), "").split('.').mapNotNull { it.toIntOrNull() }
+        val maxLen = maxOf(remoteDigits.size, localDigits.size)
+        for (i in 0 until maxLen) {
+            val r = remoteDigits.getOrElse(i) { 0 }
+            val l = localDigits.getOrElse(i) { 0 }
+            if (r > l) return true
+            if (r < l) return false
+        }
+        return false
     }
 
     /**
@@ -365,11 +380,11 @@ class UpdateManager(private val context: Context) {
     }
 
     /**
-     * Opens the web page where APK can be manually downloaded
+     * Opens the direct APK download link on GitHub Pages
      */
     fun openWebDownloadPage(context: Context) {
         try {
-            val url = prefs.getString("web_page_url", "http://localhost:3000") ?: "http://localhost:3000"
+            val url = prefs.getString("web_page_url", DEFAULT_WEB_DOWNLOAD_URL) ?: DEFAULT_WEB_DOWNLOAD_URL
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
@@ -377,20 +392,6 @@ class UpdateManager(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to open web download page", e)
         }
-    }
-
-    /**
-     * Helper for tests / demo to trigger "Daha güncel sürüm var!" notification
-     */
-    fun simulateUpdateNotification(newVersion: String = "1.0.2") {
-        _uiState.value = _uiState.value.copy(
-            status = UpdateStatus.UPDATE_AVAILABLE,
-            latestVersionName = newVersion,
-            latestVersionCode = BuildConfig.VERSION_CODE + 1,
-            isUpdateAvailable = true,
-            statusMessage = "Daha güncel sürüm var! (v$newVersion)",
-            releaseNotes = "Otomatik güncelleme desteği, konuşmacı analizi ve Google Drive bulut optimizasyonu."
-        )
     }
 
     fun resetState() {

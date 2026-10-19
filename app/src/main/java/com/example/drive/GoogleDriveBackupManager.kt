@@ -217,7 +217,7 @@ class GoogleDriveBackupManager(
         sb.append("Google Hesabı / Kullanıcı : ").append(userEmail).append("\n")
         sb.append("Hedef Drive Konumu        : ").append(userEmail).append(" > ").append(DEDICATED_FOLDER_NAME).append("\n")
         sb.append("Döküman Başlığı           : ").append(recording.title).append("\n")
-        val dateStr = SimpleDateFormat("dd MMMM yyyy HH:mm:ss", Locale("tr")).format(Date(recording.timestamp))
+        val dateStr = SimpleDateFormat("dd MMMM yyyy HH:mm:ss", Locale.forLanguageTag("tr")).format(Date(recording.timestamp))
         sb.append("Kayıt Tarihi              : ").append(dateStr).append("\n")
         val durMin = (recording.durationMs / 1000) / 60
         val durSec = (recording.durationMs / 1000) % 60

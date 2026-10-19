@@ -452,10 +452,10 @@ fun RecordScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     listOf(
-                        0.5f to "0.5x Yavaş",
-                        1.0f to "1x Normal",
-                        1.5f to "1.5x Hızlı",
-                        2.0f to "2x Süper"
+                        0.5f to "0.5x",
+                        1.0f to "1.0x",
+                        1.5f to "1.5x",
+                        2.0f to "2.0x"
                     ).forEach { (speed, label) ->
                         FilterChip(
                             selected = playbackSpeed == speed,
