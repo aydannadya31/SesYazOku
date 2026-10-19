@@ -1,9 +1,9 @@
 {
-  "versionCode": 30,
-  "versionName": "1.0.30",
+  "versionCode": 31,
+  "versionName": "1.0.31",
   "apkUrl": "SesYazOku.apk",
   "webPageUrl": "https://aydannadya31.github.io/SesYazOku/",
-  "releaseNotes": "GitHub Güncellemesi (9085461): build: implement dynamic versioning and improve audio safety",
-  "publishedAt": "2026-10-16 08:26 UTC",
+  "releaseNotes": "GitHub Güncellemesi (9d76352): feat(data): add feedback attachments and improve transcription",
+  "publishedAt": "2026-10-19 07:11 UTC",
   "minSdkVersion": 24
 }
