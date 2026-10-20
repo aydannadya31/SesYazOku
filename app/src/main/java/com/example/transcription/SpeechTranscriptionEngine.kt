@@ -174,8 +174,20 @@ object SpeechTranscriptionEngine {
                 )
                 fullTextBuilder.append("[$spkLabel] $onDeviceResult\n\n")
             } else {
-                // Kesinlikle sahte veya uydurma metin üretme, kullanıcıya gerçek durumu bildir
-                throw IllegalStateException("Kayıtta net konuşma sesi algılanamadı veya ses transkripsiyon servisine ulaşılamadı. Lütfen konuşmanın net olduğundan ve internet bağlantınızın açık olduğundan emin olunuz.")
+                val spkLabel = speakerPool.firstOrNull() ?: "Kişi 1"
+                val notice = "(Kayıt başarıyla saklandı. Konuşmalar algılanamadı veya API anahtarı girilmedi. Ayarlar'dan Gemini API anahtarınızı tanımlayabilir veya metni düzenleyebilirsiniz.)"
+                segments.add(
+                    TranscriptSegmentEntity(
+                        recordingId = recordingId,
+                        speakerLabel = spkLabel,
+                        speakerIndex = 1,
+                        startMs = 0,
+                        endMs = durationMs,
+                        text = notice,
+                        confidence = 0.5f
+                    )
+                )
+                fullTextBuilder.append("[$spkLabel] $notice\n\n")
             }
         }
 
@@ -196,15 +208,17 @@ object SpeechTranscriptionEngine {
             val userSavedKey = context.getSharedPreferences("sesyazoku_prefs", Context.MODE_PRIVATE)
                 .getString("gemini_api_key", "") ?: ""
             val buildConfigKey = com.example.BuildConfig.GEMINI_API_KEY
+            val envKey = try { System.getenv("GEMINI_API_KEY") ?: "" } catch (_: Exception) { "" }
 
             val apiKey = when {
                 userSavedKey.isNotBlank() -> userSavedKey.trim()
                 buildConfigKey.isNotBlank() && buildConfigKey != "MY_GEMINI_API_KEY" -> buildConfigKey.trim()
+                envKey.isNotBlank() -> envKey.trim()
                 else -> ""
             }
 
             if (apiKey.isBlank()) {
-                Log.w(TAG, "Gemini API key is not configured in settings or BuildConfig")
+                Log.w(TAG, "Gemini API key is not configured in settings, BuildConfig, or environment")
                 return@withContext null
             }
 
@@ -291,8 +305,8 @@ object SpeechTranscriptionEngine {
             val mediaType = "application/json; charset=utf-8".toMediaTypeOrNull()
             val requestBody = jsonPayload.toString().toRequestBody(mediaType)
 
-            // Modelleri sırayla dene (öncelikli: gemini-3.8-flash, ardından gemini-3.5-flash)
-            val modelsToTry = listOf("gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.1-pro-preview")
+            // Modelleri sırayla dene: gemini-3.5-flash, gemini-flash-latest, gemini-3.1-pro-preview
+            val modelsToTry = listOf("gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-pro-preview")
             for (model in modelsToTry) {
                 try {
                     val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey"
@@ -320,7 +334,8 @@ object SpeechTranscriptionEngine {
                             }
                         }
                     } else {
-                        Log.w(TAG, "Gemini model $model returned code: ${response.code}")
+                        val err = response.body?.string()
+                        Log.w(TAG, "Gemini model $model returned code: ${response.code}, body: $err")
                     }
                 } catch (me: Exception) {
                     Log.w(TAG, "Model $model attempt error: ${me.message}")

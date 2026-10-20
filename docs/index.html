@@ -1954,6 +1954,9 @@
               📁 Cihazdan Ses Yükle & Çevir
               <input type="file" id="webAudioFileInput" accept="audio/*" style="display: none;" onchange="handleWebAudioUpload(event)">
             </label>
+            <button class="btn btn-outline" style="font-size: 0.82rem; padding: 8px 14px; display: inline-flex; align-items: center; gap: 6px;" onclick="promptGeminiApiKey()">
+              🔑 Gemini API Ayarla
+            </button>
           </div>
 
           <!-- Speakers Selector Row -->
@@ -2739,14 +2742,22 @@
           await audioContext.resume();
         }
         if (!microphoneStream && currentSource === 'mic' && !isMicMuted && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => null);
+          const monoConstraints = {
+            channelCount: 1, // MONO KAYIT (1 Kanal - Net konuşma)
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          };
+          microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: monoConstraints }).catch(async () => {
+            return await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => null);
+          });
           if (microphoneStream) {
             const source = audioContext.createMediaStreamSource(microphoneStream);
             analyserNode = audioContext.createAnalyser();
             analyserNode.fftSize = 64;
             source.connect(analyserNode);
             dataArray = new Uint8Array(analyserNode.frequencyBinCount);
-            document.getElementById("canvasSourceLabel").textContent = "🎙️ Canlı Mikrofon (48 kHz)";
+            document.getElementById("canvasSourceLabel").textContent = "🎙️ Canlı Mikrofon • Mono (1 Kanal)";
           }
         }
       } catch (e) {
@@ -2926,9 +2937,32 @@
       }
     }
 
+    function promptGeminiApiKey() {
+      const current = localStorage.getItem("gemini_api_key") || "";
+      const val = prompt("Google AI Studio (Gemini) API Anahtarınızı giriniz:\n(Tarayıcınızın yerel hafızasında saklanır, sunucuya aktarılmaz)", current);
+      if (val !== null) {
+        if (val.trim()) {
+          localStorage.setItem("gemini_api_key", val.trim());
+          alert("✅ Gemini API anahtarınız kaydedildi! Ses kayıtları yapay zeka ile tam metne dökülecektir.");
+        } else {
+          localStorage.removeItem("gemini_api_key");
+          alert("Gemini API anahtarı temizlendi.");
+        }
+      }
+    }
+
     // Toggle Recording
     async function toggleDemoRecording() {
       if (!isRecording) {
+        // Tarayıcı güvenlik kısıtlamasına takılmamak için SpeechRecognition'ı kullanıcı tıklama hareketinde senkron başlat
+        recognition = initSpeechRecognition();
+        if (recognition && !isMicMuted) {
+          try {
+            recognition.start();
+          } catch (e) {
+            console.log("Sync speech recognition start:", e);
+          }
+        }
         await startRecording();
       } else {
         stopRecording();
@@ -2942,27 +2976,16 @@
       document.getElementById("rec-dot").style.display = "inline-block";
       document.getElementById("recStatusLabel").textContent = isMicMuted
         ? "🔇 Mikrofon kapalı"
-        : "🔴 Kayıt yapılıyor & dinleniyor...";
+        : "🔴 Kayıt yapılıyor & canlı dinleniyor...";
 
       await initWebAudio();
       startAudioFileRecording();
-
-      // Fresh speech recognition instance on each recording start
-      recognition = initSpeechRecognition();
 
       timerInterval = setInterval(() => {
         secondsElapsed++;
         updateTimerDisplay();
         updateStats();
       }, 1000);
-
-      try {
-        if (recognition && !isMicMuted) {
-          recognition.start();
-        }
-      } catch (err) {
-        console.log("recognition start notice:", err);
-      }
 
       startWaveform();
     }
@@ -2973,7 +2996,7 @@
 
       document.getElementById("btn-demo-rec").textContent = "▶️ Kaydı Başlat";
       document.getElementById("rec-dot").style.display = "none";
-      document.getElementById("recStatusLabel").textContent = "Kayıt tamamlandı.";
+      document.getElementById("recStatusLabel").textContent = "Kayıt tamamlandı, ses işleniyor...";
 
       try {
         if (recognition) recognition.stop();
@@ -2982,37 +3005,23 @@
       recognitionActive = false;
       removeInterimRow();
       stopAudioFileRecording();
-
-      // Canlı konuşma algılanmadıysa kaydedilen ses dosyasını Gemini AI ile gerçek transkribe et
-      const currentRows = document.querySelectorAll(".transcript-row");
-      if (currentRows.length === 0 && secondsElapsed >= 2) {
-        setTimeout(() => {
-          if (recordings.length > 0) {
-            transcribeRecordedAudio(recordings[0].name);
-          }
-        }, 500);
-      }
-
       stopWaveform();
     }
 
     /**
-     * Gemini 3.8 Flash API ile gerçek ses kaydını dinleyip Türkçe yazıya döker
+     * Gemini AI Multimodal API ile gerçek ses kaydını dinleyip Türkçe yazıya döker
      * (Sıfır dolgu/demo metin, temperature: 0.0, yüksek doğruluklu system instruction)
      */
     async function transcribeBlobWithGemini(blob, mimeType, fileName) {
       setRecStatus(`🧠 ${fileName} Gemini AI ile çözümleniyor...`);
       let apiKey = localStorage.getItem("gemini_api_key");
       if (!apiKey) {
-        apiKey = prompt("Transkripsiyon için Gemini API anahtarınızı giriniz (tarayıcınızda saklanacaktır):");
-        if (apiKey && apiKey.trim()) {
-          apiKey = apiKey.trim();
-          localStorage.setItem("gemini_api_key", apiKey);
-        }
+        promptGeminiApiKey();
+        apiKey = localStorage.getItem("gemini_api_key");
       }
 
       if (!apiKey) {
-        setRecStatus("⚠️ Transkripsiyon için Gemini API anahtarı girilmedi.");
+        setRecStatus("⚠️ Transkripsiyon için Gemini API anahtarı girilmedi. '🔑 Gemini API Ayarla' butonundan ekleyebilirsiniz.");
         return null;
       }
 
@@ -3051,7 +3060,7 @@
           maxOutputTokens: 8192
         };
 
-        const models = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.1-pro-preview"];
+        const models = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-pro-preview"];
         for (const model of models) {
           try {
             const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
@@ -3328,11 +3337,26 @@
       if (!microphoneStream || typeof MediaRecorder === 'undefined') return;
       try {
         recordedChunks = [];
-        mediaRecorder = new MediaRecorder(microphoneStream);
-        mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
+        let mime = 'audio/webm;codecs=opus';
+        if (!MediaRecorder.isTypeSupported(mime)) {
+          mime = 'audio/webm';
+          if (!MediaRecorder.isTypeSupported(mime)) {
+            mime = 'audio/mp4';
+          }
+        }
+        mediaRecorder = new MediaRecorder(microphoneStream, {
+          mimeType: mime,
+          audioBitsPerSecond: 64000 // Mono optimize edilmiş
+        });
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+        };
         mediaRecorder.onstop = saveRecordingFile;
-        mediaRecorder.start();
-      } catch (err) { mediaRecorder = null; }
+        mediaRecorder.start(500);
+      } catch (err) {
+        console.warn("MediaRecorder start err:", err);
+        mediaRecorder = null;
+      }
     }
 
     function stopAudioFileRecording() {
@@ -3343,12 +3367,22 @@
 
     function saveRecordingFile() {
       if (!recordedChunks.length) return;
-      const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      const mime = (mediaRecorder && mediaRecorder.mimeType) || 'audio/webm';
+      const blob = new Blob(recordedChunks, { type: mime });
       recordedChunks = [];
       const stamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-');
-      const mime = blob.type || 'audio/webm';
-      recordings.unshift({ name: `Kayit_${stamp}.${ext}`, url: URL.createObjectURL(blob), blob: blob, mimeType: mime });
+      const ext = mime.includes('mp4') ? 'm4a' : 'webm';
+      const fileName = `Kayit_${stamp}.${ext}`;
+      recordings.unshift({ name: fileName, url: URL.createObjectURL(blob), blob: blob, mimeType: mime });
       renderRecordings();
+
+      // Canlı transkript boşsa kaydedilen Mono ses dosyasını otomatik transkribe et
+      const currentRows = document.querySelectorAll(".transcript-row");
+      if (currentRows.length === 0) {
+        setTimeout(() => {
+          transcribeRecordedAudio(fileName);
+        }, 300);
+      }
     }
 
     function renderRecordings() {

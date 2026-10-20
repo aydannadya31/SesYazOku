@@ -28,6 +28,11 @@ android {
     versionCode = dynamicVersionCode
     versionName = dynamicVersionName
 
+    val envGeminiKey = (project.findProperty("GEMINI_API_KEY") as? String)
+      ?: System.getenv("GEMINI_API_KEY")
+      ?: ""
+    buildConfigField("String", "GEMINI_API_KEY", "\"$envGeminiKey\"")
+
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 

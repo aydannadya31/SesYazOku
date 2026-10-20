@@ -371,6 +371,102 @@ fun SettingsScreen(viewModel: MainViewModel) {
                         label = { Text("64 kbps") }
                     )
                 }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text("Kanal Modu (Kayıt):", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = true,
+                        onClick = { },
+                        label = { Text("🎙️ Mono (1 Kanal - Önerilen)") }
+                    )
+                }
+            }
+        }
+
+        // 4.5 Gemini AI Transkripsiyon Ayarı
+        var geminiKeyInput by remember {
+            mutableStateOf(
+                context.getSharedPreferences("sesyazoku_prefs", android.content.Context.MODE_PRIVATE)
+                    .getString("gemini_api_key", "") ?: ""
+            )
+        }
+        var geminiKeySavedMessage by remember { mutableStateOf(false) }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("gemini_api_key_card"),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Tune,
+                        contentDescription = "Gemini AI",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Column {
+                        Text(
+                            text = "AI Transkripsiyon (Gemini API)",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Ses kayıtlarını tam metne dökmek ve konuşmacıları ayrıştırmak için",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = geminiKeyInput,
+                    onValueChange = {
+                        geminiKeyInput = it
+                        geminiKeySavedMessage = false
+                    },
+                    label = { Text("Gemini API Anahtarı") },
+                    placeholder = { Text("AIzaSy... veya kendi API anahtarınız") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (geminiKeySavedMessage) {
+                        Text("✅ Anahtar başarıyla kaydedildi!", color = Color(0xFF10B981), fontSize = 12.sp)
+                    } else if (geminiKeyInput.isNotBlank()) {
+                        Text("Durum: Tanımlı (Aktif)", color = Color(0xFF10B981), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    } else {
+                        Text("Durum: Anahtar girilmedi", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                    }
+
+                    Button(
+                        onClick = {
+                            context.getSharedPreferences("sesyazoku_prefs", android.content.Context.MODE_PRIVATE)
+                                .edit()
+                                .putString("gemini_api_key", geminiKeyInput.trim())
+                                .apply()
+                            geminiKeySavedMessage = true
+                        }
+                    ) {
+                        Text("Kaydet")
+                    }
+                }
             }
         }
 

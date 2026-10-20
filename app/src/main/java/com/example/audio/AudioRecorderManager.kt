@@ -95,6 +95,7 @@ class AudioRecorderManager(private val context: Context) {
                     setAudioSource(MediaRecorder.AudioSource.MIC)
                     setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                     setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                    setAudioChannels(1) // Mono kayıt (Stereo yerine 1 kanal)
                     if (audioBitrate > 0) setAudioEncodingBitRate(audioBitrate.coerceIn(32000, 256000))
                     if (sampleRate > 0) setAudioSamplingRate(sampleRate.coerceIn(8000, 48000))
                     setOutputFile(outputFile.absolutePath)
@@ -110,6 +111,7 @@ class AudioRecorderManager(private val context: Context) {
                         setAudioSource(MediaRecorder.AudioSource.MIC)
                         setOutputFormat(MediaRecorder.OutputFormat.DEFAULT)
                         setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT)
+                        setAudioChannels(1) // Mono kayıt fallback
                         setOutputFile(outputFile.absolutePath)
                         prepare()
                         start()
