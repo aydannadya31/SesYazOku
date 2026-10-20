@@ -1,9 +1,9 @@
 {
-  "versionCode": 32,
-  "versionName": "1.0.32",
+  "versionCode": 33,
+  "versionName": "1.0.33",
   "apkUrl": "SesYazOku.apk",
   "webPageUrl": "https://aydannadya31.github.io/SesYazOku/",
-  "releaseNotes": "GitHub Güncellemesi (04159a4): feat: upgrade to v1.0.32 and optimize transcription",
-  "publishedAt": "2026-10-20 08:35 UTC",
+  "releaseNotes": "GitHub Güncellemesi (a9d92e1): feat: add Gemini API support and optimize audio recording",
+  "publishedAt": "2026-10-20 11:28 UTC",
   "minSdkVersion": 24
 }
