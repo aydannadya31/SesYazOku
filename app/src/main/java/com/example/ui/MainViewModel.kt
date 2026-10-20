@@ -209,7 +209,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _selectedSegments.value = segments
                 Toast.makeText(getApplication(), "Transkripsiyon tamamlandı!", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                Toast.makeText(getApplication(), "Transkripsiyon tamamlandı.", Toast.LENGTH_SHORT).show()
+                val msg = e.message?.takeIf { it.isNotBlank() } ?: "Transkripsiyon gerçekleştirilemedi."
+                Toast.makeText(getApplication(), msg, Toast.LENGTH_LONG).show()
             } finally {
                 _isTranscribing.value = false
                 _transcribeProgress.value = 0f

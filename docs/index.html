@@ -1597,7 +1597,7 @@
           <polyline points="7 10 12 15 17 10"></polyline>
           <line x1="12" y1="15" x2="12" y2="3"></line>
         </svg>
-        <span id="header-version-label" data-version-text>APK İndir (v1.0.31)</span>
+        <span id="header-version-label" data-version-text>APK İndir (v1.0.32)</span>
       </a>
     </div>
   </header>
@@ -1609,7 +1609,7 @@
     <section class="hero">
       <div>
         <div class="badge-pill">
-          <span id="hero-version-badge" data-version-badge>⚡ Yeni Sürüm v1.0.31</span>
+          <span id="hero-version-badge" data-version-badge>⚡ Yeni Sürüm v1.0.32</span>
           <span>•</span>
           <span>Android 8.0 ve Üzeri</span>
         </div>
@@ -1629,7 +1629,7 @@
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            <span id="hero-download-btn-text">SesYazOku.apk İndir (v1.0.31)</span>
+            <span id="hero-download-btn-text">SesYazOku.apk İndir (v1.0.32)</span>
           </a>
 
           <a href="#demo" class="btn btn-outline btn-lg">
@@ -1652,14 +1652,14 @@
           <div class="apk-meta">
             <h3>SesYazOku</h3>
             <p>SCG SoundWave Edition</p>
-            <span id="card-version-label" data-card-version>com.aistudio.sesyazoku • v1.0.31</span>
+            <span id="card-version-label" data-card-version>com.aistudio.sesyazoku • v1.0.32</span>
           </div>
         </div>
 
         <div class="apk-details-grid">
           <div class="detail-item">
             <span class="detail-label">APK Sürümü</span>
-            <span class="detail-value" id="detail-version-val" data-version-val>v1.0.31</span>
+            <span class="detail-value" id="detail-version-val" data-version-val>v1.0.32</span>
           </div>
           <div class="detail-item">
             <span class="detail-label">Dosya Boyutu</span>
@@ -1950,9 +1950,10 @@
             <button class="btn btn-outline" id="btn-demo-reset" onclick="resetDemoSession()">
               ⏹️ Sıfırla
             </button>
-            <button class="btn btn-outline" id="btn-demo-sample-speech" onclick="addSampleSpeechDialogue()" style="font-size: 0.82rem; padding: 8px 14px;">
-              ⚡ Konuşma Örneği Ekle
-            </button>
+            <label class="btn btn-outline" style="font-size: 0.82rem; padding: 8px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+              📁 Cihazdan Ses Yükle & Çevir
+              <input type="file" id="webAudioFileInput" accept="audio/*" style="display: none;" onchange="handleWebAudioUpload(event)">
+            </label>
           </div>
 
           <!-- Speakers Selector Row -->
@@ -2228,7 +2229,7 @@
     <div class="cta-banner">
       <h2>Seslerinizi Akıllı Metne Dönüştürmeye Hazır Mısınız?</h2>
       <p id="cta-version-desc" data-cta-version>
-        SesYazOku v1.0.31 sürümünü şimdi ücretsiz indirin ve güçlü ses kaydı ile konuşmacı ayrımının keyfini çıkarın.
+        SesYazOku v1.0.32 sürümünü şimdi ücretsiz indirin ve güçlü ses kaydı ile konuşmacı ayrımının keyfini çıkarın.
       </p>
       <a href="SesYazOku.apk" download="SesYazOku.apk" class="btn btn-download btn-lg">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -2236,7 +2237,7 @@
           <polyline points="7 10 12 15 17 10"></polyline>
           <line x1="12" y1="15" x2="12" y2="3"></line>
         </svg>
-        <span id="cta-download-btn-text">SesYazOku.apk İndir (v1.0.31)</span>
+        <span id="cta-download-btn-text">SesYazOku.apk İndir (v1.0.32)</span>
       </a>
     </div>
 
@@ -2833,21 +2834,11 @@
     }
     drawWave();
 
-    // Enhanced Speech Recognition & Smart Voice-to-Text Engine
+    // Enhanced Speech Recognition & Authentic Voice-to-Text Engine
     let recognition = null;
     let recognitionActive = false;
     let recognitionRestartTimer = null;
     let lastSpeechRecognizedTime = 0;
-    let vadSpeechTimer = null;
-    let vadSpeechIndex = 0;
-
-    const SPEECH_SAMPLE_PHRASES = [
-      "SesYazOku canlı ses kaydı ve konuşmacı ayrımı testi başlatıldı.",
-      "Mikrofon ve arka plan sesleri net olarak algılanıyor, ses seviyesi optimize edildi.",
-      "Konuşmacılar Kişi 1 ve Kişi 2 olarak etiketlenip transkript metnine aktarılıyor.",
-      "Toplantı notları anlık olarak hazırlanıyor, PDF dökümanı ve Drive yedeği oluşturulabilir.",
-      "Canlı ses transkripsiyonu ve kayıt işlemi başarıyla tamamlanıyor."
-    ];
 
     function setRecStatus(msg) {
       const el = document.getElementById("recStatusLabel");
@@ -2857,7 +2848,7 @@
     function initSpeechRecognition() {
       const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRec) {
-        console.log("Web Speech API not available in this browser environment. Smart Voice-to-Text will assist.");
+        console.log("Web Speech API not available in this browser environment. Real audio transcription will process via Gemini AI.");
         return null;
       }
       try {
@@ -2873,7 +2864,7 @@
         rec.onstart = () => {
           recognitionActive = true;
           if (isRecording && !isMicMuted) {
-            setRecStatus("🎙️ Dinleniyor... (Canlı metne döküm aktif)");
+            setRecStatus("🎙️ Dinleniyor... (Canlı Türkçe konuşma metne dökülüyor)");
           }
         };
 
@@ -2887,7 +2878,7 @@
             if (event.results[i].isFinal) {
               removeInterimRow();
               addTranscriptRow(text.trim());
-              setRecStatus("🎙️ Dinleniyor... (Canlı metne döküm aktif)");
+              setRecStatus("🎙️ Dinleniyor... (Canlı konuşma aktarıldı)");
             } else {
               updateInterimRow(text.trim());
               setRecStatus("✍️ Konuşma algılandı, yazılıyor...");
@@ -2899,14 +2890,12 @@
           console.warn("SpeechRec error event:", e.error);
           if (!isRecording || e.error === 'aborted') return;
           if (e.error === 'no-speech') {
-            // normal pause in speech
             return;
           }
           if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
             setRecStatus("🔇 Mikrofon izni bekleniyor — izin verilince canlı konuşma yazılacaktır");
           } else {
-            // Fallback gracefully
-            setRecStatus("🎙️ Ses algılama ve akıllı transkript devrede");
+            setRecStatus("🎙️ Ses kaydediliyor, kayıt bitiminde yapay zeka ile çözümlenecek");
           }
         };
 
@@ -2932,22 +2921,8 @@
     // Voice Activity Detection Check called during audio waveform updates
     function checkVoiceActivity(volume) {
       if (!isRecording || isMicMuted || currentSource !== 'mic') return;
-      const now = Date.now();
-      // If native SpeechRecognition produced text recently, don't trigger fallback
-      if (now - lastSpeechRecognizedTime < 3500) return;
-
-      // When talking (volume > 12) for over 1.2s without native transcription result:
-      if (volume > 12 && !vadSpeechTimer) {
-        vadSpeechTimer = setTimeout(() => {
-          vadSpeechTimer = null;
-          if (!isRecording || isMicMuted) return;
-          const phrase = SPEECH_SAMPLE_PHRASES[vadSpeechIndex % SPEECH_SAMPLE_PHRASES.length];
-          vadSpeechIndex++;
-          removeInterimRow();
-          addTranscriptRow(phrase);
-          lastSpeechRecognizedTime = Date.now();
-          setRecStatus("🎙️ Ses algılandı ve metne döküldü");
-        }, 1200);
+      if (volume > 15) {
+        setRecStatus("🎙️ Konuşma algılanıyor, dinleniyor...");
       }
     }
 
@@ -2995,12 +2970,10 @@
     function stopRecording() {
       isRecording = false;
       clearInterval(timerInterval);
-      clearTimeout(vadSpeechTimer);
-      vadSpeechTimer = null;
 
       document.getElementById("btn-demo-rec").textContent = "▶️ Kaydı Başlat";
       document.getElementById("rec-dot").style.display = "none";
-      document.getElementById("recStatusLabel").textContent = "Kayıt tamamlandı / hazır";
+      document.getElementById("recStatusLabel").textContent = "Kayıt tamamlandı.";
 
       try {
         if (recognition) recognition.stop();
@@ -3010,34 +2983,190 @@
       removeInterimRow();
       stopAudioFileRecording();
 
-      // If audio was recorded but no speech-to-text was produced (e.g. browser Web Speech API blocked/unsupported):
+      // Canlı konuşma algılanmadıysa kaydedilen ses dosyasını Gemini AI ile gerçek transkribe et
       const currentRows = document.querySelectorAll(".transcript-row");
-      if (currentRows.length === 0 && secondsElapsed >= 1) {
-        const p1 = SPEECH_SAMPLE_PHRASES[0];
-        const p2 = SPEECH_SAMPLE_PHRASES[1];
-        addTranscriptRow(p1);
-        if (secondsElapsed >= 4) {
-          setTimeout(() => addTranscriptRow(p2), 300);
-        }
+      if (currentRows.length === 0 && secondsElapsed >= 2) {
+        setTimeout(() => {
+          if (recordings.length > 0) {
+            transcribeRecordedAudio(recordings[0].name);
+          }
+        }, 500);
       }
 
       stopWaveform();
     }
 
-    function addSampleSpeechDialogue() {
-      const phrase = SPEECH_SAMPLE_PHRASES[vadSpeechIndex % SPEECH_SAMPLE_PHRASES.length];
-      vadSpeechIndex++;
-      addTranscriptRow(phrase);
-      // Alternate speaker for realistic multi-speaker transcription demonstration
-      activeSpeakerIndex = (activeSpeakerIndex + 1) % speakers.length;
-      setActiveSpeaker(activeSpeakerIndex);
+    /**
+     * Gemini 3.8 Flash API ile gerçek ses kaydını dinleyip Türkçe yazıya döker
+     * (Sıfır dolgu/demo metin, temperature: 0.0, yüksek doğruluklu system instruction)
+     */
+    async function transcribeBlobWithGemini(blob, mimeType, fileName) {
+      setRecStatus(`🧠 ${fileName} Gemini AI ile çözümleniyor...`);
+      let apiKey = localStorage.getItem("gemini_api_key");
+      if (!apiKey) {
+        apiKey = prompt("Transkripsiyon için Gemini API anahtarınızı giriniz (tarayıcınızda saklanacaktır):");
+        if (apiKey && apiKey.trim()) {
+          apiKey = apiKey.trim();
+          localStorage.setItem("gemini_api_key", apiKey);
+        }
+      }
+
+      if (!apiKey) {
+        setRecStatus("⚠️ Transkripsiyon için Gemini API anahtarı girilmedi.");
+        return null;
+      }
+
+      try {
+        const base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const res = reader.result;
+            const b64 = res.substring(res.indexOf(',') + 1);
+            resolve(b64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+
+        const rawMime = mimeType || blob.type || 'audio/webm';
+        const cleanMime = rawMime.split(';')[0]; // audio/webm;codecs=opus -> audio/webm
+
+        const systemInstruction = {
+          parts: [{
+            text: "Sen profesyonel, yüksek hassasiyetli bir ses transkripsiyon uzmanısın.\n" +
+                  "Kesin Kurallar:\n" +
+                  "1. Yalnızca ve sadece ses kaydında geçen gerçek insan konuşmalarını harfiyen ve kelimesi kelimesine metne aktar.\n" +
+                  "2. Asla uydurma, tahmin, varsayım, özet, hazır kalıp veya demo konuşma metni üretme.\n" +
+                  "3. Ses kaydında net konuşma duyulmuyorsa, ortam sessizse veya sadece müzik/gürültü varsa KESİNLİKLE hiçbir metin üretme ve sadece boş bırak.\n" +
+                  "4. Farklı konuşmacılar tespit edildiğinde satır başlarına [Kişi 1], [Kişi 2] şeklinde etiketler koy.\n" +
+                  "5. Yanıtına selamlama, özet, transkripsiyon notu veya meta açıklama ekleme. Sadece ve sadece transkribe edilen konuşma satırlarını döndür."
+          }]
+        };
+
+        const prompt = "Bu ses kaydındaki Türkçe konuşmaları hiçbir ekleme veya çıkarma yapmadan tam ve kelimesi kelimesine metne dönüştür. Konuşma yoksa yanıt verme.";
+
+        const generationConfig = {
+          temperature: 0.0,
+          topP: 0.95,
+          maxOutputTokens: 8192
+        };
+
+        const models = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.1-pro-preview"];
+        for (const model of models) {
+          try {
+            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                systemInstruction: systemInstruction,
+                contents: [{
+                  parts: [
+                    { inlineData: { mimeType: cleanMime, data: base64Data } },
+                    { text: prompt }
+                  ]
+                }],
+                generationConfig: generationConfig
+              })
+            });
+
+            if (!resp.ok) {
+              // systemInstruction desteklemeyen bir versiyon olursa geri çekilerek tekrar dene
+              if (resp.status === 400) {
+                const fallbackResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contents: [{
+                      parts: [
+                        { inlineData: { mimeType: cleanMime, data: base64Data } },
+                        { text: systemInstruction.parts[0].text + "\n\n" + prompt }
+                      ]
+                    }],
+                    generationConfig: generationConfig
+                  })
+                });
+                if (fallbackResp.ok) {
+                  const fbData = await fallbackResp.json();
+                  const fbText = fbData.candidates?.[0]?.content?.parts?.[0]?.text;
+                  if (fbText && fbText.trim().length > 0) {
+                    return fbText.trim();
+                  }
+                }
+              }
+              continue;
+            }
+
+            const data = await resp.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text && text.trim().length > 0) {
+              const cleanText = text.trim();
+              // Bilinen halüsinasyon veya sessizlik açıklamalarını filtrele
+              if (/^(sessiz|konuşma yok|konuşma algılanamadı|ses kaydı sessiz|no speech|silence)\.?$/i.test(cleanText)) {
+                return null;
+              }
+              return cleanText;
+            }
+          } catch (me) {
+            console.warn(`Model ${model} fetch failed:`, me);
+          }
+        }
+      } catch (err) {
+        console.error("transcribeBlobWithGemini error:", err);
+      }
+      return null;
     }
 
-    function transcribeRecordedAudio(fileName) {
-      const p1 = `[${fileName}]: Toplantı kaydı dinlendi ve metne döküldü.`;
-      const p2 = `[${fileName}]: Konuşmacı ayrımı ve ses analizleri tamamlandı, PDF dökümanına hazır.`;
-      addTranscriptRow(p1);
-      setTimeout(() => addTranscriptRow(p2), 400);
+    async function transcribeRecordedAudio(fileName) {
+      const rec = recordings.find(r => r.name === fileName);
+      if (!rec || !rec.blob) {
+        setRecStatus("⚠️ Ses verisi bulunamadı.");
+        return;
+      }
+
+      setRecStatus(`🧠 ${fileName} transkripsiyonu başlatıldı...`);
+      const resultText = await transcribeBlobWithGemini(rec.blob, rec.mimeType, fileName);
+
+      if (resultText) {
+        // [Kişi X] etiketleri varsa ayrıştır
+        const speakerRegex = /\[(Kişi \d+|Konuşmacı \d+|[A-Za-z0-9ÇĞİÖŞÜçğıöşü ]+)\][:\s]*(.+)/g;
+        let match;
+        let foundSegments = false;
+        while ((match = speakerRegex.exec(resultText)) !== null) {
+          foundSegments = true;
+          const spkName = match[1].trim();
+          const spkText = match[2].trim();
+          const spkIdx = spkName.includes('2') ? 1 : (spkName.includes('3') ? 2 : 0);
+          setActiveSpeaker(spkIdx);
+          addTranscriptRow(spkText);
+        }
+
+        if (!foundSegments) {
+          const sentences = resultText.split(/[.!?\n]+/).map(s => s.trim()).filter(Boolean);
+          if (sentences.length > 0) {
+            sentences.forEach((s, idx) => {
+              setActiveSpeaker(idx % speakers.length);
+              addTranscriptRow(s);
+            });
+          } else {
+            addTranscriptRow(resultText);
+          }
+        }
+        setRecStatus(`✅ ${fileName} başarıyla metne dönüştürüldü!`);
+      } else {
+        setRecStatus(`⚠️ ${fileName} kaydında net konuşma algılanamadı veya transkripsiyon servisine ulaşılamadı.`);
+      }
+    }
+
+    function handleWebAudioUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const url = URL.createObjectURL(file);
+      const mime = file.type || 'audio/mp3';
+      recordings.unshift({ name: file.name, url: url, blob: file, mimeType: mime });
+      renderRecordings();
+      event.target.value = "";
+      transcribeRecordedAudio(file.name);
     }
 
     function resetDemoSession() {
@@ -3217,8 +3346,8 @@
       const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
       recordedChunks = [];
       const stamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-');
-      const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
-      recordings.unshift({ name: `Kayit_${stamp}.${ext}`, url: URL.createObjectURL(blob) });
+      const mime = blob.type || 'audio/webm';
+      recordings.unshift({ name: `Kayit_${stamp}.${ext}`, url: URL.createObjectURL(blob), blob: blob, mimeType: mime });
       renderRecordings();
     }
 

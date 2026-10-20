@@ -98,7 +98,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Actions Build Bot"
-          git add docs/SesYazOku.apk docs/version.json docs/index.html
+          git add -f docs/SesYazOku.apk docs/version.json docs/index.html
           if git diff --staged --quiet; then
             echo "No changes to commit in docs/"
           else
