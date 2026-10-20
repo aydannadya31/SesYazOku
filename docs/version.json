@@ -3,7 +3,7 @@
   "versionName": "1.0.32",
   "apkUrl": "SesYazOku.apk",
   "webPageUrl": "https://aydannadya31.github.io/SesYazOku/",
-  "releaseNotes": "v1.0.32 - Yüksek hassasiyetli Gemini 3.8 Flash ses transkripsiyonu (sıfır dolgu/demo metin, temperature 0.0 deterministik çözümleme)",
-  "publishedAt": "2026-10-19 09:20 UTC",
+  "releaseNotes": "GitHub Güncellemesi (04159a4): feat: upgrade to v1.0.32 and optimize transcription",
+  "publishedAt": "2026-10-20 08:35 UTC",
   "minSdkVersion": 24
 }
