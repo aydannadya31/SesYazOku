@@ -43,6 +43,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.example.ui.util.AdaptiveButtonText
+import com.example.ui.util.Localization
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -84,6 +86,7 @@ fun TranscriptsScreen(
     val playingPath by playerManager.currentPlayingPath.collectAsState()
     val currentPositionMs by playerManager.currentPositionMs.collectAsState()
     val durationMs by playerManager.durationMs.collectAsState()
+    val language by viewModel.language.collectAsState()
 
     var speakerCount by remember { mutableIntStateOf(2) }
 
@@ -336,7 +339,7 @@ fun TranscriptsScreen(
                                             .height(42.dp),
                                         shape = RoundedCornerShape(10.dp)
                                     ) {
-                                        Text("Sesten Yazıya Dönüştür")
+                                        AdaptiveButtonText(text = Localization.get("trans_transcribe_btn", language))
                                     }
                                 }
                             } else {
@@ -370,7 +373,7 @@ fun TranscriptsScreen(
                                         shape = RoundedCornerShape(10.dp),
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text("Yeniden Dönüştür", fontSize = 12.sp)
+                                        AdaptiveButtonText(text = if (language == "en") "Transcribe Again" else "Yeniden Dönüştür", fontSize = 12.sp)
                                     }
 
                                     OutlinedButton(

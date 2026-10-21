@@ -42,15 +42,19 @@ object AudioImportManager {
                 }
             } ?: return@withContext null
 
-            if (fileSize == 0L) {
-                fileSize = destinationFile.length()
+            // Kural 3: Ses dosyası yüklendiğinde mono sese çevrilip ondan sonra kaydedilsin/dönüştürülsün
+            val monoFile = AudioMonoConverter.convertToMonoIfNeeded(context, destinationFile)
+            val finalFile = if (monoFile.exists() && monoFile.length() > 0) monoFile else destinationFile
+
+            if (fileSize == 0L || finalFile != destinationFile) {
+                fileSize = finalFile.length()
             }
 
             var durationMs = 0L
-            var mimeType = "audio/*"
+            var mimeType = if (finalFile.extension.equals("wav", ignoreCase = true)) "audio/wav" else "audio/*"
             try {
                 val retriever = MediaMetadataRetriever()
-                retriever.setDataSource(destinationFile.absolutePath)
+                retriever.setDataSource(finalFile.absolutePath)
                 val durationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
                 durationMs = durationStr?.toLongOrNull() ?: 0L
                 val mimeStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE)
@@ -64,7 +68,7 @@ object AudioImportManager {
 
             RecordingEntity(
                 title = cleanTitle,
-                filePath = destinationFile.absolutePath,
+                filePath = finalFile.absolutePath,
                 durationMs = durationMs,
                 fileSize = fileSize,
                 mimeType = mimeType,

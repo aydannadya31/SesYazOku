@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,6 +10,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.filled.Info
+import com.example.ui.util.AdaptiveButtonText
+import com.example.ui.util.Localization
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -440,6 +446,40 @@ fun SettingsScreen(viewModel: MainViewModel) {
                     singleLine = true
                 )
 
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Kural 5: Web sayfasındaki resimli yardım ekranına yönlendiren bağlantı
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val intent = Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("https://aydannadya31.github.io/SesYazOku/#gemini-api-guide")
+                            ).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            try { context.startActivity(intent) } catch (_: Exception) {}
+                        }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "❓ Ücretsiz Gemini API Anahtarı Nasıl Alınır? (Resimli Rehber)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
@@ -464,7 +504,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
                             geminiKeySavedMessage = true
                         }
                     ) {
-                        Text("Kaydet")
+                        AdaptiveButtonText(text = "Kaydet")
                     }
                 }
             }

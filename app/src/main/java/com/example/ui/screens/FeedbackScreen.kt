@@ -33,8 +33,11 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.AlertDialog
+import com.example.ui.util.AdaptiveButtonText
+import com.example.ui.util.Localization
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -97,10 +100,18 @@ fun FeedbackScreen(viewModel: MainViewModel) {
     val context = LocalContext.current
     val feedbacks by viewModel.feedbacks.collectAsState()
     val authProfile by viewModel.authManager.userProfile.collectAsState()
+    val language by viewModel.language.collectAsState()
 
     var subject by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("İşleyiş Geri Bildirimi") }
     var message by remember { mutableStateOf("") }
+
+    // Kural 9: Destek ekibi uyarısı alanı
+    val prefs = remember { context.getSharedPreferences("sesyazoku_prefs", Context.MODE_PRIVATE) }
+    var activeSupportAlert by remember {
+        mutableStateOf(prefs.getString("active_support_alert", "Teknik Destek Ekibi: Sistem bağlantınız aktif. Yaşadığınız sorunları veya taleplerinizi buradan iletebilirsiniz.") ?: "")
+    }
+    var isAlertDismissed by remember { mutableStateOf(false) }
 
     // Çoklu ek listesi (Birden fazla ses, fotoğraf veya PDF eklenebilir)
     var attachments by remember { mutableStateOf<List<FeedbackAttachmentItem>>(emptyList()) }
@@ -154,7 +165,7 @@ fun FeedbackScreen(viewModel: MainViewModel) {
     ) {
         item {
             Text(
-                text = "Üreticiye Mesaj",
+                text = Localization.get("feedback_title", language),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -164,6 +175,64 @@ fun FeedbackScreen(viewModel: MainViewModel) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+
+        // Kural 9: Destek Uyarısı İletildiğinde Görüntülenecek Mesaj Bildirim Alanı
+        if (activeSupportAlert.isNotBlank() && !isAlertDismissed) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("support_alert_card"),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.85f))
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.NotificationsActive,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = Localization.get("feedback_support_alert", language),
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                            IconButton(
+                                onClick = {
+                                    isAlertDismissed = true
+                                    prefs.edit().remove("active_support_alert").apply()
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Kapat",
+                                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = activeSupportAlert,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
+            }
         }
 
         // Gönderen Kullanıcı Kimlik Kartı
@@ -437,7 +506,7 @@ fun FeedbackScreen(viewModel: MainViewModel) {
                     ) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Gönder", fontWeight = FontWeight.Bold)
+                        AdaptiveButtonText(text = Localization.get("feedback_send", language), fontWeight = FontWeight.Bold)
                     }
                 }
             }

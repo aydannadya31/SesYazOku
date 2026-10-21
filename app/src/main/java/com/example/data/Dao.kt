@@ -27,6 +27,9 @@ interface RecordingDao {
     @Query("UPDATE recordings SET title = :title WHERE id = :id")
     suspend fun updateTitle(id: Long, title: String)
 
+    @Query("UPDATE recordings SET filePath = :filePath WHERE id = :id")
+    suspend fun updateFilePath(id: Long, filePath: String)
+
     @Query("UPDATE recordings SET thumbnailUri = :thumbnailUri WHERE id = :id")
     suspend fun updateThumbnail(id: Long, thumbnailUri: String?)
 

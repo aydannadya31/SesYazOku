@@ -186,10 +186,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             try {
+                // Kural 3: Ses dosyası metne dönüştürülmeden önce mono sese çevrilsin
+                val originalFile = java.io.File(recording.filePath)
+                val monoFile = com.example.audio.AudioMonoConverter.convertToMonoIfNeeded(getApplication(), originalFile)
+                val finalAudioPath = if (monoFile.exists() && monoFile.length() > 0) monoFile.absolutePath else recording.filePath
+                if (finalAudioPath != recording.filePath) {
+                    recordingDao.updateFilePath(recording.id, finalAudioPath)
+                }
+
                 val (fullText, segments) = SpeechTranscriptionEngine.transcribeAudio(
                     context = getApplication(),
                     recordingId = recording.id,
-                    filePath = recording.filePath,
+                    filePath = finalAudioPath,
                     targetSpeakerCount = speakerCount,
                     language = _language.value,
                     onProgress = { progress -> _transcribeProgress.value = progress }

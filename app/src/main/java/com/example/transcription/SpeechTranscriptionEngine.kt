@@ -18,6 +18,13 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.util.Locale
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.io.ByteArrayOutputStream
+import java.io.FileOutputStream
 import kotlin.coroutines.resume
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -76,7 +83,9 @@ object SpeechTranscriptionEngine {
         // 2. Aşama: Gerçek ses dosyasını Gemini AI API ile sesten yazıya aktar (Base64 Inline Audio)
         if (recognizedText.isNullOrBlank() && file.exists() && file.length() > 512) {
             onProgress(0.30f)
-            val geminiResult = transcribeWithGeminiApi(context, file, language, targetSpeakerCount)
+            // Kural 3: Ses dosyası yükleyip metne dönüştürme istendiğinde ses dosyası mono sese çevrilip ondan sonra metne dönüştürülsün
+            val monoAudioFile = ensureMonoAudioFile(context, file)
+            val geminiResult = transcribeWithGeminiApi(context, monoAudioFile, language, targetSpeakerCount)
             if (!geminiResult.isNullOrBlank()) {
                 recognizedText = geminiResult
             }
@@ -408,6 +417,183 @@ object SpeechTranscriptionEngine {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Kural 3: Ses dosyasını 1 kanallı (Mono) 16-bit PCM WAV formatına dönüştürür.
+     */
+    fun ensureMonoAudioFile(context: Context, inputFile: File): File {
+        try {
+            val outputDir = File(context.cacheDir, "mono_audio").apply { if (!exists()) mkdirs() }
+            val cleanName = inputFile.nameWithoutExtension.replace(Regex("[^a-zA-Z0-9_-]"), "_")
+            val monoFile = File(outputDir, "MONO_${cleanName}.wav")
+
+            val extractor = MediaExtractor()
+            extractor.setDataSource(inputFile.absolutePath)
+
+            var audioTrackIndex = -1
+            var inputFormat: MediaFormat? = null
+            for (i in 0 until extractor.trackCount) {
+                val format = extractor.getTrackFormat(i)
+                val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
+                if (mime.startsWith("audio/")) {
+                    audioTrackIndex = i
+                    inputFormat = format
+                    break
+                }
+            }
+
+            if (audioTrackIndex == -1 || inputFormat == null) {
+                extractor.release()
+                return inputFile
+            }
+
+            val channelCount = if (inputFormat.containsKey(MediaFormat.KEY_CHANNEL_COUNT)) {
+                inputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+            } else 1
+
+            val sampleRate = if (inputFormat.containsKey(MediaFormat.KEY_SAMPLE_RATE)) {
+                inputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+            } else 44100
+
+            // Eğer zaten tek kanal (mono) WAV ise doğrudan döndür
+            if (channelCount <= 1 && inputFile.name.endsWith(".wav", ignoreCase = true)) {
+                extractor.release()
+                return inputFile
+            }
+
+            extractor.selectTrack(audioTrackIndex)
+            val mime = inputFormat.getString(MediaFormat.KEY_MIME) ?: ""
+            val decoder = MediaCodec.createDecoderByType(mime)
+            decoder.configure(inputFormat, null, null, 0)
+            decoder.start()
+
+            val pcmOutputStream = ByteArrayOutputStream()
+            val info = MediaCodec.BufferInfo()
+            var isEOS = false
+
+            while (!isEOS) {
+                val inIndex = decoder.dequeueInputBuffer(10000L)
+                if (inIndex >= 0) {
+                    val inBuffer = decoder.getInputBuffer(inIndex)
+                    if (inBuffer != null) {
+                        val sampleSize = extractor.readSampleData(inBuffer, 0)
+                        if (sampleSize < 0) {
+                            decoder.queueInputBuffer(inIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                            isEOS = true
+                        } else {
+                            decoder.queueInputBuffer(inIndex, 0, sampleSize, extractor.sampleTime, 0)
+                            extractor.advance()
+                        }
+                    }
+                }
+
+                var outIndex = decoder.dequeueOutputBuffer(info, 10000L)
+                while (outIndex >= 0) {
+                    val outBuffer = decoder.getOutputBuffer(outIndex)
+                    if (outBuffer != null && info.size > 0) {
+                        outBuffer.position(info.offset)
+                        outBuffer.limit(info.offset + info.size)
+                        val chunk = ByteArray(info.size)
+                        outBuffer.get(chunk)
+
+                        if (channelCount > 1) {
+                            // Downmix stereo to 1-channel mono
+                            val shortBuf = ByteBuffer.wrap(chunk).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+                            val monoShorts = ShortArray(shortBuf.remaining() / channelCount)
+                            for (s in monoShorts.indices) {
+                                var sum = 0
+                                for (c in 0 until channelCount) {
+                                    sum += shortBuf.get()
+                                }
+                                monoShorts[s] = (sum / channelCount).toShort()
+                            }
+                            val monoBytes = ByteBuffer.allocate(monoShorts.size * 2).order(ByteOrder.LITTLE_ENDIAN)
+                            monoBytes.asShortBuffer().put(monoShorts)
+                            pcmOutputStream.write(monoBytes.array())
+                        } else {
+                            pcmOutputStream.write(chunk)
+                        }
+                    }
+                    decoder.releaseOutputBuffer(outIndex, false)
+                    if ((info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                        break
+                    }
+                    outIndex = decoder.dequeueOutputBuffer(info, 0)
+                }
+            }
+
+            decoder.stop()
+            decoder.release()
+            extractor.release()
+
+            val rawPcm = pcmOutputStream.toByteArray()
+            if (rawPcm.isNotEmpty()) {
+                writeWavFile(monoFile, rawPcm, sampleRate, 1)
+                Log.i(TAG, "Successfully converted audio to mono WAV (${monoFile.length()} bytes)")
+                return monoFile
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Mono audio conversion fallback: ${e.message}")
+        }
+        return inputFile
+    }
+
+    private fun writeWavFile(outputFile: File, pcmData: ByteArray, sampleRate: Int, channels: Int) {
+        val totalAudioLen = pcmData.size.toLong()
+        val totalDataLen = totalAudioLen + 36
+        val byteRate = sampleRate * channels * 2
+
+        val header = ByteArray(44)
+        header[0] = 'R'.code.toByte()
+        header[1] = 'I'.code.toByte()
+        header[2] = 'F'.code.toByte()
+        header[3] = 'F'.code.toByte()
+        header[4] = (totalDataLen and 0xff).toByte()
+        header[5] = (totalDataLen shr 8 and 0xff).toByte()
+        header[6] = (totalDataLen shr 16 and 0xff).toByte()
+        header[7] = (totalDataLen shr 24 and 0xff).toByte()
+        header[8] = 'W'.code.toByte()
+        header[9] = 'A'.code.toByte()
+        header[10] = 'V'.code.toByte()
+        header[11] = 'E'.code.toByte()
+        header[12] = 'f'.code.toByte()
+        header[13] = 'm'.code.toByte()
+        header[14] = 't'.code.toByte()
+        header[15] = ' '.code.toByte()
+        header[16] = 16
+        header[17] = 0
+        header[18] = 0
+        header[19] = 0
+        header[20] = 1 // Format: PCM
+        header[21] = 0
+        header[22] = channels.toByte()
+        header[23] = 0
+        header[24] = (sampleRate and 0xff).toByte()
+        header[25] = (sampleRate shr 8 and 0xff).toByte()
+        header[26] = (sampleRate shr 16 and 0xff).toByte()
+        header[27] = (sampleRate shr 24 and 0xff).toByte()
+        header[28] = (byteRate and 0xff).toByte()
+        header[29] = (byteRate shr 8 and 0xff).toByte()
+        header[30] = (byteRate shr 16 and 0xff).toByte()
+        header[31] = (byteRate shr 24 and 0xff).toByte()
+        header[32] = (channels * 2).toByte() // block align
+        header[33] = 0
+        header[34] = 16 // bits per sample
+        header[35] = 0
+        header[36] = 'd'.code.toByte()
+        header[37] = 'a'.code.toByte()
+        header[38] = 't'.code.toByte()
+        header[39] = 'a'.code.toByte()
+        header[40] = (totalAudioLen and 0xff).toByte()
+        header[41] = (totalAudioLen shr 8 and 0xff).toByte()
+        header[42] = (totalAudioLen shr 16 and 0xff).toByte()
+        header[43] = (totalAudioLen shr 24 and 0xff).toByte()
+
+        FileOutputStream(outputFile).use { fos ->
+            fos.write(header)
+            fos.write(pcmData)
         }
     }
 }

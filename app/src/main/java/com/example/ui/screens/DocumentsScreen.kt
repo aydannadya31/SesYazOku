@@ -59,6 +59,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.example.ui.util.AdaptiveButtonText
+import com.example.ui.util.Localization
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -92,6 +94,7 @@ fun DocumentsScreen(viewModel: MainViewModel) {
     val recordings by viewModel.recordings.collectAsState()
     val driveBackupState by viewModel.driveBackupUiState.collectAsState()
     val userProfile by viewModel.authManager.userProfile.collectAsState()
+    val language by viewModel.language.collectAsState()
 
     var selectedIds by remember { mutableStateOf(setOf<Long>()) }
     var renamingItem by remember { mutableStateOf<RecordingEntity?>(null) }
@@ -356,8 +359,13 @@ fun DocumentsScreen(viewModel: MainViewModel) {
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (selectedIds.isEmpty()) "Tümünü Drive'a Yedekle" else "Seçilenleri Drive'a Aktar (${selectedIds.size})",
+                            val backupLabel = if (selectedIds.isEmpty()) {
+                                Localization.get("drive_backup_all", language)
+                            } else {
+                                "${Localization.get("drive_backup_selected", language)} (${selectedIds.size})"
+                            }
+                            AdaptiveButtonText(
+                                text = backupLabel,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -571,22 +579,22 @@ fun DocumentsScreen(viewModel: MainViewModel) {
                     ) {
                         Button(
                             onClick = {
+                                val targets = if (selectedIds.isEmpty()) recordings else recordings.filter { it.id in selectedIds }
+                                viewModel.shareBackupToDriveApp(context, targets)
+                            }
+                        ) {
+                            Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            AdaptiveButtonText(Localization.get("drive_save_now", language))
+                        }
+                        OutlinedButton(
+                            onClick = {
                                 viewModel.openGoogleDrive(context)
                             }
                         ) {
                             Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Drive'da Kendi Hesabında Aç")
-                        }
-                        OutlinedButton(
-                            onClick = {
-                                val targets = if (selectedIds.isEmpty()) recordings else recordings.filter { it.id in selectedIds }
-                                viewModel.shareBackupToDriveApp(context, targets)
-                            }
-                        ) {
-                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Cihazdaki Drive ile Senkronize Et")
+                            AdaptiveButtonText(Localization.get("drive_open_browser", language))
                         }
                     }
                 }

@@ -3,6 +3,7 @@ package com.example.drive
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Environment
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.FileProvider
@@ -194,6 +195,28 @@ class GoogleDriveBackupManager(
             delay(250)
         }
 
+        // Copy files to public Downloads/SesYazOku directory so they are permanent and indexable
+        try {
+            val publicDir = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                "SesYazOku"
+            ).apply { if (!exists()) mkdirs() }
+
+            val localFiles = driveBackupDir.listFiles() ?: emptyArray()
+            for (f in localFiles) {
+                try {
+                    val dest = File(publicDir, f.name)
+                    f.copyTo(dest, overwrite = true)
+                    android.media.MediaScannerConnection.scanFile(
+                        context,
+                        arrayOf(dest.absolutePath),
+                        null,
+                        null
+                    )
+                } catch (_: Exception) {}
+            }
+        } catch (_: Exception) {}
+
         // Final verification & completion
         _uiState.value = _uiState.value.copy(
             status = DriveBackupStatus.SUCCESS,
@@ -201,8 +224,13 @@ class GoogleDriveBackupManager(
             progressPercent = 100,
             progressFloat = 1.0f,
             uploadedFiles = uploadedList.toList(),
-            statusMessage = "Tüm seçilen dökümanlar [$targetEmail] kullanıcısının Google Drive '$DEDICATED_FOLDER_NAME' klasörüne başarıyla yedeklendi!"
+            statusMessage = "Tüm seçilen dökümanlar hazırlandı ve [$targetEmail] için Drive aktarımı başlatıldı!"
         )
+
+        // Automatically launch Drive save dialog
+        withContext(Dispatchers.Main) {
+            shareBackupToDeviceDriveApp(context, recordings, targetEmail)
+        }
     }
 
     private fun buildTranscriptionDocument(
@@ -349,32 +377,49 @@ class GoogleDriveBackupManager(
                 return
             }
 
+            val clipData = android.content.ClipData.newUri(context.contentResolver, "SesYazOku Drive Backup", uris[0])
+            for (i in 1 until uris.size) {
+                clipData.addItem(android.content.ClipData.Item(uris[i]))
+            }
+
             val shareIntent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
                 type = "*/*"
+                this.clipData = clipData
                 putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
                 putExtra(Intent.EXTRA_SUBJECT, "SesYazOku Google Drive Yedeği ($targetEmail)")
                 putExtra(Intent.EXTRA_TEXT, "SesYazOku döküman ve transkripsiyon yedekleri ($targetEmail).")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                // Attempt to target Drive app directly if installed
-                setPackage("com.google.android.apps.docs")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
 
-            try {
-                context.startActivity(shareIntent)
-            } catch (_: Exception) {
-                // If Drive package not found or fails, open chooser
-                val chooser = Intent.createChooser(
-                    Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                        type = "*/*"
-                        putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    },
-                    "Google Drive ile Kendi Hesabına Kaydet"
-                ).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            // Grant read permission explicitly for all matching packages
+            val resInfoList = context.packageManager.queryIntentActivities(shareIntent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
+            for (resolveInfo in resInfoList) {
+                val packageName = resolveInfo.activityInfo.packageName
+                for (uri in uris) {
+                    context.grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                context.startActivity(chooser)
             }
+
+            // Check if Google Drive app is available
+            val hasDriveApp = resInfoList.any { it.activityInfo.packageName == "com.google.android.apps.docs" }
+            if (hasDriveApp) {
+                try {
+                    val driveSpecificIntent = Intent(shareIntent).apply {
+                        setPackage("com.google.android.apps.docs")
+                    }
+                    context.startActivity(driveSpecificIntent)
+                    return
+                } catch (e: Exception) {
+                    Log.w(TAG, "Direct launch of Drive app failed, opening chooser", e)
+                }
+            }
+
+            val chooser = Intent.createChooser(shareIntent, "Google Drive ile Hesabına Kaydet").apply {
+                this.clipData = clipData
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(chooser)
         } catch (e: Exception) {
             Log.e(TAG, "Error sharing to Drive app", e)
             Toast.makeText(context, "Drive paylaşımı başlatılamadı: ${e.message}", Toast.LENGTH_SHORT).show()

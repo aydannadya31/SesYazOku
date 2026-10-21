@@ -39,9 +39,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.example.ui.util.AdaptiveButtonText
+import com.example.ui.util.Localization
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -97,6 +103,8 @@ fun EditorScreen(
     // Etiket düzenleme diyaloğu
     var editingSpeaker by remember { mutableStateOf<Pair<Int, String>?>(null) } // (speakerIndex, currentLabel)
     var newLabelInput by remember { mutableStateOf("") }
+    var isDropdownExpanded by remember { mutableStateOf(false) }
+    val language by viewModel.language.collectAsState()
 
     Column(
         modifier = Modifier
@@ -182,39 +190,109 @@ fun EditorScreen(
                 }
             }
         } else {
-            // Kayıt Seçim Şeridi
+            // Kayıt Seçim Açılır Menüsü (Kural 7)
             Text(
-                text = "Düzenlenecek Dökümanı Seçin:",
+                text = Localization.get("editor_select_doc", language),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(6.dp))
 
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(transcribedRecordings) { rec ->
-                    val isSelected = currentRecording?.id == rec.id
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { viewModel.selectRecordingForView(rec.id) },
-                        label = { Text(rec.title, maxLines = 1) },
-                        leadingIcon = {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Surface(
+                    onClick = { isDropdownExpanded = !isDropdownExpanded },
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("editor_document_dropdown_trigger")
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Icon(
-                                imageVector = if (isSelected) Icons.Default.Check else Icons.Default.Description,
+                                imageVector = Icons.Default.Description,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp)
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
                             )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                        modifier = Modifier.testTag("editor_chip_${rec.id}")
-                    )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = currentRecording?.title ?: "Döküman Seçin",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1
+                                )
+                                currentRecording?.let {
+                                    val durMin = (it.durationMs / 1000) / 60
+                                    val durSec = (it.durationMs / 1000) % 60
+                                    Text(
+                                        text = "Süre: ${String.format(Locale.getDefault(), "%02d:%02d", durMin, durSec)} • ${it.speakerCount} Konuşmacı",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                        Icon(
+                            imageVector = if (isDropdownExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                            contentDescription = "Açılır Menü",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                DropdownMenu(
+                    expanded = isDropdownExpanded,
+                    onDismissRequest = { isDropdownExpanded = false },
+                    modifier = Modifier
+                        .fillMaxWidth(0.92f)
+                        .background(MaterialTheme.colorScheme.surface)
+                ) {
+                    transcribedRecordings.forEach { rec ->
+                        val isSelected = currentRecording?.id == rec.id
+                        DropdownMenuItem(
+                            text = {
+                                Column {
+                                    Text(
+                                        text = rec.title,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    val durMin = (rec.durationMs / 1000) / 60
+                                    val durSec = (rec.durationMs / 1000) % 60
+                                    Text(
+                                        text = "Süre: ${String.format(Locale.getDefault(), "%02d:%02d", durMin, durSec)} • ${rec.speakerCount} Konuşmacı",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = if (isSelected) Icons.Default.Check else Icons.Default.Description,
+                                    contentDescription = null,
+                                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            onClick = {
+                                viewModel.selectRecordingForView(rec.id)
+                                isDropdownExpanded = false
+                            }
+                        )
+                    }
                 }
             }
 

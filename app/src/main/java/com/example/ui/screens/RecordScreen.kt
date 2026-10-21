@@ -74,6 +74,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.service.FloatingRecordingService
 import com.example.ui.MainViewModel
+import com.example.ui.util.AdaptiveButtonText
+import com.example.ui.util.Localization
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -101,6 +103,7 @@ fun RecordScreen(
     val currentPositionMs by playerManager.currentPositionMs.collectAsState()
     val durationMs by playerManager.durationMs.collectAsState()
     val recordings by viewModel.recordings.collectAsState()
+    val language by viewModel.language.collectAsState()
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -140,13 +143,13 @@ fun RecordScreen(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Ses Kayıt Merkezi",
+                    text = Localization.get("rec_title", language),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Canlı mikrofon kaydı, diğer uygulamalar ve harici ses dosyaları",
+                    text = Localization.get("rec_subtitle", language),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -160,7 +163,7 @@ fun RecordScreen(
             ) {
                 Icon(Icons.Default.Folder, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Dosyalar", fontSize = 12.sp)
+                Text(Localization.get("nav_documents", language), fontSize = 12.sp)
             }
         }
 
@@ -202,10 +205,10 @@ fun RecordScreen(
 
                 Text(
                     text = when {
-                        !isRecording -> "Kayıt Yapılmıyor"
-                        isPaused -> "Kayıt Duraklatıldı"
-                        isMicMuted -> "Kayıt Sürüyor (Mikrofon Sessizde)"
-                        else -> "Canlı Ses Kaydediliyor..."
+                        !isRecording -> Localization.get("rec_status_idle", language)
+                        isPaused -> Localization.get("rec_status_paused", language)
+                        isMicMuted -> Localization.get("rec_status_muted", language)
+                        else -> Localization.get("rec_status_recording", language)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -645,7 +648,7 @@ fun RecordScreen(
                             .testTag("start_app_record_button"),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Uygulama/Görüşme Kaydını Başlat")
+                        AdaptiveButtonText(text = if (language == "en") "Start App/Call Recording" else "Uygulama/Görüşme Kaydını Başlat")
                     }
                 } else {
                     Row(
@@ -669,7 +672,7 @@ fun RecordScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Text("Durdur ve Kaydet")
+                            AdaptiveButtonText(text = if (language == "en") "Stop & Save" else "Durdur ve Kaydet")
                         }
                     }
                 }
@@ -756,7 +759,7 @@ fun RecordScreen(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Cihazdan Ses Dosyası Seç")
+                    AdaptiveButtonText(text = if (language == "en") "Choose Audio File from Device" else "Cihazdan Ses Dosyası Seç")
                 }
             }
         }

@@ -35,10 +35,19 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import com.example.ui.util.Localization
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.MainViewModel
 import com.example.ui.components.PermissionsDialog
@@ -95,6 +104,13 @@ fun AppRootContent(viewModel: MainViewModel) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 
     val authProfile by viewModel.authManager.userProfile.collectAsState()
+    val updateState by viewModel.updateUiState.collectAsState()
+    val language by viewModel.language.collectAsState()
+
+    // 1. Kural: Uygulamayı kullanıcı her açtığında güncel sürüm kontrolü yap
+    LaunchedEffect(Unit) {
+        viewModel.updateManager.checkForUpdates()
+    }
 
     if (showSplash) {
         SplashScreen(
@@ -137,43 +153,57 @@ fun AppRootContent(viewModel: MainViewModel) {
                 NavigationBarItem(
                     selected = selectedTabIndex == 0,
                     onClick = { selectedTabIndex = 0 },
-                    icon = { Icon(Icons.Default.Mic, contentDescription = "Kayıt") },
-                    label = { Text("Kayıt") },
+                    icon = { Icon(Icons.Default.Mic, contentDescription = Localization.get("nav_record", language)) },
+                    label = { Text(Localization.get("nav_record", language)) },
                     modifier = Modifier.testTag("nav_record")
                 )
                 NavigationBarItem(
                     selected = selectedTabIndex == 1,
                     onClick = { selectedTabIndex = 1 },
-                    icon = { Icon(Icons.Default.RecordVoiceOver, contentDescription = "Transkriptor") },
-                    label = { Text("Transkriptor") },
+                    icon = { Icon(Icons.Default.RecordVoiceOver, contentDescription = Localization.get("nav_transcripts", language)) },
+                    label = { Text(Localization.get("nav_transcripts", language)) },
                     modifier = Modifier.testTag("nav_transcripts")
                 )
                 NavigationBarItem(
                     selected = selectedTabIndex == 2,
                     onClick = { selectedTabIndex = 2 },
-                    icon = { Icon(Icons.Default.Edit, contentDescription = "Düzenleyici") },
-                    label = { Text("Düzenleyici") },
+                    icon = { Icon(Icons.Default.Edit, contentDescription = Localization.get("nav_editor", language)) },
+                    label = { Text(Localization.get("nav_editor", language)) },
                     modifier = Modifier.testTag("nav_editor")
                 )
                 NavigationBarItem(
                     selected = selectedTabIndex == 3,
                     onClick = { selectedTabIndex = 3 },
-                    icon = { Icon(Icons.Default.Folder, contentDescription = "Dosya Yöneticisi") },
-                    label = { Text("Dosyalar") },
+                    icon = { Icon(Icons.Default.Folder, contentDescription = Localization.get("nav_documents", language)) },
+                    label = { Text(Localization.get("nav_documents", language)) },
                     modifier = Modifier.testTag("nav_documents")
                 )
                 NavigationBarItem(
                     selected = selectedTabIndex == 4,
                     onClick = { selectedTabIndex = 4 },
-                    icon = { Icon(Icons.Default.Feedback, contentDescription = "Üreticiye Mesaj") },
-                    label = { Text("Mesaj") },
+                    icon = { Icon(Icons.Default.Feedback, contentDescription = Localization.get("nav_feedback", language)) },
+                    label = { Text(Localization.get("nav_feedback", language)) },
                     modifier = Modifier.testTag("nav_feedback")
                 )
                 NavigationBarItem(
                     selected = selectedTabIndex == 5,
                     onClick = { selectedTabIndex = 5 },
-                    icon = { Icon(Icons.Default.Settings, contentDescription = "Ayarlar") },
-                    label = { Text("Ayarlar") },
+                    icon = {
+                        Box {
+                            Icon(Icons.Default.Settings, contentDescription = Localization.get("nav_settings", language))
+                            // 1. Kural: Güncelleme var ise Ayarlar simgesinin sol üst köşesinde minik turuncu bir nokta
+                            if (updateState.isUpdateAvailable) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .align(Alignment.TopStart)
+                                        .offset(x = (-3).dp, y = (-2).dp)
+                                        .background(Color(0xFFF59E0B), CircleShape)
+                                )
+                            }
+                        }
+                    },
+                    label = { Text(Localization.get("nav_settings", language)) },
                     modifier = Modifier.testTag("nav_settings")
                 )
             }
