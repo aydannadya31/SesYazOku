@@ -15,7 +15,7 @@ android {
   val dynamicVersionCode: Int = (project.findProperty("versionCode") as? String)?.toIntOrNull()
     ?: System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()?.let { it + 10 }
     ?: System.getenv("VERSION_CODE")?.toIntOrNull()
-    ?: 32
+    ?: 34
 
   val dynamicVersionName: String = (project.findProperty("versionName") as? String)
     ?: System.getenv("VERSION_NAME")

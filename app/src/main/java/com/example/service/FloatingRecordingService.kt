@@ -13,11 +13,16 @@ import androidx.core.app.NotificationCompat
 import com.example.MainActivity
 import com.example.R
 import com.example.audio.AudioRecorderManager
+import com.example.data.AppDatabase
+import com.example.data.RecordingEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class FloatingRecordingService : Service() {
 
@@ -61,9 +66,29 @@ class FloatingRecordingService : Service() {
                 }
             }
             ACTION_STOP_CALL_RECORDING -> {
+                val duration = _recordedDurationSeconds.value * 1000L
                 val file = recorderManager.stopRecording()
                 _isRunning.value = false
                 stopForeground(STOP_FOREGROUND_REMOVE)
+
+                if (file != null && file.exists() && file.length() > 0) {
+                    val dateStr = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date())
+                    val entity = RecordingEntity(
+                        title = "Uygulama & Görüşme Kaydı ($dateStr)",
+                        filePath = file.absolutePath,
+                        durationMs = if (duration > 0) duration else 1000L,
+                        fileSize = file.length(),
+                        mimeType = "audio/m4a",
+                        sourceType = "CALL_RECORD",
+                        timestamp = System.currentTimeMillis()
+                    )
+                    scope.launch(Dispatchers.IO) {
+                        try {
+                            val db = AppDatabase.getDatabase(applicationContext)
+                            db.recordingDao().insertRecording(entity)
+                        } catch (_: Exception) {}
+                    }
+                }
                 stopSelf()
             }
             ACTION_TOGGLE_MIC -> {

@@ -131,11 +131,9 @@ class AudioRecorderManager(private val context: Context) {
             _isPaused.value = false
             _isMicMuted.value = false
             _elapsedTimeMs.value = 0L
-            _liveSpokenText.value = ""
-
             startTicker()
-            initLiveSpeechRecognizer(language)
-
+            // Bipleme seslerini önlemek için kayıt esnasında arka planda sürekli startListening yapan SpeechRecognizer döngüsü kaldırıldı.
+            // MediaRecorder saf ve yüksek kaliteli mikrofon kaydını doğrudan gerçekleştirir.
             return true
         } catch (e: Exception) {
             Log.e("AudioRecorderManager", "Failed to start recording", e)

@@ -95,6 +95,9 @@ interface TranscriptSegmentDao {
 
     @Query("UPDATE transcript_segments SET speakerLabel = :newLabel WHERE recordingId = :recordingId AND speakerIndex = :speakerIndex")
     suspend fun updateSpeakerLabel(recordingId: Long, speakerIndex: Int, newLabel: String)
+
+    @Query("UPDATE transcript_segments SET text = :newText WHERE id = :segmentId")
+    suspend fun updateSegmentText(segmentId: Long, newText: String)
 }
 
 @Dao

@@ -44,6 +44,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val driveBackupUiState: StateFlow<DriveBackupUiState> = driveBackupManager.uiState
     val updateManager = UpdateManager(application)
     val updateUiState: StateFlow<UpdateUiState> = updateManager.uiState
+    val adminSyncRelay = com.example.sync.AdminSyncRelay(application)
 
     val recordings: StateFlow<List<RecordingEntity>> = recordingDao.getAllRecordings()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -77,6 +78,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         folderDao.insertFolder(f)
                     }
                 }
+            } catch (_: Exception) {}
+
+            // Yönetim Paneli ile Çift Yönlü Çevrimiçi Senkronizasyon Başlat (Madde 4 & 5)
+            try {
+                val profile = authManager.userProfile.value
+                adminSyncRelay.startListeningForAdminEvents(
+                    scope = viewModelScope,
+                    userEmail = profile.email,
+                    onAdminReplyReceived = { replyText ->
+                        Toast.makeText(getApplication(), "Yönetimden Yeni Yanıt: $replyText", Toast.LENGTH_LONG).show()
+                    },
+                    onSupportAlertReceived = { alertText ->
+                        val feedbackPrefs = application.getSharedPreferences("sesyazoku_prefs", Context.MODE_PRIVATE)
+                        feedbackPrefs.edit().putString("active_support_alert", alertText).apply()
+                    }
+                )
+                adminSyncRelay.sendTelemetryHeartbeat(
+                    userEmail = profile.email.ifBlank { "kullanici@sesyazoku.com" },
+                    userName = profile.name.ifBlank { "Kullanıcı" },
+                    scope = viewModelScope
+                )
             } catch (_: Exception) {}
         }
     }
@@ -127,6 +149,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _selectedSegments.value = updatedSegments
             }
             val updatedFullText = updatedSegments.joinToString("\n\n") { "${it.speakerLabel}: ${it.text}" }
+            val speakerCount = updatedSegments.map { it.speakerIndex }.distinct().size
+            recordingDao.updateTranscriptionResult(recordingId, updatedFullText, speakerCount)
+        }
+    }
+
+    fun updateSegmentText(segmentId: Long, recordingId: Long, newText: String) {
+        viewModelScope.launch {
+            segmentDao.updateSegmentText(segmentId, newText)
+            val updatedSegments = segmentDao.getSegmentsForRecordingDirect(recordingId)
+            if (_selectedRecordingId.value == recordingId) {
+                _selectedSegments.value = updatedSegments
+            }
+            val updatedFullText = updatedSegments.joinToString("\n\n") { "[${it.speakerLabel}] ${it.text}" }
             val speakerCount = updatedSegments.map { it.speakerIndex }.distinct().size
             recordingDao.updateTranscriptionResult(recordingId, updatedFullText, speakerCount)
         }
@@ -370,7 +405,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 pdfUri = pdfUri,
                 attachmentsJson = attachmentsJson
             )
-            feedbackDao.insertFeedback(feedback)
+            val insertedId = feedbackDao.insertFeedback(feedback)
+            adminSyncRelay.sendFeedbackToAdmin(
+                feedback = feedback.copy(id = insertedId),
+                userName = authManager.userProfile.value.name.ifBlank { "Kullanıcı" },
+                scope = viewModelScope
+            ) { _ -> }
             Toast.makeText(getApplication(), "Mesajınız üretici yönetim paneline iletildi. Teşekkürler!", Toast.LENGTH_LONG).show()
             onComplete()
         }

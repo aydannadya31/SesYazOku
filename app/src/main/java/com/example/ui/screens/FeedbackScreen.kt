@@ -35,7 +35,14 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Visibility
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.material3.AlertDialog
+import coil.compose.AsyncImage
 import com.example.ui.util.AdaptiveButtonText
 import com.example.ui.util.Localization
 import androidx.compose.material3.Button
@@ -102,6 +109,10 @@ fun FeedbackScreen(viewModel: MainViewModel) {
     val authProfile by viewModel.authManager.userProfile.collectAsState()
     val language by viewModel.language.collectAsState()
 
+    val playerManager = viewModel.playerManager
+    val isPlaying by playerManager.isPlaying.collectAsState()
+    val currentPlayingPath by playerManager.currentPlayingPath.collectAsState()
+
     var subject by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("İşleyiş Geri Bildirimi") }
     var message by remember { mutableStateOf("") }
@@ -116,6 +127,8 @@ fun FeedbackScreen(viewModel: MainViewModel) {
     // Çoklu ek listesi (Birden fazla ses, fotoğraf veya PDF eklenebilir)
     var attachments by remember { mutableStateOf<List<FeedbackAttachmentItem>>(emptyList()) }
     var feedbackToDelete by remember { mutableStateOf<FeedbackEntity?>(null) }
+    var expandedAttachmentsFbId by remember { mutableStateOf<Long?>(null) }
+    var previewImageUrl by remember { mutableStateOf<String?>(null) }
 
     // Çoklu dosya seçiciler
     val audioPickerLauncher = rememberLauncherForActivityResult(
@@ -624,6 +637,31 @@ fun FeedbackScreen(viewModel: MainViewModel) {
                             Triple(a, img, p)
                         }
 
+                        val fbAttachments = remember(fb.attachmentsJson, fb.audioUri, fb.imageUri, fb.pdfUri) {
+                            val list = mutableListOf<FeedbackAttachmentItem>()
+                            if (fb.attachmentsJson.isNotBlank() && fb.attachmentsJson != "[]") {
+                                try {
+                                    val array = JSONArray(fb.attachmentsJson)
+                                    for (i in 0 until array.length()) {
+                                        val item = array.getJSONObject(i)
+                                        list.add(
+                                            FeedbackAttachmentItem(
+                                                id = "att_${fb.id}_$i",
+                                                type = item.optString("type", "IMAGE"),
+                                                uriString = item.optString("uri"),
+                                                name = item.optString("name", "Ek ${i + 1}")
+                                            )
+                                        )
+                                    }
+                                } catch (_: Exception) {}
+                            } else {
+                                fb.audioUri?.let { list.add(FeedbackAttachmentItem(id = "a_${fb.id}", type = "AUDIO", uriString = it, name = "Ses Kaydı")) }
+                                fb.imageUri?.let { list.add(FeedbackAttachmentItem(id = "i_${fb.id}", type = "IMAGE", uriString = it, name = "Fotoğraf")) }
+                                fb.pdfUri?.let { list.add(FeedbackAttachmentItem(id = "p_${fb.id}", type = "PDF", uriString = it, name = "PDF Belgesi")) }
+                            }
+                            list
+                        }
+
                         if (hasMultipleAttachments || fb.audioUri != null || fb.imageUri != null || fb.pdfUri != null) {
                             Spacer(modifier = Modifier.height(6.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -636,6 +674,231 @@ fun FeedbackScreen(viewModel: MainViewModel) {
                                     if (fb.audioUri != null) SmallBadge(text = "🎤 Ses Eki", color = MaterialTheme.colorScheme.primary)
                                     if (fb.imageUri != null) SmallBadge(text = "🖼️ Fotoğraf", color = Color(0xFF10B981))
                                     if (fb.pdfUri != null) SmallBadge(text = "📄 PDF", color = Color(0xFFEF4444))
+                                }
+                            }
+                        }
+
+                        // Ekleri Görüntüle ve Tekrar Gönder Butonları (Madde 7)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (fbAttachments.isNotEmpty()) {
+                                OutlinedButton(
+                                    onClick = {
+                                        expandedAttachmentsFbId = if (expandedAttachmentsFbId == fb.id) null else fb.id
+                                    },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("view_attachments_${fb.id}"),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (expandedAttachmentsFbId == fb.id) Icons.Default.Close else Icons.Default.Visibility,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (expandedAttachmentsFbId == fb.id) "Ekleri Kapat" else "Ekleri Gör (${fbAttachments.size})",
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    subject = fb.subject
+                                    selectedCategory = fb.category
+                                    message = fb.message
+                                    attachments = fbAttachments.map { it.copy(id = UUID.randomUUID().toString()) }
+                                    Toast.makeText(
+                                        context,
+                                        "Mesaj ve ${attachments.size} adet ek düzenleme formuna aktarıldı. Düzenleyip tekrar gönderebilirsiniz.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("resend_feedback_${fb.id}"),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (fbAttachments.isNotEmpty()) "Eklerle Tekrar Gönder" else "Tekrar Gönder",
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+
+                        // Açılır Ek İçerik Paneli (APK içinde ekleri dinleme/görüntüleme)
+                        if (expandedAttachmentsFbId == fb.id && fbAttachments.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "Mesaja Ait Ekler (${fbAttachments.size}):",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+
+                                    fbAttachments.forEach { att ->
+                                        when (att.type) {
+                                            "AUDIO" -> {
+                                                val isThisAudioPlaying = isPlaying && currentPlayingPath == att.uriString
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.SpaceBetween
+                                                    ) {
+                                                        Row(
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            modifier = Modifier.weight(1f)
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Audiotrack,
+                                                                contentDescription = null,
+                                                                tint = MaterialTheme.colorScheme.primary,
+                                                                modifier = Modifier.size(18.dp)
+                                                            )
+                                                            Spacer(modifier = Modifier.width(8.dp))
+                                                            Text(
+                                                                text = att.name,
+                                                                fontSize = 12.sp,
+                                                                maxLines = 1,
+                                                                fontWeight = FontWeight.Medium
+                                                            )
+                                                        }
+
+                                                        IconButton(
+                                                            onClick = {
+                                                                playerManager.playOrPause(att.uriString)
+                                                            },
+                                                            modifier = Modifier.size(32.dp)
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = if (isThisAudioPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                                                contentDescription = if (isThisAudioPlaying) "Durdur" else "Dinle",
+                                                                tint = MaterialTheme.colorScheme.primary
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            "IMAGE" -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable { previewImageUrl = att.uriString }
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.padding(8.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        AsyncImage(
+                                                            model = att.uriString,
+                                                            contentDescription = att.name,
+                                                            modifier = Modifier
+                                                                .size(48.dp)
+                                                                .clip(RoundedCornerShape(6.dp))
+                                                        )
+                                                        Spacer(modifier = Modifier.width(10.dp))
+                                                        Column(modifier = Modifier.weight(1f)) {
+                                                            Text(
+                                                                text = att.name,
+                                                                fontSize = 12.sp,
+                                                                maxLines = 1,
+                                                                fontWeight = FontWeight.Medium
+                                                            )
+                                                            Text(
+                                                                text = "Büyütmek için dokunun",
+                                                                fontSize = 10.sp,
+                                                                color = MaterialTheme.colorScheme.outline
+                                                            )
+                                                        }
+                                                        Icon(
+                                                            imageVector = Icons.Default.Visibility,
+                                                            contentDescription = "Görüntüle",
+                                                            tint = MaterialTheme.colorScheme.primary,
+                                                            modifier = Modifier.size(18.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            "PDF" -> {
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = Color(0xFFEF4444).copy(alpha = 0.1f),
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable {
+                                                            try {
+                                                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                                                    setDataAndType(Uri.parse(att.uriString), "application/pdf")
+                                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                                }
+                                                                context.startActivity(intent)
+                                                            } catch (_: Exception) {
+                                                                Toast.makeText(context, "PDF görüntüleyici bulunamadı.", Toast.LENGTH_SHORT).show()
+                                                            }
+                                                        }
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.SpaceBetween
+                                                    ) {
+                                                        Row(
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            modifier = Modifier.weight(1f)
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.PictureAsPdf,
+                                                                contentDescription = null,
+                                                                tint = Color(0xFFEF4444),
+                                                                modifier = Modifier.size(18.dp)
+                                                            )
+                                                            Spacer(modifier = Modifier.width(8.dp))
+                                                            Text(
+                                                                text = att.name,
+                                                                fontSize = 12.sp,
+                                                                maxLines = 1,
+                                                                fontWeight = FontWeight.Medium
+                                                            )
+                                                        }
+                                                        Text(
+                                                            text = "Aç",
+                                                            fontSize = 11.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = Color(0xFFEF4444)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -687,6 +950,46 @@ fun FeedbackScreen(viewModel: MainViewModel) {
             dismissButton = {
                 TextButton(onClick = { feedbackToDelete = null }) {
                     Text("Vazgeç")
+                }
+            }
+        )
+    }
+
+    // Fotoğraf Eki Büyütülmüş Önizleme Diyaloğu
+    if (previewImageUrl != null) {
+        AlertDialog(
+            onDismissRequest = { previewImageUrl = null },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Fotoğraf Eki Önizleme", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    IconButton(onClick = { previewImageUrl = null }, modifier = Modifier.size(28.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = "Kapat")
+                    }
+                }
+            },
+            text = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(320.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = previewImageUrl,
+                        contentDescription = "Önizleme",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(8.dp))
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = { previewImageUrl = null }) {
+                    Text("Kapat")
                 }
             }
         )

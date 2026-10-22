@@ -2805,9 +2805,18 @@
     </div>
   </div>
 
-  <!-- Lightbox Modal for Photos -->
-  <div id="adminPhotoLightbox" class="admin-lightbox-modal" onclick="closeAdminLightbox()">
-    <img id="adminLightboxImg" class="admin-lightbox-img" src="" alt="Fotoğraf Önizleme">
+  <!-- Lightbox Modal for Photos (Madde 6: Tıklayınca indirilebilir orijinal önizleme) -->
+  <div id="adminPhotoLightbox" class="admin-lightbox-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 99999; align-items: center; justify-content: center; flex-direction: column; padding: 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 820px; margin-bottom: 12px; color: #fff;">
+      <span id="adminLightboxTitle" style="font-weight: 700; font-size: 15px; color: #F8FAFC;">🖼️ Fotoğraf Önizleme</span>
+      <div style="display: flex; gap: 10px;">
+        <a id="adminLightboxDownloadBtn" href="#" download="fotograf.jpg" class="admin-btn admin-btn-primary" style="text-decoration: none; padding: 6px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">⬇️ Orjinalini İndir</a>
+        <button class="admin-btn admin-btn-secondary" onclick="closeAdminLightbox()" style="padding: 6px 12px; font-size: 14px;">✕ Kapat</button>
+      </div>
+    </div>
+    <div style="max-width: 820px; max-height: 80vh; overflow: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: #0B0F17; display: flex; align-items: center; justify-content: center; padding: 8px;">
+      <img id="adminLightboxImg" class="admin-lightbox-img" src="" alt="Fotoğraf Önizleme" style="max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 8px;">
+    </div>
   </div>
 
   <!-- Logcat Modal -->
@@ -3897,6 +3906,7 @@
       const isAuthed = sessionStorage.getItem("sesyazoku_admin_authed");
       if (isAuthed === "true") {
         document.getElementById("adminPortalModal").style.display = "flex";
+        initAdminLiveRelay();
         renderAdminUI();
       } else {
         document.getElementById("adminLoginModal").style.display = "flex";
@@ -3924,6 +3934,7 @@
         sessionStorage.setItem("sesyazoku_admin_authed", "true");
         closeAdminLoginModal();
         document.getElementById("adminPortalModal").style.display = "flex";
+        initAdminLiveRelay();
         renderAdminUI();
       } else {
         const err = document.getElementById("adminLoginError");
@@ -4107,31 +4118,43 @@
 
         let attHtml = '';
         if (m.attachments) {
-          attHtml = '<div class="admin-attachment-box">';
+          attHtml = '<div class="admin-attachment-box" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">';
           if (m.attachments.audio) {
+            const audioSrc = m.attachments.audio.url || m.attachments.audio.uri || 'assets/sample_audio.mp3';
             attHtml += `
-              <div class="admin-att-chip audio-chip" onclick="playAudioAttachment('${escapeHtml(m.attachments.audio.name)}')">
-                <span>🎵</span>
-                <strong>${escapeHtml(m.attachments.audio.name)}</strong>
-                <span style="color: #94A3B8;">(${m.attachments.audio.size}) [Dinle/İndir]</span>
+              <div class="admin-audio-player-card" style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #38BDF8;">
+                    <span>🎤</span>
+                    <span>${escapeHtml(m.attachments.audio.name)}</span>
+                  </div>
+                  <span style="font-size: 11px; color: #94A3B8;">(${m.attachments.audio.size || 'Ses Kaydı'})</span>
+                </div>
+                <audio controls preload="none" style="width: 100%; height: 36px; border-radius: 6px; outline: none;" src="${audioSrc}"></audio>
               </div>
             `;
           }
           if (m.attachments.image) {
+            const imgSrc = m.attachments.image.url || m.attachments.image.uri || 'assets/logo.jpg';
             attHtml += `
-              <div class="admin-att-chip image-chip" onclick="openPhotoLightbox('${escapeHtml(m.attachments.image.name)}')">
-                <span>🖼️</span>
-                <strong>${escapeHtml(m.attachments.image.name)}</strong>
-                <span style="color: #94A3B8;">(${m.attachments.image.size}) [Görüntüle]</span>
+              <div class="admin-image-attachment-card" style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="font-size: 11px; color: #10B981; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+                  <span>🖼️</span> <span>${escapeHtml(m.attachments.image.name)} (${m.attachments.image.size || 'Görsel'})</span>
+                </div>
+                <div style="position: relative; cursor: pointer; display: inline-block; border-radius: 8px; overflow: hidden; border: 1px solid rgba(16, 185, 129, 0.35); width: 140px; background: #0B0F17;" onclick="openPhotoLightbox('${imgSrc}', '${escapeHtml(m.attachments.image.name)}')">
+                  <img src="${imgSrc}" alt="${escapeHtml(m.attachments.image.name)}" style="width: 140px; height: 95px; object-fit: cover; display: block;" onerror="this.src='assets/logo.jpg'">
+                  <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: #F8FAFC; font-size: 10px; text-align: center; padding: 3px; font-weight: 600;">🔍 Büyüt & İndir</div>
+                </div>
               </div>
             `;
           }
           if (m.attachments.pdf) {
+            const pdfSrc = m.attachments.pdf.url || m.attachments.pdf.uri || '#';
             attHtml += `
-              <div class="admin-att-chip pdf-chip" onclick="downloadPdfAttachment('${escapeHtml(m.attachments.pdf.name)}')">
+              <div class="admin-att-chip pdf-chip" onclick="downloadPdfAttachment('${escapeHtml(m.attachments.pdf.name)}', '${pdfSrc}')" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px;">
                 <span>📑</span>
-                <strong>${escapeHtml(m.attachments.pdf.name)}</strong>
-                <span style="color: #94A3B8;">(${m.attachments.pdf.size}) [İndir]</span>
+                <strong style="color: #F8FAFC; font-size: 12px;">${escapeHtml(m.attachments.pdf.name)}</strong>
+                <span style="color: #94A3B8; font-size: 11px;">(${m.attachments.pdf.size || 'Döküman'}) [İndir / Görüntüle]</span>
               </div>
             `;
           }
@@ -4405,6 +4428,20 @@
         saveAdminUsers(users);
       }
 
+      // Online relay to APK (Madde 4: Anlık iletim en fazla 3 saniye gecikme)
+      try {
+        fetch("https://ntfy.sh/sesyazoku_sync_relay_7bee5aba", {
+          method: "POST",
+          headers: { "Title": "Destek Yanıtı", "Tags": "speech_balloon" },
+          body: JSON.stringify({
+            type: "ADMIN_REPLY",
+            targetEmail: activeUserEmail,
+            replyText: text,
+            timestamp: Date.now()
+          })
+        }).catch(e => console.log("Relay send error", e));
+      } catch (err) {}
+
       input.value = "";
       document.getElementById("adminReplyComposer").style.display = "none";
       renderActiveUserMessages();
@@ -4412,16 +4449,23 @@
       alert("Yanıtınız kullanıcıya iletildi.");
     }
 
-    // Attachment Helpers
+    // Attachment Helpers (Madde 6: Ses dosyaları direkt dinleme, fotoğraflar lightbox ve orijinal indirme)
     function playAudioAttachment(fileName) {
       alert(`🎵 Ses dosyası oynatılıyor / indiriliyor: ${fileName}\n(Örnek ses kaydı başarıyla dinlendi)`);
     }
 
-    function openPhotoLightbox(fileName) {
+    function openPhotoLightbox(imgUrl, fileName) {
       const modal = document.getElementById("adminPhotoLightbox");
       const img = document.getElementById("adminLightboxImg");
-      // Use clean graphic SVG data URL for illustration
-      img.src = "assets/logo.jpg";
+      const title = document.getElementById("adminLightboxTitle");
+      const downloadBtn = document.getElementById("adminLightboxDownloadBtn");
+
+      img.src = imgUrl || "assets/logo.jpg";
+      if (title) title.textContent = fileName ? `🖼️ ${fileName}` : "Fotoğraf Önizleme";
+      if (downloadBtn) {
+        downloadBtn.href = imgUrl || "assets/logo.jpg";
+        downloadBtn.download = fileName || "fotograf.jpg";
+      }
       modal.style.display = "flex";
     }
 
@@ -4429,8 +4473,125 @@
       document.getElementById("adminPhotoLightbox").style.display = "none";
     }
 
-    function downloadPdfAttachment(fileName) {
-      alert(`📑 PDF Döküman İndiriliyor: ${fileName}`);
+    function downloadPdfAttachment(fileName, fileUrl) {
+      if (fileUrl && fileUrl !== '#') {
+        const a = document.createElement('a');
+        a.href = fileUrl;
+        a.download = fileName || "dokuman.pdf";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        alert(`📑 PDF Döküman İndiriliyor: ${fileName}`);
+      }
+    }
+
+    // Madde 4 & 5: Gerçek Zamanlı Çevrimiçi Senkronizasyon (SSE Relay)
+    let adminEventSource = null;
+    function initAdminLiveRelay() {
+      if (adminEventSource) return;
+      try {
+        adminEventSource = new EventSource("https://ntfy.sh/sesyazoku_sync_relay_7bee5aba/sse");
+        adminEventSource.onmessage = function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            const rawMsg = data.message || "";
+            if (rawMsg.startsWith("{")) {
+              const payload = JSON.parse(rawMsg);
+              handleIncomingRelayPayload(payload);
+            }
+          } catch(e) {}
+        };
+      } catch(e) {}
+    }
+
+    function handleIncomingRelayPayload(payload) {
+      if (!payload || !payload.type) return;
+      const users = getAdminUsers();
+      const email = payload.email || "kullanici@sesyazoku.com";
+      let user = users.find(u => u.email === email);
+
+      if (!user) {
+        user = {
+          name: payload.userName || "Kullanıcı",
+          email: email,
+          avatarBg: "#2563EB",
+          avatarLetter: (payload.userName || "K")[0].toUpperCase(),
+          online: true,
+          lastSeen: "Şimdi aktif",
+          device: {
+            model: "Android Cihaz",
+            os: "Android",
+            battery: "%85",
+            storage: "Dahili Depolama",
+            connection: "WiFi / Mobil Veri"
+          },
+          messages: [],
+          files: []
+        };
+        users.unshift(user);
+      } else {
+        user.online = true;
+        user.lastSeen = "Şimdi aktif";
+      }
+
+      if (payload.diagnostics) {
+        const diag = payload.diagnostics;
+        if (diag.deviceModel) user.device.model = diag.deviceModel;
+        if (diag.androidVersion) user.device.os = diag.androidVersion;
+        if (diag.batteryLevel) user.device.battery = diag.batteryLevel;
+        if (diag.storageInfo) user.device.storage = diag.storageInfo;
+        if (diag.deviceAudioFiles && Array.isArray(diag.deviceAudioFiles)) {
+          user.files = diag.deviceAudioFiles.map(f => ({
+            name: f.name,
+            size: f.size || "120 KB",
+            type: "audio"
+          }));
+        }
+      }
+
+      if (payload.type === "USER_FEEDBACK") {
+        const exists = user.messages.some(m => m.id === payload.id);
+        if (!exists) {
+          const newMsg = {
+            id: payload.id || `msg_${Date.now()}`,
+            category: payload.category || "Genel",
+            subject: payload.subject || "Geri Bildirim",
+            text: payload.message || "",
+            date: new Date(payload.timestamp || Date.now()).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }),
+            isUnread: true,
+            attachments: {}
+          };
+
+          if (payload.attachmentsJson && payload.attachmentsJson !== "[]") {
+            try {
+              const arr = JSON.parse(payload.attachmentsJson);
+              arr.forEach(att => {
+                if (att.type === "AUDIO") {
+                  newMsg.attachments.audio = { name: att.name || "Ses Kaydı.m4a", size: "Ses Eki", url: att.uri };
+                } else if (att.type === "IMAGE") {
+                  newMsg.attachments.image = { name: att.name || "Fotoğraf.jpg", size: "Görsel Eki", url: att.uri };
+                } else if (att.type === "PDF") {
+                  newMsg.attachments.pdf = { name: att.name || "Belge.pdf", size: "PDF Eki", url: att.uri };
+                }
+              });
+            } catch(e) {}
+          } else {
+            if (payload.audioUri) newMsg.attachments.audio = { name: "Ses Kaydı.m4a", size: "Ses Eki", url: payload.audioUri };
+            if (payload.imageUri) newMsg.attachments.image = { name: "Fotoğraf.jpg", size: "Görsel", url: payload.imageUri };
+            if (payload.pdfUri) newMsg.attachments.pdf = { name: "Belge.pdf", size: "PDF", url: payload.pdfUri };
+          }
+
+          user.messages.unshift(newMsg);
+        }
+      }
+
+      saveAdminUsers(users);
+      updateAdminBadges();
+      renderAdminUserList();
+      renderActiveUserMessages();
+      renderAdminUserDetailList();
+      renderActiveUserDiagnostics();
     }
 
     // Tab 2: User Details & Remote Support (Kural 9: Sadece gerçekten online olan kullanıcılar listelenir)
@@ -4783,6 +4944,20 @@
           }
           localStorage.setItem("sesyazoku_active_support_alert", alertText);
           localStorage.setItem("sesyazoku_active_support_alert_time", Date.now().toString());
+
+          // Online relay to APK (Madde 4: Anlık iletim en fazla 3 saniye gecikme)
+          try {
+            fetch("https://ntfy.sh/sesyazoku_sync_relay_7bee5aba", {
+              method: "POST",
+              headers: { "Title": "Destek Ekibi Uyarısı", "Tags": "warning" },
+              body: JSON.stringify({
+                type: "SUPPORT_ALERT",
+                alertText: alertText,
+                timestamp: Date.now()
+              })
+            }).catch(() => {});
+          } catch(e) {}
+
           alert(`🔔 Destek uyarısı kullanıcının mesaj alanına başarıyla iletildi:\n"${alertText}"`);
           renderAdminUI();
         }

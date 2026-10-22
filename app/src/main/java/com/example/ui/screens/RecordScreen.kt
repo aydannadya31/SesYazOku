@@ -12,6 +12,20 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -216,32 +230,83 @@ fun RecordScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Waveform / Amplitude Meter
-                Row(
+                // 1. Kural: Canlı ses kayıt dalgasına (waveform) akıcı ve estetik gradyan animasyonu
+                val animatedAmp by animateFloatAsState(
+                    targetValue = if (isRecording && !isPaused && !isMicMuted) amplitude.coerceIn(0.08f, 1f) else 0.04f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    ),
+                    label = "waveform_amplitude"
+                )
+
+                val infiniteTransition = rememberInfiniteTransition(label = "wave_anim")
+                val phase by infiniteTransition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = (2 * Math.PI).toFloat(),
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(durationMillis = 2000, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart
+                    ),
+                    label = "wave_phase"
+                )
+
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(36.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    val barCount = 18
-                    for (i in 0 until barCount) {
-                        val barHeight = if (isRecording && !isPaused && !isMicMuted) {
-                            val factor = (amplitude * (1f + (i % 5) * 0.2f)).coerceIn(0.1f, 1f)
-                            (factor * 32.dp.value).dp
-                        } else {
-                            4.dp
-                        }
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 2.dp)
-                                .width(6.dp)
-                                .height(barHeight)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(
-                                    if (isRecording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
+                    val inactiveOutline = MaterialTheme.colorScheme.outlineVariant
+                    val inactiveOutlineFaded = inactiveOutline.copy(alpha = 0.5f)
+
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .testTag("waveform_canvas")
+                    ) {
+                        val barCount = 28
+                        val totalSpacing = size.width * 0.35f
+                        val barSpacing = totalSpacing / (barCount - 1)
+                        val barWidth = ((size.width - totalSpacing) / barCount).coerceAtLeast(3f)
+
+                        val midY = size.height / 2f
+                        val maxBarHeight = size.height * 0.92f
+
+                        val gradientBrush = Brush.verticalGradient(
+                            colors = if (isRecording && !isPaused && !isMicMuted) {
+                                listOf(
+                                    Color(0xFF06B6D4), // Cyan
+                                    Color(0xFF3B82F6), // Blue
+                                    Color(0xFF8B5CF6)  // Purple / Violet
                                 )
+                            } else {
+                                listOf(
+                                    inactiveOutline,
+                                    inactiveOutlineFaded
+                                )
+                            },
+                            startY = 0f,
+                            endY = size.height
                         )
+
+                        for (i in 0 until barCount) {
+                            val x = i * (barWidth + barSpacing)
+                            val waveMultiplier = kotlin.math.sin(phase + i * 0.38f).toFloat() * 0.28f + 0.72f
+                            val normalizedHeight = (animatedAmp * waveMultiplier * maxBarHeight).coerceIn(6f, maxBarHeight)
+
+                            val top = midY - (normalizedHeight / 2f)
+
+                            drawRoundRect(
+                                brush = gradientBrush,
+                                topLeft = Offset(x, top),
+                                size = Size(barWidth, normalizedHeight),
+                                cornerRadius = CornerRadius(barWidth / 2f, barWidth / 2f)
+                            )
+                        }
                     }
                 }
 

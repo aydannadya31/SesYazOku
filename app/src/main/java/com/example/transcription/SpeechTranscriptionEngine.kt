@@ -165,39 +165,21 @@ object SpeechTranscriptionEngine {
                 }
             }
         } else {
-            // Canlı kayıt metni de yoksa cihazın ses tanıma servisini son çare dene
-            val onDeviceResult = runDeviceSpeechRecognition(context, language)
-            if (!onDeviceResult.isNullOrBlank()) {
-                recognizedText = onDeviceResult
-                val spkLabel = speakerPool.firstOrNull() ?: "Kişi 1"
-                segments.add(
-                    TranscriptSegmentEntity(
-                        recordingId = recordingId,
-                        speakerLabel = spkLabel,
-                        speakerIndex = 1,
-                        startMs = 0,
-                        endMs = durationMs,
-                        text = onDeviceResult,
-                        confidence = 0.90f
-                    )
+            // Sesten metne dönüştürülürken cihazın mikrofonu ASLA açılmaz (yüklenen dosya içeriğine dış ses karışması engellenir).
+            val spkLabel = speakerPool.firstOrNull() ?: "Kişi 1"
+            val notice = "(Kayıt başarıyla saklandı. Konuşmalar algılanamadı veya API anahtarı tanımlanmadı. Ayarlar'dan Gemini API anahtarınızı girerek doğrudan ses dosyasından yüksek doğrulukla transkripsiyon yapabilir veya dökümanı düzenleyebilirsiniz.)"
+            segments.add(
+                TranscriptSegmentEntity(
+                    recordingId = recordingId,
+                    speakerLabel = spkLabel,
+                    speakerIndex = 1,
+                    startMs = 0,
+                    endMs = durationMs,
+                    text = notice,
+                    confidence = 0.5f
                 )
-                fullTextBuilder.append("[$spkLabel] $onDeviceResult\n\n")
-            } else {
-                val spkLabel = speakerPool.firstOrNull() ?: "Kişi 1"
-                val notice = "(Kayıt başarıyla saklandı. Konuşmalar algılanamadı veya API anahtarı girilmedi. Ayarlar'dan Gemini API anahtarınızı tanımlayabilir veya metni düzenleyebilirsiniz.)"
-                segments.add(
-                    TranscriptSegmentEntity(
-                        recordingId = recordingId,
-                        speakerLabel = spkLabel,
-                        speakerIndex = 1,
-                        startMs = 0,
-                        endMs = durationMs,
-                        text = notice,
-                        confidence = 0.5f
-                    )
-                )
-                fullTextBuilder.append("[$spkLabel] $notice\n\n")
-            }
+            )
+            fullTextBuilder.append("[$spkLabel] $notice\n\n")
         }
 
         onProgress(1.0f)

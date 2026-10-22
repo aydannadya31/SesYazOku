@@ -56,6 +56,20 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FastRewind
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -96,6 +110,32 @@ fun DocumentsScreen(viewModel: MainViewModel) {
     val userProfile by viewModel.authManager.userProfile.collectAsState()
     val language by viewModel.language.collectAsState()
 
+    var activeViewingDocId by remember { mutableStateOf<Long?>(null) }
+    var documentsSubTab by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    var isDocSelectorExpanded by remember { mutableStateOf(false) }
+
+    val playerManager = viewModel.playerManager
+    val isPlaying by playerManager.isPlaying.collectAsState()
+    val currentPositionMs by playerManager.currentPositionMs.collectAsState()
+    val durationMs by playerManager.durationMs.collectAsState()
+    val playbackSpeed by playerManager.playbackSpeed.collectAsState()
+    val currentPlayingPath by playerManager.currentPlayingPath.collectAsState()
+
+    val segments by viewModel.selectedSegments.collectAsState()
+
+    val activeDoc = remember(recordings, activeViewingDocId) {
+        recordings.firstOrNull { it.id == activeViewingDocId }
+            ?: recordings.firstOrNull { it.isTranscribed || it.transcriptFullText.isNotBlank() }
+            ?: recordings.firstOrNull()
+    }
+
+    androidx.compose.runtime.LaunchedEffect(activeDoc?.id) {
+        activeDoc?.let {
+            viewModel.selectRecordingForView(it.id)
+        }
+    }
+
+    var conflictTargetItem by remember { mutableStateOf<RecordingEntity?>(null) }
     var selectedIds by remember { mutableStateOf(setOf<Long>()) }
     var renamingItem by remember { mutableStateOf<RecordingEntity?>(null) }
     var newTitleText by remember { mutableStateOf("") }
@@ -165,6 +205,40 @@ fun DocumentsScreen(viewModel: MainViewModel) {
 
         Spacer(modifier = Modifier.height(14.dp))
 
+        // Kural 3: Dosyalar sekmesi görünüm modları
+        TabRow(
+            selectedTabIndex = documentsSubTab,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .testTag("documents_mode_tabs")
+        ) {
+            Tab(
+                selected = documentsSubTab == 0,
+                onClick = { documentsSubTab = 0 },
+                text = {
+                    Text(
+                        text = "📝 Metin & Ses Oynatıcı",
+                        fontWeight = if (documentsSubTab == 0) FontWeight.Bold else FontWeight.Normal,
+                        fontSize = 13.sp
+                    )
+                }
+            )
+            Tab(
+                selected = documentsSubTab == 1,
+                onClick = { documentsSubTab = 1 },
+                text = {
+                    Text(
+                        text = "☁️ Google Drive & Liste (${recordings.size})",
+                        fontWeight = if (documentsSubTab == 1) FontWeight.Bold else FontWeight.Normal,
+                        fontSize = 13.sp
+                    )
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         if (recordings.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -192,7 +266,330 @@ fun DocumentsScreen(viewModel: MainViewModel) {
                     )
                 }
             }
+        } else if (documentsSubTab == 0) {
+            // Kural 3: "Dosyalar segmesinde Metin üstte görünsün ve burdan metin içinde düzenleme yapılabilsin,
+            // metnin en altında ses kaydı dinlemek için buton ve sesi istenilen süreye çekmek için sürükleme barı ve yönetim tuşları olsun.
+            // Her ses durağı yeni metin başlangıcı olsun, metin içinde bu noktalarda butonlar olsun ve oralara dokununca ses kaydında o alana gidilebilsin."
+            if (activeDoc == null) {
+                Box(
+                    modifier = Modifier.fillMaxSize().weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Lütfen incelenecek dökümanı seçiniz.")
+                }
+            } else {
+                // Aktif döküman seçici başlık barı
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = activeDoc.title,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Box {
+                                    IconButton(
+                                        onClick = { isDocSelectorExpanded = true },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isDocSelectorExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                                            contentDescription = "Döküman Seç",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    DropdownMenu(
+                                        expanded = isDocSelectorExpanded,
+                                        onDismissRequest = { isDocSelectorExpanded = false }
+                                    ) {
+                                        recordings.forEach { doc ->
+                                            DropdownMenuItem(
+                                                text = { Text(doc.title, fontWeight = if (doc.id == activeDoc.id) FontWeight.Bold else FontWeight.Normal) },
+                                                onClick = {
+                                                    activeViewingDocId = doc.id
+                                                    isDocSelectorExpanded = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            Text(
+                                text = "${activeDoc.speakerCount} Konuşmacı • ${formatTimestamp(activeDoc.durationMs)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            FilledTonalButton(
+                                onClick = { viewModel.exportAndSharePdf(context, activeDoc) },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Paylaş", fontSize = 11.sp)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Üst Alan: Scroll edilebilir ve düzenlenebilir metin blokları (Her ses durağı / segment yeni metin başlangıcı)
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    if (segments.isEmpty()) {
+                        item {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text(
+                                        text = "Bu dökümana ait transkript metni henüz ayrıştırılmamış.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Button(
+                                        onClick = { viewModel.runTranscription(activeDoc) }
+                                    ) {
+                                        Text("Transkripsiyonu Başlat")
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        items(segments, key = { it.id }) { seg ->
+                            val isPlayingThisSeg = isPlaying && currentPlayingPath == activeDoc.filePath && (currentPositionMs in seg.startMs..seg.endMs)
+
+                            Card(
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isPlayingThisSeg) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                                    else MaterialTheme.colorScheme.surface
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .then(
+                                        if (isPlayingThisSeg) Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+                                        else Modifier
+                                    )
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    // Ses durağı / Konuşmacı atlama butonu: Dokununca ses kaydında o noktaya gider
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Button(
+                                            onClick = {
+                                                if (!isPlaying || currentPlayingPath != activeDoc.filePath) {
+                                                    playerManager.playOrPause(activeDoc.filePath)
+                                                }
+                                                playerManager.seekTo(seg.startMs)
+                                            },
+                                            shape = RoundedCornerShape(8.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = if (isPlayingThisSeg) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                                                contentColor = if (isPlayingThisSeg) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+                                            ),
+                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                            modifier = Modifier.testTag("jump_to_segment_${seg.id}")
+                                        ) {
+                                            Icon(
+                                                imageVector = if (isPlayingThisSeg) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                                contentDescription = "Bu Durağa Git",
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "${formatTimestamp(seg.startMs)} • ${seg.speakerLabel}",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+
+                                        Text(
+                                            text = "${formatTimestamp(seg.startMs)} - ${formatTimestamp(seg.endMs)}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.outline
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    // Metin içinde doğrudan düzenleme yapılabilen metin alanı
+                                    OutlinedTextField(
+                                        value = seg.text,
+                                        onValueChange = { newText ->
+                                            viewModel.updateSegmentText(seg.id, activeDoc.id, newText)
+                                        },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .testTag("segment_text_field_${seg.id}"),
+                                        textStyle = MaterialTheme.typography.bodyMedium,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Alt Alan: "metnin en altında ses kaydı dinlemek için buton ve sesi istenilen süreye çekmek için sürükleme barı ve yönetim tuşları olsun."
+                val effectiveTotalDur = if (durationMs > 0) durationMs else activeDoc.durationMs.coerceAtLeast(1000L)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("bottom_audio_player_bar"),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "${formatTimestamp(currentPositionMs)} / ${formatTimestamp(effectiveTotalDur)}",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            ) {
+                                Text(
+                                    text = "${if (playbackSpeed == 1f) "1" else playbackSpeed.toString()}x Hız",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+
+                        // Sürükleme Barı (Seekbar Slider)
+                        Slider(
+                            value = currentPositionMs.coerceIn(0L, effectiveTotalDur).toFloat(),
+                            onValueChange = { targetPos ->
+                                playerManager.seekTo(targetPos.toLong())
+                            },
+                            valueRange = 0f..effectiveTotalDur.toFloat(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(28.dp)
+                                .testTag("audio_player_slider"),
+                            colors = SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+
+                        // Yönetim Tuşları (Geri 5s, Oynat/Durdur, İleri 5s, Hız Değiştir)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            // Geri 5 saniye
+                            IconButton(
+                                onClick = {
+                                    val newPos = (currentPositionMs - 5000L).coerceAtLeast(0L)
+                                    playerManager.seekTo(newPos)
+                                },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(Icons.Default.FastRewind, contentDescription = "Geri 5 sn", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+
+                            // Oynat / Duraklat Butonu
+                            Button(
+                                onClick = {
+                                    playerManager.playOrPause(activeDoc.filePath)
+                                },
+                                shape = CircleShape,
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .testTag("player_play_pause_button"),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = if (isPlaying && currentPlayingPath == activeDoc.filePath) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = "Oynat/Durdur",
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+
+                            // İleri 5 saniye
+                            IconButton(
+                                onClick = {
+                                    val newPos = (currentPositionMs + 5000L).coerceAtMost(effectiveTotalDur)
+                                    playerManager.seekTo(newPos)
+                                },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(Icons.Default.FastForward, contentDescription = "İleri 5 sn", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+
+                            // Hız Değiştirme Döngüsü
+                            FilledTonalButton(
+                                onClick = {
+                                    val nextSpeed = when (playbackSpeed) {
+                                        1.0f -> 1.25f
+                                        1.25f -> 1.5f
+                                        1.5f -> 2.0f
+                                        2.0f -> 0.75f
+                                        else -> 1.0f
+                                    }
+                                    playerManager.setPlaybackSpeed(nextSpeed)
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Icon(Icons.Default.Speed, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("${playbackSpeed}x", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
         } else {
+            // Tab 1: Google Drive Yedekleme & Döküman Listesi
             // Google Drive Dedicated Backup Control Card
             Card(
                 modifier = Modifier
@@ -348,7 +745,20 @@ fun DocumentsScreen(viewModel: MainViewModel) {
                                 } else {
                                     recordings.filter { it.id in selectedIds }
                                 }
-                                viewModel.backupSelectedRecordingsToDrive(context, targets)
+
+                                // Kural 11: Drive yedekleme öncesi aynı isimde dosya kontrolü
+                                val conflict = targets.firstOrNull { t ->
+                                    val safeUserFolder = (userProfile.email.ifBlank { "kullanici@gmail.com" }).replace(Regex("[^a-zA-Z0-9_-]"), "_")
+                                    val backupDir = File(context.getExternalFilesDir(null) ?: context.filesDir, "GoogleDrive/$safeUserFolder/${GoogleDriveBackupManager.DEDICATED_FOLDER_NAME}")
+                                    val cleanName = t.title.replace(Regex("[^a-zA-Z0-9_-]"), "_")
+                                    File(backupDir, "${cleanName}.pdf").exists()
+                                }
+
+                                if (conflict != null) {
+                                    conflictTargetItem = conflict
+                                } else {
+                                    viewModel.backupSelectedRecordingsToDrive(context, targets)
+                                }
                             },
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.testTag("backup_to_drive_button")
@@ -405,12 +815,64 @@ fun DocumentsScreen(viewModel: MainViewModel) {
                         },
                         onSavePdf = { viewModel.savePdfToStorage(context, item) },
                         onShare = { viewModel.exportAndSharePdf(context, item) },
-                        onBackupDrive = { viewModel.backupRecordingToDrive(context, item) },
+                        onBackupDrive = {
+                            val safeUserFolder = (userProfile.email.ifBlank { "kullanici@gmail.com" }).replace(Regex("[^a-zA-Z0-9_-]"), "_")
+                            val backupDir = File(context.getExternalFilesDir(null) ?: context.filesDir, "GoogleDrive/$safeUserFolder/${GoogleDriveBackupManager.DEDICATED_FOLDER_NAME}")
+                            val cleanName = item.title.replace(Regex("[^a-zA-Z0-9_-]"), "_")
+                            if (File(backupDir, "${cleanName}.pdf").exists()) {
+                                conflictTargetItem = item
+                            } else {
+                                viewModel.backupRecordingToDrive(context, item)
+                            }
+                        },
                         onDelete = { deletingItem = item }
                     )
                 }
             }
         }
+    // Kural 11: Drive yedekleme esnasında aynı isimde dosya var ise uyarı verip soran diyalog
+    if (conflictTargetItem != null) {
+        val target = conflictTargetItem!!
+        AlertDialog(
+            onDismissRequest = { conflictTargetItem = null },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CloudUpload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Dosya Adı Çakışması")
+                }
+            },
+            text = {
+                Text(
+                    text = "Drive alanında '${target.title}' isimli döküman zaten mevcut.\n\nMevcut dosyanın üzerine mi yazılsın yoksa yeni bir isimle mi yedeklensin?",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val toBackup = target
+                        conflictTargetItem = null
+                        viewModel.backupSelectedRecordingsToDrive(context, listOf(toBackup))
+                    }
+                ) {
+                    Text("Üzerine Yaz")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        val toBackup = target
+                        conflictTargetItem = null
+                        val newTitle = "${toBackup.title} (Yedek ${System.currentTimeMillis() % 1000})"
+                        viewModel.renameRecording(toBackup.id, newTitle)
+                        viewModel.backupSelectedRecordingsToDrive(context, listOf(toBackup.copy(title = newTitle)))
+                    }
+                ) {
+                    Text("İsmi Değiştir")
+                }
+            }
+        )
     }
 
     // Automated Google Drive Upload Progress Dialog
@@ -424,33 +886,54 @@ fun DocumentsScreen(viewModel: MainViewModel) {
                 }
             },
             title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (driveBackupState.status == DriveBackupStatus.SUCCESS) {
-                            Icons.Default.CheckCircle
-                        } else {
-                            Icons.Default.CloudUpload
-                        },
-                        contentDescription = null,
-                        tint = if (driveBackupState.status == DriveBackupStatus.SUCCESS) {
-                            Color(0xFF10B981)
-                        } else {
-                            MaterialTheme.colorScheme.primary
-                        },
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = if (driveBackupState.status == DriveBackupStatus.SUCCESS) {
+                                Icons.Default.CheckCircle
+                            } else {
+                                Icons.Default.CloudUpload
+                            },
+                            contentDescription = null,
+                            tint = if (driveBackupState.status == DriveBackupStatus.SUCCESS) {
+                                Color(0xFF10B981)
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = if (driveBackupState.status == DriveBackupStatus.SUCCESS) {
+                                "Drive Yedeği Tamamlandı!"
+                            } else if (driveBackupState.status == DriveBackupStatus.ERROR) {
+                                "Yedekleme Hatası"
+                            } else {
+                                "Google Drive'a Yedekleniyor..."
+                            },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    // Kural 11: Pencerenin en sağ üstüne " X " şeklinde kapatmak için buton
+                    IconButton(
+                        onClick = { viewModel.resetDriveBackupState() },
                         modifier = Modifier.size(28.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = if (driveBackupState.status == DriveBackupStatus.SUCCESS) {
-                            "Drive Yedeği Tamamlandı!"
-                        } else if (driveBackupState.status == DriveBackupStatus.ERROR) {
-                            "Yedekleme Hatası"
-                        } else {
-                            "Google Drive'a Yedekleniyor..."
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Kapat (X)",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             },
             text = {
@@ -569,6 +1052,29 @@ fun DocumentsScreen(viewModel: MainViewModel) {
                             }
                         }
                     }
+
+                    // Kural 11: Yükleme işlemi bittikten sonra çıkan pencerede Kapat butonu diğer butonlar ile karışmaması için en alt ortaya eklendi
+                    if (isFinished) {
+                        Spacer(modifier = Modifier.height(18.dp))
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Button(
+                                onClick = { viewModel.resetDriveBackupState() },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth(0.6f)
+                                    .testTag("drive_backup_close_centered_btn")
+                            ) {
+                                Text("Kapat", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {
@@ -599,17 +1105,7 @@ fun DocumentsScreen(viewModel: MainViewModel) {
                     }
                 }
             },
-            dismissButton = {
-                if (isFinished) {
-                    TextButton(
-                        onClick = {
-                            viewModel.resetDriveBackupState()
-                        }
-                    ) {
-                        Text("Kapat")
-                    }
-                }
-            }
+            dismissButton = null
         )
     }
 
@@ -773,6 +1269,7 @@ fun DocumentsScreen(viewModel: MainViewModel) {
             }
         )
     }
+}
 }
 
 @Composable
@@ -961,4 +1458,11 @@ fun DocumentCard(
             }
         }
     }
+}
+
+private fun formatTimestamp(ms: Long): String {
+    val totalSec = (ms / 1000).coerceAtLeast(0L)
+    val mins = totalSec / 60
+    val secs = totalSec % 60
+    return String.format(Locale.getDefault(), "%02d:%02d", mins, secs)
 }

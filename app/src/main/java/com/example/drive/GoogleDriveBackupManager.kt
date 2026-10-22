@@ -139,16 +139,19 @@ class GoogleDriveBackupManager(
             val pdfFile = PdfManager.generatePdf(context, item, segments)
             delay(300)
 
-            // Generate clean transcription text file with user header
+            // Kural 12: Pdf yüklenirken yanında aynı bilgiyi içeren txt yüklemesi olmasın,
+            // ses kaydı PDF ile birlikte Drive'a yedeklensin.
             val cleanTitle = item.title.replace(Regex("[^a-zA-Z0-9_-]"), "_")
-            val txtFile = File(context.cacheDir, "${cleanTitle}_Transkript.txt")
-            val transcriptContent = buildTranscriptionDocument(item, segments, targetEmail)
-            txtFile.writeText(transcriptContent)
 
-            // Copy to user's dedicated backup folder
+            val audioFile = File(item.filePath)
+            val audioBackupName = if (audioFile.exists()) "${cleanTitle}.${audioFile.extension}" else null
+
+            // Copy PDF and Audio recording to user's dedicated backup folder
             try {
                 pdfFile?.copyTo(File(driveBackupDir, pdfFile.name), overwrite = true)
-                txtFile.copyTo(File(driveBackupDir, txtFile.name), overwrite = true)
+                if (audioFile.exists() && audioBackupName != null) {
+                    audioFile.copyTo(File(driveBackupDir, audioBackupName), overwrite = true)
+                }
             } catch (e: Exception) {
                 Log.w(TAG, "User folder copy warning: ${e.message}")
             }
@@ -166,23 +169,26 @@ class GoogleDriveBackupManager(
             // Cloud REST API upload if token is present
             if (!authToken.isNullOrBlank()) {
                 pdfFile?.let { uploadFileToDriveRestApi(it, "application/pdf", authToken, targetEmail) }
-                uploadFileToDriveRestApi(txtFile, "text/plain", authToken, targetEmail)
+                if (audioFile.exists()) {
+                    val mime = if (audioFile.extension.equals("wav", true)) "audio/wav" else "audio/mp4"
+                    uploadFileToDriveRestApi(audioFile, mime, authToken, targetEmail)
+                }
             }
 
-            // Smooth progress increment for transcription upload
+            // Smooth progress increment for audio recording upload
             delay(400)
             val uploadProgressMid = uploadProgressStart + 15f
             _uiState.value = _uiState.value.copy(
-                currentFileName = "${cleanTitle}_Transkript.txt",
+                currentFileName = audioBackupName ?: "${cleanTitle}.pdf",
                 progressPercent = uploadProgressMid.toInt().coerceAtMost(92),
                 progressFloat = (uploadProgressMid / 100f).coerceAtMost(0.92f),
-                statusMessage = "[${index + 1}/$total] '${cleanTitle}_Transkript.txt' [$targetEmail] Drive alanına yükleniyor..."
+                statusMessage = "[${index + 1}/$total] Ses kaydı ve PDF [$targetEmail] Drive alanına yükleniyor..."
             )
             delay(300)
 
             // Mark database entry as backed up to Drive
             recordingDao.updateDriveBackupStatus(item.id, true)
-            uploadedList.add("${item.title} (PDF & Transkript)")
+            uploadedList.add("${item.title} (PDF & Ses Kaydı)")
 
             val itemFinishedProgress = 15f + (((index + 1).toFloat() / total) * 75f)
             _uiState.value = _uiState.value.copy(
