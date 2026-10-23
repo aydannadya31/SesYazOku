@@ -24,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Tune
@@ -31,6 +32,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -82,6 +84,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
     val audioSampleRate by viewModel.audioSampleRate.collectAsState()
 
     var showChangeAccountDialog by remember { mutableStateOf(false) }
+    var showCleanInstallDialog by remember { mutableStateOf(false) }
     var editEmail by remember { mutableStateOf("") }
     var editName by remember { mutableStateOf("") }
 
@@ -752,6 +755,23 @@ fun SettingsScreen(viewModel: MainViewModel) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("Web Sayfasından Doğrudan İndir (APK Linki)")
                         }
+
+                        // Temiz Kurulum Butonu (Eski Sürümü Silip Yenisini Kurma Sistemi)
+                        FilledTonalButton(
+                            onClick = { showCleanInstallDialog = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("clean_install_apk_button"),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteSweep,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("⚡ Temiz Kurulum (Eski Sürümü Sil & Yenisini Kur)")
+                        }
                     } else {
                         // Check for Updates Button
                         Button(
@@ -783,9 +803,94 @@ fun SettingsScreen(viewModel: MainViewModel) {
                                 Text("Güncellemeleri Denetle", fontWeight = FontWeight.Bold)
                             }
                         }
+
+                        // Her zaman temiz kurulum seçeneği
+                        OutlinedButton(
+                            onClick = { showCleanInstallDialog = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("clean_install_always_button"),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteSweep,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("⚡ Temiz Kurulum Sistemi (Verileri Sil & Yeniden Yükle)", fontSize = 12.sp)
+                        }
                     }
                 }
             }
         }
+    }
+
+    // Temiz Kurulum Diyaloğu (Eski sürümü silip yenisini sıfırdan kurma)
+    if (showCleanInstallDialog) {
+        AlertDialog(
+            onDismissRequest = { showCleanInstallDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.DeleteSweep,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text("Temiz Kurulum Sistemi", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Android sistemi, telefonda aynı isimli uygulama varken 'Mevcut uygulamayı güncellemek istiyor musunuz?' sorusunu sorar.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Eski sürümün üzerine güncellemek yerine; tüm eski önbellek ve verileri tamamen temizleyip sıfırdan tertemiz kurulum yapmak için:",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("1️⃣ Sıfırdan Temiz Kur: Eski verileri ve önbelleği sıfırlar, yeni APK'yı Downloads klasörüne güvenceye alarak temiz kurulumu başlatır.", fontSize = 12.sp)
+                            Text("2️⃣ Eski Sürümü Kaldır: Mevcut eski uygulamayı telefondan tamamen siler, ardından İndirilenler'deki APK dosyasına dokunarak sıfır kurulum yapabilirsiniz.", fontSize = 12.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showCleanInstallDialog = false
+                        viewModel.cleanInstallUpdate(context)
+                    }
+                ) {
+                    Text("Sıfırdan Temiz Kur")
+                }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(onClick = { showCleanInstallDialog = false }) {
+                        Text("Vazgeç")
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            showCleanInstallDialog = false
+                            viewModel.promptUninstallExisting(context)
+                        }
+                    ) {
+                        Text("Eski Sürümü Kaldır")
+                    }
+                }
+            }
+        )
     }
 }

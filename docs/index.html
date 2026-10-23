@@ -2169,8 +2169,38 @@
         <span class="section-pill">Kolay Adımlar</span>
         <h2 class="section-title">APK Nasıl Kurulur?</h2>
         <p class="section-subtitle">
-          Android telefonunuza SesYazOku'yu 4 basit adımda yükleyip hemen kullanmaya başlayabilirsiniz.
+          Android telefonunuza SesYazOku'yu basit adımlarla yükleyip hemen kullanmaya başlayabilirsiniz.
         </p>
+      </div>
+
+      <!-- TEMİZ KURULUM SİSTEMİ BİLGİLENDİRMESİ (ESKİ SÜRÜMÜ SİLİP YENİSİNİ KURMA) -->
+      <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.15)); border: 1px solid rgba(6, 182, 212, 0.4); border-radius: 16px; padding: 22px 26px; margin-bottom: 32px; box-shadow: 0 4px 20px rgba(6, 182, 212, 0.15);">
+        <div style="display: flex; align-items: flex-start; gap: 16px;">
+          <div style="font-size: 36px; line-height: 1;">⚡</div>
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+              <h3 style="font-size: 18px; font-weight: 800; color: #F8FAFC;">Temiz Kurulum Sistemi (Eski Sürümü Silip Yenisini Kurma)</h3>
+              <span style="background: #10B981; color: #022C22; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase;">Önemli Çözüm</span>
+            </div>
+            <p style="font-size: 14px; color: #CBD5E1; line-height: 1.6; margin-bottom: 12px;">
+              Android sistemi telefonda eski bir sürüm algıladığında varsayılan olarak <em>"Mevcut uygulamayı güncellemek istiyor musunuz?"</em> uyarısı gösterir. Eski sürüm kalıntılarından, veritabanı uyuşmazlığından veya güncelleme takılmalarından kaçınmak için <strong>iki kolay temiz kurulum yöntemi</strong> sunulmuştur:
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+              <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 14px 16px;">
+                <div style="font-weight: 700; color: #38BDF8; font-size: 14px; margin-bottom: 4px;">1. Uygulama İçi Tek Tıkla Temiz Kurulum</div>
+                <div style="font-size: 13px; color: #94A3B8; line-height: 1.5;">
+                  Mevcut SesYazOku uygulamasını açın &rarr; <strong>Ayarlar</strong> &rarr; <strong>"⚡ Temiz Kurulum (Eski Sürümü Sil & Yenisini Kur)"</strong> seçeneğine dokunun. Uygulama eski veritabanı ve önbelleği sıfırlar, yeni APK'yı kalıcı Downloads klasörüne alıp eski sürümü kaldırma ve sıfırdan kurma ekranını açar.
+                </div>
+              </div>
+              <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 12px; padding: 14px 16px;">
+                <div style="font-weight: 700; color: #A78BFA; font-size: 14px; margin-bottom: 4px;">2. Eski Uygulamayı Kaldırıp Sıfırdan Yükleme</div>
+                <div style="font-size: 13px; color: #94A3B8; line-height: 1.5;">
+                  Telefonunuzun ana ekranından eski SesYazOku simgesine basılı tutup <strong>"Kaldır" (Sil)</strong> seçin. Ardından indirdiğiniz yeni <code>SesYazOku.apk</code> dosyasına dokunarak sıfır hata ile tertemiz kurulum yapın.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="steps-grid">
@@ -4432,7 +4462,7 @@
       try {
         fetch("https://ntfy.sh/sesyazoku_sync_relay_7bee5aba", {
           method: "POST",
-          headers: { "Title": "Destek Yanıtı", "Tags": "speech_balloon" },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             type: "ADMIN_REPLY",
             targetEmail: activeUserEmail,
@@ -4489,13 +4519,36 @@
     // Madde 4 & 5: Gerçek Zamanlı Çevrimiçi Senkronizasyon (SSE Relay)
     let adminEventSource = null;
     function initAdminLiveRelay() {
+      // 1. Geçmiş mesajları hemen çek (son 12 saatteki tüm APK bildirimleri)
+      fetch("https://ntfy.sh/sesyazoku_sync_relay_7bee5aba/json?since=12h&poll=1")
+        .then(res => res.text())
+        .then(text => {
+          if (!text) return;
+          const lines = text.trim().split("\n");
+          lines.forEach(line => {
+            if (!line) return;
+            try {
+              const eventObj = JSON.parse(line);
+              if (eventObj.event === "message" && eventObj.message) {
+                const rawMsg = eventObj.message.trim();
+                if (rawMsg.startsWith("{")) {
+                  const payload = JSON.parse(rawMsg);
+                  handleIncomingRelayPayload(payload);
+                }
+              }
+            } catch (err) {}
+          });
+        })
+        .catch(e => console.log("Past messages prefetch notice:", e));
+
+      // 2. Canlı EventSource akışını aç
       if (adminEventSource) return;
       try {
-        adminEventSource = new EventSource("https://ntfy.sh/sesyazoku_sync_relay_7bee5aba/sse");
+        adminEventSource = new EventSource("https://ntfy.sh/sesyazoku_sync_relay_7bee5aba/sse?since=12h");
         adminEventSource.onmessage = function(event) {
           try {
             const data = JSON.parse(event.data);
-            const rawMsg = data.message || "";
+            const rawMsg = (data.message || "").trim();
             if (rawMsg.startsWith("{")) {
               const payload = JSON.parse(rawMsg);
               handleIncomingRelayPayload(payload);
@@ -4949,13 +5002,13 @@
           try {
             fetch("https://ntfy.sh/sesyazoku_sync_relay_7bee5aba", {
               method: "POST",
-              headers: { "Title": "Destek Ekibi Uyarısı", "Tags": "warning" },
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 type: "SUPPORT_ALERT",
                 alertText: alertText,
                 timestamp: Date.now()
               })
-            }).catch(() => {});
+            }).catch(e => console.log("Relay send alert error:", e));
           } catch(e) {}
 
           alert(`🔔 Destek uyarısı kullanıcının mesaj alanına başarıyla iletildi:\n"${alertText}"`);
@@ -5249,15 +5302,17 @@
       }
     }
 
-    // Auto-initialize badges and version metadata on page load
+    // Auto-initialize badges, version metadata and real-time live sync on page load
     document.addEventListener("DOMContentLoaded", () => {
       updateAdminBadges();
       const savedTheme = localStorage.getItem("sesyazoku_admin_theme");
       if (savedTheme) setAdminTheme(savedTheme);
       loadVersionMetadata();
+      initAdminLiveRelay();
     });
     // Immediate call in case DOMContentLoaded already fired
     loadVersionMetadata();
+    initAdminLiveRelay();
   </script>
 </body>
 </html>

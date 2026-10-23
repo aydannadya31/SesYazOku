@@ -83,25 +83,38 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // Yönetim Paneli ile Çift Yönlü Çevrimiçi Senkronizasyon Başlat (Madde 4 & 5)
             try {
                 val profile = authManager.userProfile.value
+                val initialEmail = profile.email.ifBlank { "aydannadya31@gmail.com" }
+                val initialName = profile.name.ifBlank { "Aydan Nadya" }
+
                 adminSyncRelay.startListeningForAdminEvents(
                     scope = viewModelScope,
-                    userEmail = profile.email,
+                    userEmail = initialEmail,
                     onAdminReplyReceived = { replyText ->
                         Toast.makeText(getApplication(), "Yönetimden Yeni Yanıt: $replyText", Toast.LENGTH_LONG).show()
                     },
                     onSupportAlertReceived = { alertText ->
-                        val feedbackPrefs = application.getSharedPreferences("sesyazoku_prefs", Context.MODE_PRIVATE)
                         feedbackPrefs.edit().putString("active_support_alert", alertText).apply()
+                        _activeSupportAlert.value = alertText
+                        Toast.makeText(getApplication(), "🔔 Yönetici Destek Uyarısı: $alertText", Toast.LENGTH_LONG).show()
                     }
                 )
                 adminSyncRelay.sendTelemetryHeartbeat(
-                    userEmail = profile.email.ifBlank { "kullanici@sesyazoku.com" },
-                    userName = profile.name.ifBlank { "Kullanıcı" },
+                    userEmail = initialEmail,
+                    userName = initialName,
                     scope = viewModelScope
                 )
             } catch (_: Exception) {}
         }
     }
+
+    private val feedbackPrefs = application.getSharedPreferences("sesyazoku_prefs", Context.MODE_PRIVATE)
+    private val _activeSupportAlert = MutableStateFlow(
+        feedbackPrefs.getString(
+            "active_support_alert",
+            "Teknik Destek Ekibi: Sistem bağlantınız aktif. Yaşadığınız sorunları veya taleplerinizi buradan iletebilirsiniz."
+        ) ?: ""
+    )
+    val activeSupportAlert: StateFlow<String> = _activeSupportAlert.asStateFlow()
 
     // Settings
     private val prefs = application.getSharedPreferences("sesyazoku_settings", Context.MODE_PRIVATE)
@@ -368,6 +381,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             updateManager.downloadAndInstallUpdate(context)
         }
+    }
+
+    fun cleanInstallUpdate(context: Context) {
+        viewModelScope.launch {
+            updateManager.downloadAndCleanInstall(context)
+        }
+    }
+
+    fun promptUninstallExisting(context: Context) {
+        updateManager.promptUninstallOldVersion(context)
     }
 
     fun openWebDownloadPage(context: Context) {

@@ -8,6 +8,7 @@ import android.os.BatteryManager
 import android.os.Build
 import android.os.Environment
 import android.os.StatFs
+import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.data.FeedbackEntity
 import kotlinx.coroutines.CoroutineScope
@@ -21,26 +22,27 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.File
+import java.util.Collections
 import java.util.concurrent.TimeUnit
 
 class AdminSyncRelay(private val context: Context) {
 
     companion object {
+        private const val TAG = "AdminSyncRelay"
         // Applet-spesifik güvenli eşzamanlama kanalı
         const val RELAY_URL = "https://ntfy.sh/sesyazoku_sync_relay_7bee5aba"
     }
 
     private val client = OkHttpClient.Builder()
-        .connectTimeout(5, TimeUnit.SECONDS)
-        .readTimeout(10, TimeUnit.SECONDS)
-        .writeTimeout(5, TimeUnit.SECONDS)
+        .connectTimeout(8, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(8, TimeUnit.SECONDS)
         .build()
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
-    private var lastPollTimestamp = System.currentTimeMillis() / 1000L
+    private val processedMessageIds = Collections.synchronizedSet(HashSet<String>())
 
-    // 1. Gerçek Cihaz & Yetki Telemetrisini Toplama (Madde 5)
+    // 1. Gerçek Cihaz & Yetki Telemetrisini Toplama
     fun gatherDeviceDiagnostics(): JSONObject {
         val root = JSONObject()
         try {
@@ -90,11 +92,13 @@ class AdminSyncRelay(private val context: Context) {
             }
             root.put("deviceAudioFiles", fileListArray)
             root.put("totalRecordedFilesCount", files.size)
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.w(TAG, "Error gathering diagnostics: ${e.message}")
+        }
         return root
     }
 
-    // 2. APK'dan Yönetim Paneline Anlık Mesaj İletme (<3 Saniye Gecikme Garantisi) (Madde 4 & 6)
+    // 2. APK'dan Yönetim Paneline Anlık Mesaj İletme (<3 Saniye Gecikme Garantisi)
     fun sendFeedbackToAdmin(
         feedback: FeedbackEntity,
         userName: String,
@@ -103,11 +107,14 @@ class AdminSyncRelay(private val context: Context) {
     ) {
         scope.launch(Dispatchers.IO) {
             try {
+                val effectiveEmail = feedback.userEmail.ifBlank { "aydannadya31@gmail.com" }
+                val effectiveName = userName.ifBlank { "Aydan Nadya" }
+
                 val payload = JSONObject().apply {
                     put("type", "USER_FEEDBACK")
                     put("id", feedback.id.toString())
-                    put("email", feedback.userEmail)
-                    put("userName", userName)
+                    put("email", effectiveEmail)
+                    put("userName", effectiveName)
                     put("category", feedback.category)
                     put("subject", feedback.subject)
                     put("message", feedback.message)
@@ -120,17 +127,20 @@ class AdminSyncRelay(private val context: Context) {
                 }
 
                 val body = payload.toString().toRequestBody(jsonMediaType)
+                // ASCII-safe Request (No non-ASCII headers!)
                 val request = Request.Builder()
                     .url(RELAY_URL)
-                    .header("Title", "Yeni APK Mesajı: ${feedback.subject}")
-                    .header("Tags", "envelope,speech_balloon")
                     .post(body)
                     .build()
 
-                client.newCall(request).execute().use { response ->
-                    onDone(response.isSuccessful)
+                val call = client.newCall(request)
+                call.execute().use { response ->
+                    val success = response.isSuccessful
+                    Log.i(TAG, "Feedback relay sent to admin. Success=$success, Code=${response.code}")
+                    onDone(success)
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to send feedback to relay", e)
                 onDone(false)
             }
         }
@@ -140,35 +150,41 @@ class AdminSyncRelay(private val context: Context) {
     fun sendTelemetryHeartbeat(userEmail: String, userName: String, scope: CoroutineScope) {
         scope.launch(Dispatchers.IO) {
             try {
+                val effectiveEmail = userEmail.ifBlank { "aydannadya31@gmail.com" }
+                val effectiveName = userName.ifBlank { "Aydan Nadya" }
+
                 val payload = JSONObject().apply {
                     put("type", "DEVICE_TELEMETRY")
-                    put("email", userEmail)
-                    put("userName", userName)
+                    put("email", effectiveEmail)
+                    put("userName", effectiveName)
                     put("timestamp", System.currentTimeMillis())
                     put("diagnostics", gatherDeviceDiagnostics())
                 }
                 val body = payload.toString().toRequestBody(jsonMediaType)
                 val request = Request.Builder()
                     .url(RELAY_URL)
-                    .header("Title", "Cihaz Canlılık Bildirimi")
                     .post(body)
                     .build()
                 client.newCall(request).execute().close()
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                Log.w(TAG, "Telemetry heartbeat failed: ${e.message}")
+            }
         }
     }
 
-    // 4. Yönetim Panelinden Gelen Mesaj ve Uyarıları Dinleme (Maksimum 2.5 sn gecikmeli yoklama döngüsü)
+    // 4. Yönetim Panelinden Gelen Mesaj ve Destek Uyarılarını Dinleme
     fun startListeningForAdminEvents(
         scope: CoroutineScope,
         userEmail: String,
         onAdminReplyReceived: (replyText: String) -> Unit,
         onSupportAlertReceived: (alertText: String) -> Unit
     ) {
+        val effectiveEmail = userEmail.ifBlank { "aydannadya31@gmail.com" }
         scope.launch(Dispatchers.IO) {
             while (isActive) {
                 try {
-                    val pollUrl = "$RELAY_URL/json?since=${lastPollTimestamp}&poll=1"
+                    // 10 dakika geriye dönük yoklama ile saat farkı/kayıp mesaj riskini sıfıra indirir
+                    val pollUrl = "$RELAY_URL/json?since=10m&poll=1"
                     val request = Request.Builder().url(pollUrl).get().build()
                     client.newCall(request).execute().use { response ->
                         if (response.isSuccessful) {
@@ -178,15 +194,21 @@ class AdminSyncRelay(private val context: Context) {
                                 if (line.isBlank()) continue
                                 try {
                                     val item = JSONObject(line)
+                                    val msgId = item.optString("id")
+                                    if (msgId.isNotBlank() && !processedMessageIds.add(msgId)) {
+                                        // Zaten işlendi
+                                        continue
+                                    }
                                     val messageField = item.optString("message")
                                     if (messageField.isNotBlank() && messageField.startsWith("{")) {
                                         val innerJson = JSONObject(messageField)
                                         val type = innerJson.optString("type")
                                         val targetEmail = innerJson.optString("targetEmail")
 
-                                        if (type == "ADMIN_REPLY" && (targetEmail.isBlank() || targetEmail == userEmail)) {
+                                        if (type == "ADMIN_REPLY" && (targetEmail.isBlank() || targetEmail.equals(effectiveEmail, ignoreCase = true))) {
                                             val text = innerJson.optString("replyText")
                                             if (text.isNotBlank()) {
+                                                Log.i(TAG, "Admin reply received: $text")
                                                 scope.launch(Dispatchers.Main) {
                                                     onAdminReplyReceived(text)
                                                 }
@@ -194,22 +216,21 @@ class AdminSyncRelay(private val context: Context) {
                                         } else if (type == "SUPPORT_ALERT") {
                                             val alertText = innerJson.optString("alertText")
                                             if (alertText.isNotBlank()) {
+                                                Log.i(TAG, "Support alert received: $alertText")
                                                 scope.launch(Dispatchers.Main) {
                                                     onSupportAlertReceived(alertText)
                                                 }
                                             }
                                         }
                                     }
-                                    val time = item.optLong("time")
-                                    if (time > lastPollTimestamp) {
-                                        lastPollTimestamp = time
-                                    }
                                 } catch (_: Exception) {}
                             }
                         }
                     }
-                } catch (_: Exception) {}
-                delay(2500) // 2.5 saniye gecikme döngüsü
+                } catch (e: Exception) {
+                    Log.w(TAG, "Poll error: ${e.message}")
+                }
+                delay(2000) // 2 saniyelik anlık kontrol döngüsü
             }
         }
     }

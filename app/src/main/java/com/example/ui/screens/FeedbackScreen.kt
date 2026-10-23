@@ -117,11 +117,8 @@ fun FeedbackScreen(viewModel: MainViewModel) {
     var selectedCategory by remember { mutableStateOf("İşleyiş Geri Bildirimi") }
     var message by remember { mutableStateOf("") }
 
-    // Kural 9: Destek ekibi uyarısı alanı
-    val prefs = remember { context.getSharedPreferences("sesyazoku_prefs", Context.MODE_PRIVATE) }
-    var activeSupportAlert by remember {
-        mutableStateOf(prefs.getString("active_support_alert", "Teknik Destek Ekibi: Sistem bağlantınız aktif. Yaşadığınız sorunları veya taleplerinizi buradan iletebilirsiniz.") ?: "")
-    }
+    // Kural 9: Destek ekibi uyarısı alanı (Yönetim panelinden gönderilen uyarılar anında yansır)
+    val activeSupportAlert by viewModel.activeSupportAlert.collectAsState()
     var isAlertDismissed by remember { mutableStateOf(false) }
 
     // Çoklu ek listesi (Birden fazla ses, fotoğraf veya PDF eklenebilir)
@@ -224,7 +221,8 @@ fun FeedbackScreen(viewModel: MainViewModel) {
                             IconButton(
                                 onClick = {
                                     isAlertDismissed = true
-                                    prefs.edit().remove("active_support_alert").apply()
+                                    val sp = context.getSharedPreferences("sesyazoku_prefs", Context.MODE_PRIVATE)
+                                    sp.edit().remove("active_support_alert").apply()
                                 },
                                 modifier = Modifier.size(24.dp)
                             ) {
@@ -498,7 +496,7 @@ fun FeedbackScreen(viewModel: MainViewModel) {
                                     subject = subject.trim(),
                                     category = selectedCategory,
                                     message = message.trim(),
-                                    userEmail = authProfile.email,
+                                    userEmail = authProfile.email.ifBlank { "aydannadya31@gmail.com" },
                                     audioUri = audioFirst,
                                     imageUri = imageFirst,
                                     pdfUri = pdfFirst,
