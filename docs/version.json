@@ -1,9 +1,9 @@
 {
-  "versionCode": 37,
-  "versionName": "1.0.37",
+  "versionCode": 38,
+  "versionName": "1.0.38",
   "apkUrl": "SesYazOku.apk",
   "webPageUrl": "https://aydannadya31.github.io/SesYazOku/",
-  "releaseNotes": "GitHub Güncellemesi (87fddff): feat(transcription): improve speaker labeling and editing",
-  "publishedAt": "2026-10-26 07:29 UTC",
+  "releaseNotes": "GitHub Güncellemesi (063439a): feat: add audio markers and audio enhancement features",
+  "publishedAt": "2026-10-26 11:59 UTC",
   "minSdkVersion": 24
 }
