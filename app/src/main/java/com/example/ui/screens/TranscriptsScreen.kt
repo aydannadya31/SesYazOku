@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Translate
@@ -43,6 +44,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -483,7 +485,7 @@ fun TranscriptsScreen(
                                         AdaptiveButtonText(text = Localization.get("trans_transcribe_btn", language))
                                     }
                                 } else {
-                                    // Detected speakers banner
+                                    // Detected speakers banner with re-transcribe action
                                     Surface(
                                         shape = RoundedCornerShape(8.dp),
                                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
@@ -491,21 +493,41 @@ fun TranscriptsScreen(
                                     ) {
                                         Row(
                                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Group,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = "🎯 Tespit Edilen Kişi Sayısı: ${item.speakerCount} Kişi",
-                                                style = MaterialTheme.typography.labelMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Group,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = "🎯 Tespit Edilen Kişi Sayısı: ${item.speakerCount} Kişi",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+
+                                            OutlinedButton(
+                                                onClick = {
+                                                    viewModel.selectRecordingForView(item.id)
+                                                    viewModel.runTranscription(item, speakerCount = item.speakerCount.coerceAtLeast(1))
+                                                },
+                                                shape = RoundedCornerShape(6.dp),
+                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                                modifier = Modifier.height(26.dp)
+                                            ) {
+                                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(12.dp))
+                                                Spacer(modifier = Modifier.width(3.dp))
+                                                Text("Yeniden Dönüştür", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                            }
                                         }
                                     }
 
@@ -591,11 +613,25 @@ fun TranscriptsScreen(
 
                                     Spacer(modifier = Modifier.height(8.dp))
 
-                                    // Secondary row: Edit in Editor, Color Tag (Item 11)
+                                    // Secondary row: Re-Transcribe, Edit in Editor, Color Tag (Item 11)
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
+                                        FilledTonalButton(
+                                            onClick = {
+                                                viewModel.selectRecordingForView(item.id)
+                                                viewModel.runTranscription(item, speakerCount = item.speakerCount.coerceAtLeast(1))
+                                            },
+                                            shape = RoundedCornerShape(8.dp),
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                            modifier = Modifier.weight(1.2f)
+                                        ) {
+                                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("Yeniden Dönüştür", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        }
+
                                         OutlinedButton(
                                             onClick = {
                                                 viewModel.selectRecordingForView(item.id)
@@ -603,11 +639,11 @@ fun TranscriptsScreen(
                                             },
                                             shape = RoundedCornerShape(8.dp),
                                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                                            modifier = Modifier.weight(1f)
+                                            modifier = Modifier.weight(0.8f)
                                         ) {
                                             Icon(Icons.Default.Label, contentDescription = null, modifier = Modifier.size(14.dp))
                                             Spacer(modifier = Modifier.width(4.dp))
-                                            Text("Etiket / Renk", fontSize = 11.sp)
+                                            Text("Etiket", fontSize = 11.sp)
                                         }
 
                                         OutlinedButton(
@@ -617,11 +653,11 @@ fun TranscriptsScreen(
                                             },
                                             shape = RoundedCornerShape(8.dp),
                                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                                            modifier = Modifier.weight(1f)
+                                            modifier = Modifier.weight(0.9f)
                                         ) {
                                             Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
                                             Spacer(modifier = Modifier.width(4.dp))
-                                            Text("Metni Düzenle", fontSize = 11.sp)
+                                            Text("Düzenle", fontSize = 11.sp)
                                         }
                                     }
                                 }

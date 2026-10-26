@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
@@ -343,7 +344,21 @@ fun DocumentsScreen(viewModel: MainViewModel) {
                             )
                         }
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            FilledTonalButton(
+                                onClick = {
+                                    viewModel.runTranscription(activeDoc, speakerCount = activeDoc.speakerCount.coerceAtLeast(1))
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(13.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(if (activeDoc.isTranscribed) "Tekrar Dönüştür" else "Metne Dönüştür", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                            }
                             OutlinedButton(
                                 onClick = { summaryDoc = activeDoc },
                                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
@@ -858,6 +873,9 @@ fun DocumentsScreen(viewModel: MainViewModel) {
                         onSetImage = {
                             photoTargetItem = item
                             showPhotoSourceDialog = true
+                        },
+                        onTranscribe = {
+                            viewModel.runTranscription(item, speakerCount = item.speakerCount.coerceAtLeast(1))
                         },
                         onSavePdf = { viewModel.savePdfToStorage(context, item) },
                         onShare = { viewModel.exportAndSharePdf(context, item) },
@@ -1405,7 +1423,8 @@ fun DocumentCard(
     onSavePdf: () -> Unit,
     onShare: () -> Unit,
     onBackupDrive: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onTranscribe: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -1533,49 +1552,70 @@ fun DocumentCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Action Buttons Row (PDF Save, WhatsApp Share, Drive Backup, Delete)
+            // Action Buttons Row (Dönüştür / Tekrar Dönüştür, PDF Save, WhatsApp Share, Drive Backup, Delete)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Transcribe / Re-transcribe Button
+                FilledTonalButton(
+                    onClick = onTranscribe,
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    modifier = Modifier.weight(1.3f)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(if (recording.isTranscribed) "Tekrar Dönüştür" else "Metne Dönüştür", fontSize = 11.sp, maxLines = 1)
+                }
+
                 // PDF Save
                 FilledTonalButton(
                     onClick = onSavePdf,
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("PDF Kaydet", fontSize = 12.sp)
+                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text("PDF", fontSize = 11.sp)
                 }
 
                 // WhatsApp / Social Share
                 Button(
                     onClick = onShare,
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Paylaş", fontSize = 12.sp)
+                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text("Paylaş", fontSize = 11.sp)
                 }
 
                 // Drive Backup for single item
                 OutlinedButton(
                     onClick = onBackupDrive,
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Drive", fontSize = 12.sp)
+                    Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text("Drive", fontSize = 11.sp)
                 }
 
                 // Delete
-                IconButton(onClick = onDelete) {
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(36.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Sil",
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }

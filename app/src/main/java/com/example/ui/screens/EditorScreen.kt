@@ -27,11 +27,13 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -350,6 +352,18 @@ fun EditorScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            FilledTonalButton(
+                                onClick = {
+                                    viewModel.runTranscription(activeRec, speakerCount = activeRec.speakerCount.coerceAtLeast(1))
+                                },
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(if (activeRec.isTranscribed) "Tekrar Metne Dönüştür" else "Metne Dönüştür", fontSize = 12.sp)
+                            }
                         } else {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -399,6 +413,24 @@ fun EditorScreen(
                                             )
                                         }
                                     }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                FilledTonalButton(
+                                    onClick = {
+                                        viewModel.runTranscription(activeRec, speakerCount = activeRec.speakerCount.coerceAtLeast(1))
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(if (activeRec.isTranscribed) "Tekrar Metne Dönüştür" else "Metne Dönüştür", fontSize = 12.sp)
                                 }
                             }
                         }
