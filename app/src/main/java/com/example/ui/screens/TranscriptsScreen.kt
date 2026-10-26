@@ -56,6 +56,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.PaddingValues
+import com.example.ui.components.SpeakerAndTextEditDialog
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -74,6 +78,7 @@ fun TranscriptsScreen(
     onNavigateToDocuments: () -> Unit,
     onNavigateToEditor: (() -> Unit)? = null
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val recordings by viewModel.recordings.collectAsState()
     val isTranscribing by viewModel.isTranscribing.collectAsState()
     val transcribeProgress by viewModel.transcribeProgress.collectAsState()
@@ -89,6 +94,7 @@ fun TranscriptsScreen(
     val language by viewModel.language.collectAsState()
 
     var speakerCount by remember { mutableIntStateOf(2) }
+    var editingSegment by remember { mutableStateOf<TranscriptSegmentEntity?>(null) }
 
     Column(
         modifier = Modifier
@@ -220,7 +226,7 @@ fun TranscriptsScreen(
                                     )
                                     val dateStr = SimpleDateFormat("dd MMM yyyy HH:mm", Locale.forLanguageTag("tr")).format(Date(item.timestamp))
                                     Text(
-                                        text = "$dateStr • ${if (item.isTranscribed) "${item.speakerCount} Konuşmacı Metni Hazır" else "Transkripsiyon Bekliyor"}",
+                                        text = "$dateStr • ${if (item.isTranscribed) "${item.speakerCount} Konuşmacı Metni Hazır" else "Metne Dönüştürme Bekliyor"}",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -315,41 +321,62 @@ fun TranscriptsScreen(
                             // Action Bar inside item
                             if (!item.isTranscribed) {
                                 Column {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                        modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Text(
-                                            text = "Kişi Sayısı: ${item.speakerCount}",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary
+                                            text = "ℹ️ Ses kaydı henüz metne dönüştürülmedi. Konuşmacı sayısı (Kişi 1, Kişi 2...), metne dönüştürme tamamlandığında otomatik olarak tespit edilir.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(10.dp)
                                         )
                                     }
 
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(10.dp))
 
                                     Button(
                                         onClick = {
                                             viewModel.selectRecordingForView(item.id)
-                                            viewModel.runTranscription(item, speakerCount = item.speakerCount.coerceAtLeast(1))
+                                            viewModel.runTranscription(item)
                                         },
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(42.dp),
+                                            .height(44.dp),
                                         shape = RoundedCornerShape(10.dp)
                                     ) {
+                                        Icon(Icons.Default.RecordVoiceOver, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
                                         AdaptiveButtonText(text = Localization.get("trans_transcribe_btn", language))
                                     }
                                 }
                             } else {
-                                Text(
-                                    text = "Kişi Sayısı: ${item.speakerCount}",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Group,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "🎯 Tespit Edilen Kişi Sayısı: ${item.speakerCount} Kişi",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
                                 // If already transcribed, show preview snippet & view details button
                                 Text(
                                     text = item.transcriptFullText.take(160) + if (item.transcriptFullText.length > 160) "..." else "",
@@ -419,7 +446,10 @@ fun TranscriptsScreen(
                                         )
                                         Spacer(modifier = Modifier.height(8.dp))
                                         segments.forEach { seg ->
-                                            SpeakerSegmentBubble(seg)
+                                            SpeakerSegmentBubble(
+                                                segment = seg,
+                                                onEdit = { editingSegment = seg }
+                                            )
                                             Spacer(modifier = Modifier.height(8.dp))
                                         }
                                     }
@@ -431,10 +461,34 @@ fun TranscriptsScreen(
             }
         }
     }
+
+    // Metin içindeki "Kişi 1" yazan yerdeki değiştirme butonu ile kişi adı veya metin alanını değiştirme diyaloğu
+    editingSegment?.let { seg ->
+        val activeRec = recordings.firstOrNull { it.id == seg.recordingId } ?: recordings.firstOrNull { it.id == selectedId }
+        activeRec?.let { rec ->
+            SpeakerAndTextEditDialog(
+                segment = seg,
+                recordingId = rec.id,
+                onDismiss = { editingSegment = null },
+                onUpdateExactSpeakerName = { oldName, newName ->
+                    viewModel.updateSpeakerLabelByExactName(rec.id, oldName, newName)
+                },
+                onUpdateSingleSpeaker = { segId, newName ->
+                    viewModel.updateSingleSegmentSpeaker(segId, rec.id, newName)
+                },
+                onUpdateSegmentText = { segId, newText ->
+                    viewModel.updateSegmentText(segId, rec.id, newText)
+                }
+            )
+        }
+    }
 }
 
 @Composable
-fun SpeakerSegmentBubble(segment: TranscriptSegmentEntity) {
+fun SpeakerSegmentBubble(
+    segment: TranscriptSegmentEntity,
+    onEdit: () -> Unit
+) {
     val badgeColor = when (segment.speakerIndex % 3) {
         1 -> Color(0xFF2563EB) // Blue
         2 -> Color(0xFF059669) // Emerald
@@ -448,20 +502,44 @@ fun SpeakerSegmentBubble(segment: TranscriptSegmentEntity) {
         Surface(
             shape = RoundedCornerShape(8.dp),
             color = badgeColor,
-            modifier = Modifier.padding(top = 2.dp)
+            modifier = Modifier
+                .padding(top = 2.dp)
+                .clickable { onEdit() }
         ) {
-            Text(
-                text = segment.speakerLabel,
-                color = Color.White,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-            )
+            ) {
+                Text(
+                    text = segment.speakerLabel,
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Değiştir",
+                    tint = Color.White.copy(alpha = 0.9f),
+                    modifier = Modifier.size(12.dp)
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
-        Column(modifier = Modifier.weight(1f)) {
+        OutlinedButton(
+            onClick = onEdit,
+            shape = RoundedCornerShape(6.dp),
+            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+            modifier = Modifier.height(26.dp)
+        ) {
+            Text("Değiştir", fontSize = 10.sp)
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Column(modifier = Modifier.weight(1f).clickable { onEdit() }) {
             Text(
                 text = segment.text,
                 style = MaterialTheme.typography.bodyMedium,

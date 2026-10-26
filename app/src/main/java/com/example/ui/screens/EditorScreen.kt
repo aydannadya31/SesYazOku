@@ -46,6 +46,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.PaddingValues
+import com.example.ui.components.SpeakerAndTextEditDialog
 import com.example.ui.util.AdaptiveButtonText
 import com.example.ui.util.Localization
 import androidx.compose.runtime.Composable
@@ -100,9 +102,10 @@ fun EditorScreen(
         }
     }
 
-    // Etiket düzenleme diyaloğu
-    var editingSpeaker by remember { mutableStateOf<Pair<Int, String>?>(null) } // (speakerIndex, currentLabel)
-    var newLabelInput by remember { mutableStateOf("") }
+    // Toplu ve tekil kişi / metin düzenleme durumları
+    var bulkEditingSpeakerLabel by remember { mutableStateOf<String?>(null) }
+    var newBulkLabelInput by remember { mutableStateOf("") }
+    var activeEditingSegment by remember { mutableStateOf<TranscriptSegmentEntity?>(null) }
     var isDropdownExpanded by remember { mutableStateOf(false) }
     val language by viewModel.language.collectAsState()
 
@@ -335,10 +338,9 @@ fun EditorScreen(
 
                         // Segmentlerden benzersiz konuşmacı listesini çıkar
                         val uniqueSpeakers = remember(segments) {
-                            segments.groupBy { it.speakerIndex }
-                                .mapValues { entry -> entry.value.first().speakerLabel }
-                                .toList()
-                                .sortedBy { it.first }
+                            segments.map { it.speakerLabel.trim() }
+                                .filter { it.isNotBlank() }
+                                .distinct()
                         }
 
                         if (uniqueSpeakers.isEmpty()) {
@@ -352,15 +354,15 @@ fun EditorScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                uniqueSpeakers.forEach { (spkIndex, spkLabel) ->
+                                uniqueSpeakers.forEach { spkLabel ->
                                     Surface(
                                         shape = RoundedCornerShape(10.dp),
                                         color = MaterialTheme.colorScheme.background,
                                         modifier = Modifier
                                             .weight(1f)
                                             .clickable {
-                                                editingSpeaker = Pair(spkIndex, spkLabel)
-                                                newLabelInput = spkLabel
+                                                bulkEditingSpeakerLabel = spkLabel
+                                                newBulkLabelInput = spkLabel
                                             }
                                     ) {
                                         Row(
@@ -382,7 +384,7 @@ fun EditorScreen(
                                                     maxLines = 1
                                                 )
                                                 Text(
-                                                    text = "Tıkla & Değiştir",
+                                                    text = "Toplu Değiştir",
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.primary,
                                                     fontSize = 10.sp
@@ -454,9 +456,12 @@ fun EditorScreen(
                             }
                         }
                     } else {
-                        items(segments) { seg ->
+                        items(segments, key = { it.id }) { seg ->
                             Card(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { activeEditingSegment = seg }
+                                    .testTag("editor_segment_card_${seg.id}"),
                                 shape = RoundedCornerShape(10.dp),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                             ) {
@@ -467,32 +472,60 @@ fun EditorScreen(
                                     ) {
                                         Surface(
                                             shape = RoundedCornerShape(6.dp),
-                                            color = MaterialTheme.colorScheme.primaryContainer
+                                            color = MaterialTheme.colorScheme.primaryContainer,
+                                            modifier = Modifier.clickable { activeEditingSegment = seg }
                                         ) {
-                                            Text(
-                                                text = seg.speakerLabel,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Person,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(12.dp),
+                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = seg.speakerLabel,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        // Metin içindeki "Kişi 1" yazan yerdeki değiştirme butonu
+                                        OutlinedButton(
+                                            onClick = { activeEditingSegment = seg },
+                                            shape = RoundedCornerShape(8.dp),
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                            modifier = Modifier
+                                                .height(28.dp)
+                                                .testTag("edit_segment_button_${seg.id}")
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Edit,
+                                                contentDescription = "Kişi veya Metin Değiştir",
+                                                modifier = Modifier.size(12.dp)
                                             )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("Değiştir (Kişi / Metin)", fontSize = 10.sp)
                                         }
 
                                         Spacer(modifier = Modifier.weight(1f))
 
-                                        // Konuşmacı etiketini hızlı değiştirme butonu
                                         IconButton(
-                                            onClick = {
-                                                editingSpeaker = Pair(seg.speakerIndex, seg.speakerLabel)
-                                                newLabelInput = seg.speakerLabel
-                                            },
+                                            onClick = { activeEditingSegment = seg },
                                             modifier = Modifier.size(24.dp)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Edit,
-                                                contentDescription = "Etiketi Değiştir",
-                                                tint = MaterialTheme.colorScheme.outline,
-                                                modifier = Modifier.size(14.dp)
+                                                contentDescription = "Düzenle",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp)
                                             )
                                         }
                                     }
@@ -514,13 +547,13 @@ fun EditorScreen(
         }
     }
 
-    // Toplu Kişi Etiketi Değiştirme Diyaloğu
-    editingSpeaker?.let { (spkIndex, oldLabel) ->
+    // 1. Toplu Kişi Etiketi Değiştirme Diyaloğu (Sadece seçili etiketi değiştirir, diğerlerini etkilemez)
+    bulkEditingSpeakerLabel?.let { oldLabel ->
         AlertDialog(
-            onDismissRequest = { editingSpeaker = null },
+            onDismissRequest = { bulkEditingSpeakerLabel = null },
             title = {
                 Text(
-                    text = "Konuşmacı Etiketini Değiştir",
+                    text = "Toplu Kişi İsmi Değiştir",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -528,51 +561,71 @@ fun EditorScreen(
             text = {
                 Column {
                     Text(
-                        text = "Bu dökümandaki bütün \"$oldLabel\" etiketleri tek seferde yeni belirteceğiniz isimle güncellenecektir (Örn: Ahmet Hoca). Diğer kayıtlar etkilenmez.",
+                        text = "Bu dökümandaki yalnızca \"$oldLabel\" etiketleri yeni belirteceğiniz isimle güncellenecektir. Diğer konuşmacı isimleri (Kişi 2, Kişi 3...) kesinlikle değiştirilmez.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(14.dp))
                     OutlinedTextField(
-                        value = newLabelInput,
-                        onValueChange = { newLabelInput = it },
-                        label = { Text("Yeni Konuşmacı Adı") },
+                        value = newBulkLabelInput,
+                        onValueChange = { newBulkLabelInput = it },
+                        label = { Text("Yeni Konuşmacı Adı (Örn: Ahmet Hoca)") },
                         singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .testTag("speaker_label_input")
+                            .testTag("bulk_speaker_label_input")
                     )
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        val trimmed = newLabelInput.trim()
+                        val trimmed = newBulkLabelInput.trim()
                         if (trimmed.isNotBlank() && currentRecording != null) {
-                            viewModel.updateSpeakerLabel(
+                            viewModel.updateSpeakerLabelByExactName(
                                 recordingId = currentRecording.id,
-                                speakerIndex = spkIndex,
+                                oldLabel = oldLabel,
                                 newLabel = trimmed
                             )
                             Toast.makeText(
                                 context,
-                                "Tüm \"$oldLabel\" etiketleri \"$trimmed\" olarak güncellendi ve Döküman kaydedildi.",
+                                "Tüm \"$oldLabel\" isimleri \"$trimmed\" olarak değiştirildi. Diğer isimler korundu.",
                                 Toast.LENGTH_LONG
                             ).show()
-                            editingSpeaker = null
+                            bulkEditingSpeakerLabel = null
                         }
                     },
-                    enabled = newLabelInput.isNotBlank(),
-                    modifier = Modifier.testTag("confirm_speaker_label_button")
+                    enabled = newBulkLabelInput.isNotBlank(),
+                    modifier = Modifier.testTag("confirm_bulk_speaker_label_button")
                 ) {
-                    Text("Tüm Metinde Değiştir")
+                    Text("Sadece '$oldLabel' İsimlerini Değiştir")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { editingSpeaker = null }) {
+                TextButton(onClick = { bulkEditingSpeakerLabel = null }) {
                     Text("İptal")
                 }
             }
         )
+    }
+
+    // 2. Metin İçindeki Segmentte Kişi Adı veya Metin Alanını Değiştirme Diyaloğu
+    activeEditingSegment?.let { seg ->
+        currentRecording?.let { rec ->
+            SpeakerAndTextEditDialog(
+                segment = seg,
+                recordingId = rec.id,
+                onDismiss = { activeEditingSegment = null },
+                onUpdateExactSpeakerName = { oldName, newName ->
+                    viewModel.updateSpeakerLabelByExactName(rec.id, oldName, newName)
+                },
+                onUpdateSingleSpeaker = { segId, newName ->
+                    viewModel.updateSingleSegmentSpeaker(segId, rec.id, newName)
+                },
+                onUpdateSegmentText = { segId, newText ->
+                    viewModel.updateSegmentText(segId, rec.id, newText)
+                }
+            )
+        }
     }
 }

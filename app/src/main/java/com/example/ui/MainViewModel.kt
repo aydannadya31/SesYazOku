@@ -161,8 +161,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (_selectedRecordingId.value == recordingId) {
                 _selectedSegments.value = updatedSegments
             }
-            val updatedFullText = updatedSegments.joinToString("\n\n") { "${it.speakerLabel}: ${it.text}" }
-            val speakerCount = updatedSegments.map { it.speakerIndex }.distinct().size
+            val updatedFullText = updatedSegments.joinToString("\n\n") { "[${it.speakerLabel}] ${it.text}" }
+            val speakerCount = updatedSegments.map { it.speakerLabel.trim() }.filter { it.isNotBlank() }.distinct().size.coerceAtLeast(1)
+            recordingDao.updateTranscriptionResult(recordingId, updatedFullText, speakerCount)
+        }
+    }
+
+    fun updateSpeakerLabelByExactName(recordingId: Long, oldLabel: String, newLabel: String) {
+        viewModelScope.launch {
+            val targetOld = oldLabel.trim()
+            val targetNew = newLabel.trim()
+            segmentDao.updateSpeakerLabelByExactName(recordingId, targetOld, targetNew)
+            val updatedSegments = segmentDao.getSegmentsForRecordingDirect(recordingId)
+            if (_selectedRecordingId.value == recordingId) {
+                _selectedSegments.value = updatedSegments
+            }
+            val updatedFullText = updatedSegments.joinToString("\n\n") { "[${it.speakerLabel}] ${it.text}" }
+            val speakerCount = updatedSegments.map { it.speakerLabel.trim() }.filter { it.isNotBlank() }.distinct().size.coerceAtLeast(1)
+            recordingDao.updateTranscriptionResult(recordingId, updatedFullText, speakerCount)
+        }
+    }
+
+    fun updateSingleSegmentSpeaker(segmentId: Long, recordingId: Long, newLabel: String) {
+        viewModelScope.launch {
+            segmentDao.updateSingleSegmentSpeaker(segmentId, newLabel.trim())
+            val updatedSegments = segmentDao.getSegmentsForRecordingDirect(recordingId)
+            if (_selectedRecordingId.value == recordingId) {
+                _selectedSegments.value = updatedSegments
+            }
+            val updatedFullText = updatedSegments.joinToString("\n\n") { "[${it.speakerLabel}] ${it.text}" }
+            val speakerCount = updatedSegments.map { it.speakerLabel.trim() }.filter { it.isNotBlank() }.distinct().size.coerceAtLeast(1)
             recordingDao.updateTranscriptionResult(recordingId, updatedFullText, speakerCount)
         }
     }
@@ -175,7 +203,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _selectedSegments.value = updatedSegments
             }
             val updatedFullText = updatedSegments.joinToString("\n\n") { "[${it.speakerLabel}] ${it.text}" }
-            val speakerCount = updatedSegments.map { it.speakerIndex }.distinct().size
+            val speakerCount = updatedSegments.map { it.speakerLabel.trim() }.filter { it.isNotBlank() }.distinct().size.coerceAtLeast(1)
+            recordingDao.updateTranscriptionResult(recordingId, updatedFullText, speakerCount)
+        }
+    }
+
+    fun replaceTextInSegment(segmentId: Long, recordingId: Long, findText: String, replaceText: String) {
+        viewModelScope.launch {
+            val segments = segmentDao.getSegmentsForRecordingDirect(recordingId)
+            val targetSeg = segments.find { it.id == segmentId } ?: return@launch
+            val updatedText = targetSeg.text.replace(findText, replaceText)
+            segmentDao.updateSegmentText(segmentId, updatedText)
+            val updatedSegments = segmentDao.getSegmentsForRecordingDirect(recordingId)
+            if (_selectedRecordingId.value == recordingId) {
+                _selectedSegments.value = updatedSegments
+            }
+            val updatedFullText = updatedSegments.joinToString("\n\n") { "[${it.speakerLabel}] ${it.text}" }
+            val speakerCount = updatedSegments.map { it.speakerLabel.trim() }.filter { it.isNotBlank() }.distinct().size.coerceAtLeast(1)
             recordingDao.updateTranscriptionResult(recordingId, updatedFullText, speakerCount)
         }
     }

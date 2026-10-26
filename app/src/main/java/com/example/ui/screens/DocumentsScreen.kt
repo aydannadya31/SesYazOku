@@ -102,6 +102,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import com.example.data.TranscriptSegmentEntity
+import com.example.ui.components.SpeakerAndTextEditDialog
+
 @Composable
 fun DocumentsScreen(viewModel: MainViewModel) {
     val context = LocalContext.current
@@ -113,6 +116,7 @@ fun DocumentsScreen(viewModel: MainViewModel) {
     var activeViewingDocId by remember { mutableStateOf<Long?>(null) }
     var documentsSubTab by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     var isDocSelectorExpanded by remember { mutableStateOf(false) }
+    var editingDocSegment by remember { mutableStateOf<TranscriptSegmentEntity?>(null) }
 
     val playerManager = viewModel.playerManager
     val isPlaying by playerManager.isPlaying.collectAsState()
@@ -328,7 +332,7 @@ fun DocumentsScreen(viewModel: MainViewModel) {
                                 }
                             }
                             Text(
-                                text = "${activeDoc.speakerCount} Konuşmacı • ${formatTimestamp(activeDoc.durationMs)}",
+                                text = "${if (activeDoc.isTranscribed) "${activeDoc.speakerCount} Konuşmacı • " else ""}${formatTimestamp(activeDoc.durationMs)}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -432,11 +436,25 @@ fun DocumentsScreen(viewModel: MainViewModel) {
                                             )
                                         }
 
-                                        Text(
-                                            text = "${formatTimestamp(seg.startMs)} - ${formatTimestamp(seg.endMs)}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.outline
-                                        )
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            IconButton(
+                                                onClick = { editingDocSegment = seg },
+                                                modifier = Modifier.size(26.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Edit,
+                                                    contentDescription = "Kişi veya Metin Değiştir",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "${formatTimestamp(seg.startMs)} - ${formatTimestamp(seg.endMs)}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.outline
+                                            )
+                                        }
                                     }
 
                                     Spacer(modifier = Modifier.height(8.dp))
@@ -1268,6 +1286,26 @@ fun DocumentsScreen(viewModel: MainViewModel) {
                 }
             }
         )
+    }
+
+    // Metin içindeki "Kişi 1" yazan yerdeki değiştirme butonu ile kişi adı veya metin alanını değiştirme diyaloğu
+    editingDocSegment?.let { seg ->
+        activeDoc?.let { doc ->
+            SpeakerAndTextEditDialog(
+                segment = seg,
+                recordingId = doc.id,
+                onDismiss = { editingDocSegment = null },
+                onUpdateExactSpeakerName = { oldName, newName ->
+                    viewModel.updateSpeakerLabelByExactName(doc.id, oldName, newName)
+                },
+                onUpdateSingleSpeaker = { segId, newName ->
+                    viewModel.updateSingleSegmentSpeaker(segId, doc.id, newName)
+                },
+                onUpdateSegmentText = { segId, newText ->
+                    viewModel.updateSegmentText(segId, doc.id, newText)
+                }
+            )
+        }
     }
 }
 }

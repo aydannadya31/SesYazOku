@@ -112,6 +112,7 @@ object SpeechTranscriptionEngine {
             if (matches.isNotEmpty()) {
                 val totalParts = matches.size
                 val partDuration = (durationMs / totalParts).coerceAtLeast(1000L)
+                val speakerLabelToIndexMap = mutableMapOf<String, Int>()
 
                 matches.forEachIndexed { index, matchResult ->
                     val spkLabel = matchResult.groupValues[1].trim()
@@ -119,12 +120,13 @@ object SpeechTranscriptionEngine {
 
                     val start = index * partDuration
                     val end = ((index + 1) * partDuration).coerceAtMost(durationMs)
+                    val spkIndex = speakerLabelToIndexMap.getOrPut(spkLabel) { speakerLabelToIndexMap.size + 1 }
 
                     segments.add(
                         TranscriptSegmentEntity(
                             recordingId = recordingId,
                             speakerLabel = spkLabel,
-                            speakerIndex = (index % targetSpeakerCount) + 1,
+                            speakerIndex = spkIndex,
                             startMs = start,
                             endMs = end,
                             text = spkContent,
