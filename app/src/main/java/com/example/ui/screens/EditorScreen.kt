@@ -108,6 +108,7 @@ fun EditorScreen(
     var activeEditingSegment by remember { mutableStateOf<TranscriptSegmentEntity?>(null) }
     var isDropdownExpanded by remember { mutableStateOf(false) }
     val language by viewModel.language.collectAsState()
+    val activeUndo by viewModel.activeUndo.collectAsState()
 
     Column(
         modifier = Modifier
@@ -628,4 +629,10 @@ fun EditorScreen(
             )
         }
     }
+
+    com.example.ui.components.UndoSnackbarBanner(
+        activeUndo = activeUndo,
+        onUndo = { viewModel.executeActiveUndo() },
+        onDismiss = { viewModel.dismissActiveUndo() }
+    )
 }

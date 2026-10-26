@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -154,6 +155,61 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // 10-Second Undo / Redo Mechanism (Item 9)
+    data class UndoAction(
+        val id: String,
+        val message: String,
+        val remainingSeconds: Int,
+        val onUndo: suspend () -> Unit
+    )
+
+    private val _activeUndo = MutableStateFlow<UndoAction?>(null)
+    val activeUndo: StateFlow<UndoAction?> = _activeUndo.asStateFlow()
+
+    private var undoCountdownJob: Job? = null
+
+    fun registerUndoAction(message: String, onUndo: suspend () -> Unit) {
+        undoCountdownJob?.cancel()
+        val actionId = System.currentTimeMillis().toString()
+        undoCountdownJob = viewModelScope.launch {
+            for (sec in 10 downTo 1) {
+                _activeUndo.value = UndoAction(actionId, message, sec, onUndo)
+                kotlinx.coroutines.delay(1000L)
+            }
+            _activeUndo.value = null
+        }
+    }
+
+    fun executeActiveUndo() {
+        val action = _activeUndo.value ?: return
+        _activeUndo.value = null
+        undoCountdownJob?.cancel()
+        viewModelScope.launch {
+            action.onUndo()
+            Toast.makeText(getApplication(), "İşlem geri alındı!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun dismissActiveUndo() {
+        _activeUndo.value = null
+        undoCountdownJob?.cancel()
+    }
+
+    // Global Search & Category Filter (Item 6 & Item 11)
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _selectedCategoryFilter = MutableStateFlow("Tümü")
+    val selectedCategoryFilter: StateFlow<String> = _selectedCategoryFilter.asStateFlow()
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun setSelectedCategoryFilter(cat: String) {
+        _selectedCategoryFilter.value = cat
+    }
+
     fun updateSpeakerLabel(recordingId: Long, speakerIndex: Int, newLabel: String) {
         viewModelScope.launch {
             segmentDao.updateSpeakerLabel(recordingId, speakerIndex, newLabel.trim())
@@ -171,6 +227,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val targetOld = oldLabel.trim()
             val targetNew = newLabel.trim()
+            val previousSegments = segmentDao.getSegmentsForRecordingDirect(recordingId)
+
             segmentDao.updateSpeakerLabelByExactName(recordingId, targetOld, targetNew)
             val updatedSegments = segmentDao.getSegmentsForRecordingDirect(recordingId)
             if (_selectedRecordingId.value == recordingId) {
@@ -179,11 +237,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val updatedFullText = updatedSegments.joinToString("\n\n") { "[${it.speakerLabel}] ${it.text}" }
             val speakerCount = updatedSegments.map { it.speakerLabel.trim() }.filter { it.isNotBlank() }.distinct().size.coerceAtLeast(1)
             recordingDao.updateTranscriptionResult(recordingId, updatedFullText, speakerCount)
+
+            // Register 10-Second Undo
+            registerUndoAction("Kişi adı değiştirildi: '$targetOld' → '$targetNew'") {
+                for (seg in previousSegments) {
+                    if (seg.speakerLabel == targetOld) {
+                        segmentDao.updateSingleSegmentSpeaker(seg.id, targetOld)
+                    }
+                }
+                val reverted = segmentDao.getSegmentsForRecordingDirect(recordingId)
+                if (_selectedRecordingId.value == recordingId) {
+                    _selectedSegments.value = reverted
+                }
+                val revText = reverted.joinToString("\n\n") { "[${it.speakerLabel}] ${it.text}" }
+                val revCount = reverted.map { it.speakerLabel.trim() }.filter { it.isNotBlank() }.distinct().size.coerceAtLeast(1)
+                recordingDao.updateTranscriptionResult(recordingId, revText, revCount)
+            }
         }
     }
 
     fun updateSingleSegmentSpeaker(segmentId: Long, recordingId: Long, newLabel: String) {
         viewModelScope.launch {
+            val previousSegments = segmentDao.getSegmentsForRecordingDirect(recordingId)
+            val oldSeg = previousSegments.find { it.id == segmentId }
+            val oldLabel = oldSeg?.speakerLabel ?: ""
+
             segmentDao.updateSingleSegmentSpeaker(segmentId, newLabel.trim())
             val updatedSegments = segmentDao.getSegmentsForRecordingDirect(recordingId)
             if (_selectedRecordingId.value == recordingId) {
@@ -192,11 +270,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val updatedFullText = updatedSegments.joinToString("\n\n") { "[${it.speakerLabel}] ${it.text}" }
             val speakerCount = updatedSegments.map { it.speakerLabel.trim() }.filter { it.isNotBlank() }.distinct().size.coerceAtLeast(1)
             recordingDao.updateTranscriptionResult(recordingId, updatedFullText, speakerCount)
+
+            // Register 10-Second Undo
+            registerUndoAction("Konuşmacı değiştirildi: '${newLabel.trim()}'") {
+                if (oldLabel.isNotBlank()) {
+                    segmentDao.updateSingleSegmentSpeaker(segmentId, oldLabel)
+                    val reverted = segmentDao.getSegmentsForRecordingDirect(recordingId)
+                    if (_selectedRecordingId.value == recordingId) {
+                        _selectedSegments.value = reverted
+                    }
+                    val revText = reverted.joinToString("\n\n") { "[${it.speakerLabel}] ${it.text}" }
+                    val revCount = reverted.map { it.speakerLabel.trim() }.filter { it.isNotBlank() }.distinct().size.coerceAtLeast(1)
+                    recordingDao.updateTranscriptionResult(recordingId, revText, revCount)
+                }
+            }
         }
     }
 
     fun updateSegmentText(segmentId: Long, recordingId: Long, newText: String) {
         viewModelScope.launch {
+            val previousSegments = segmentDao.getSegmentsForRecordingDirect(recordingId)
+            val oldSeg = previousSegments.find { it.id == segmentId }
+            val oldText = oldSeg?.text ?: ""
+
             segmentDao.updateSegmentText(segmentId, newText)
             val updatedSegments = segmentDao.getSegmentsForRecordingDirect(recordingId)
             if (_selectedRecordingId.value == recordingId) {
@@ -205,6 +301,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val updatedFullText = updatedSegments.joinToString("\n\n") { "[${it.speakerLabel}] ${it.text}" }
             val speakerCount = updatedSegments.map { it.speakerLabel.trim() }.filter { it.isNotBlank() }.distinct().size.coerceAtLeast(1)
             recordingDao.updateTranscriptionResult(recordingId, updatedFullText, speakerCount)
+
+            // Register 10-Second Undo
+            registerUndoAction("Metin düzenlendi") {
+                segmentDao.updateSegmentText(segmentId, oldText)
+                val reverted = segmentDao.getSegmentsForRecordingDirect(recordingId)
+                if (_selectedRecordingId.value == recordingId) {
+                    _selectedSegments.value = reverted
+                }
+                val revText = reverted.joinToString("\n\n") { "[${it.speakerLabel}] ${it.text}" }
+                recordingDao.updateTranscriptionResult(recordingId, revText, speakerCount)
+            }
         }
     }
 
@@ -212,7 +319,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val segments = segmentDao.getSegmentsForRecordingDirect(recordingId)
             val targetSeg = segments.find { it.id == segmentId } ?: return@launch
+            val previousText = targetSeg.text
             val updatedText = targetSeg.text.replace(findText, replaceText)
+
             segmentDao.updateSegmentText(segmentId, updatedText)
             val updatedSegments = segmentDao.getSegmentsForRecordingDirect(recordingId)
             if (_selectedRecordingId.value == recordingId) {
@@ -221,6 +330,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val updatedFullText = updatedSegments.joinToString("\n\n") { "[${it.speakerLabel}] ${it.text}" }
             val speakerCount = updatedSegments.map { it.speakerLabel.trim() }.filter { it.isNotBlank() }.distinct().size.coerceAtLeast(1)
             recordingDao.updateTranscriptionResult(recordingId, updatedFullText, speakerCount)
+
+            // Register 10-Second Undo
+            registerUndoAction("Kelime değiştirildi: '$findText' → '$replaceText'") {
+                segmentDao.updateSegmentText(segmentId, previousText)
+                val reverted = segmentDao.getSegmentsForRecordingDirect(recordingId)
+                if (_selectedRecordingId.value == recordingId) {
+                    _selectedSegments.value = reverted
+                }
+                val revText = reverted.joinToString("\n\n") { "[${it.speakerLabel}] ${it.text}" }
+                recordingDao.updateTranscriptionResult(recordingId, revText, speakerCount)
+            }
         }
     }
 
@@ -241,6 +361,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun stopAndSaveRecording(sourceType: String = "LIVE", titlePrefix: String = "Kayıt"): Long {
+        val markers = recorderManager.liveMarkers.value
+        val markersArr = org.json.JSONArray()
+        for (m in markers) {
+            val o = org.json.JSONObject()
+            o.put("timestampMs", m.timestampMs)
+            o.put("label", m.label)
+            markersArr.put(o)
+        }
+        val markersJson = markersArr.toString()
+
         val file = recorderManager.stopRecording() ?: return -1L
         var createdId = 0L
         viewModelScope.launch {
@@ -252,11 +382,51 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 fileSize = file.length(),
                 mimeType = "audio/m4a",
                 sourceType = sourceType,
-                timestamp = System.currentTimeMillis()
+                timestamp = System.currentTimeMillis(),
+                markersJson = markersJson
             )
             createdId = recordingDao.insertRecording(entity)
         }
         return createdId
+    }
+
+    fun updateRecordingColorTag(recordingId: Long, colorTag: String) {
+        viewModelScope.launch {
+            recordingDao.updateColorTag(recordingId, colorTag)
+            Toast.makeText(getApplication(), "Renk etiketi güncellendi.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun exportAndSharePdfWithTemplate(
+        context: Context,
+        recording: RecordingEntity,
+        template: com.example.export.PdfTemplate = com.example.export.PdfTemplate.STANDARD
+    ) {
+        viewModelScope.launch {
+            val segments = segmentDao.getSegmentsForRecordingDirect(recording.id)
+            val pdfFile = com.example.export.PdfManager.generatePdf(context, recording, segments, template)
+            if (pdfFile != null) {
+                com.example.export.PdfManager.sharePdf(context, pdfFile)
+            } else {
+                Toast.makeText(context, "PDF oluşturulamadı", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun savePdfToStorageWithTemplate(
+        context: Context,
+        recording: RecordingEntity,
+        template: com.example.export.PdfTemplate = com.example.export.PdfTemplate.STANDARD
+    ) {
+        viewModelScope.launch {
+            val segments = segmentDao.getSegmentsForRecordingDirect(recording.id)
+            val pdfFile = com.example.export.PdfManager.generatePdf(context, recording, segments, template)
+            if (pdfFile != null) {
+                Toast.makeText(context, "PDF kaydedildi: ${pdfFile.name}", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(context, "PDF kaydedilemedi", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     fun importAudioFile(uri: Uri) {

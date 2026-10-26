@@ -60,6 +60,15 @@ interface RecordingDao {
     @Query("UPDATE recordings SET category = :newCategory WHERE category = :oldCategory")
     suspend fun renameCategoryInRecordings(oldCategory: String, newCategory: String)
 
+    @Query("UPDATE recordings SET markersJson = :markersJson WHERE id = :id")
+    suspend fun updateMarkers(id: Long, markersJson: String)
+
+    @Query("UPDATE recordings SET summaryJson = :summaryJson WHERE id = :id")
+    suspend fun updateSummary(id: Long, summaryJson: String)
+
+    @Query("UPDATE recordings SET colorTag = :colorTag WHERE id = :id")
+    suspend fun updateColorTag(id: Long, colorTag: String)
+
     @Query("DELETE FROM recordings WHERE id IN (:ids)")
     suspend fun deleteRecordingsByIds(ids: List<Long>)
 }

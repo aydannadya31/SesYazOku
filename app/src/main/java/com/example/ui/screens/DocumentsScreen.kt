@@ -152,6 +152,11 @@ fun DocumentsScreen(viewModel: MainViewModel) {
     var photoTargetItem by remember { mutableStateOf<RecordingEntity?>(null) }
     var showPhotoSourceDialog by remember { mutableStateOf(false) }
 
+    val activeUndo by viewModel.activeUndo.collectAsState()
+    var summaryDoc by remember { mutableStateOf<RecordingEntity?>(null) }
+    var translateDoc by remember { mutableStateOf<RecordingEntity?>(null) }
+    var exportDoc by remember { mutableStateOf<RecordingEntity?>(null) }
+
     // Gallery Picker
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -338,15 +343,38 @@ fun DocumentsScreen(viewModel: MainViewModel) {
                             )
                         }
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            OutlinedButton(
+                                onClick = { summaryDoc = activeDoc },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Özet", fontSize = 11.sp)
+                            }
+                            OutlinedButton(
+                                onClick = { translateDoc = activeDoc },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Çeviri", fontSize = 11.sp)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    com.example.export.ShareManager.shareQuickCard(context, activeDoc, segments)
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Paylaş", fontSize = 11.sp)
+                            }
                             FilledTonalButton(
-                                onClick = { viewModel.exportAndSharePdf(context, activeDoc) },
+                                onClick = { exportDoc = activeDoc },
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
-                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(14.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Paylaş", fontSize = 11.sp)
+                                Text("PDF", fontSize = 11.sp)
                             }
                         }
                     }
@@ -1307,6 +1335,63 @@ fun DocumentsScreen(viewModel: MainViewModel) {
             )
         }
     }
+
+    summaryDoc?.let { doc ->
+        val segs: List<TranscriptSegmentEntity> = if (activeDoc?.id == doc.id) segments else emptyList()
+        com.example.summary.MeetingSummaryDialog(
+            recording = doc,
+            segments = segs,
+            onDismiss = { summaryDoc = null },
+            onShareSummary = { summaryText ->
+                com.example.export.PdfManager.shareFullText(context, "${doc.title} - Toplantı Özeti", summaryText)
+            }
+        )
+    }
+
+    translateDoc?.let { doc ->
+        val segs: List<TranscriptSegmentEntity> = if (activeDoc?.id == doc.id) segments else emptyList()
+        com.example.translation.TranslationDialog(
+            recording = doc,
+            segments = segs,
+            onDismiss = { translateDoc = null },
+            onShareTranslated = { translatedText ->
+                com.example.export.PdfManager.shareFullText(context, "${doc.title} - Çeviri", translatedText)
+            }
+        )
+    }
+
+    exportDoc?.let { doc ->
+        val segs: List<TranscriptSegmentEntity> = if (activeDoc?.id == doc.id) segments else emptyList()
+        com.example.export.PdfExportDialog(
+            recording = doc,
+            segments = segs,
+            onDismiss = { exportDoc = null },
+            onGeneratePdf = { tmpl, isShare ->
+                exportDoc = null
+                if (isShare) {
+                    viewModel.exportAndSharePdfWithTemplate(context, doc, tmpl)
+                } else {
+                    viewModel.savePdfToStorageWithTemplate(context, doc, tmpl)
+                }
+            },
+            onExportSubtitle = { isVtt ->
+                exportDoc = null
+                if (isVtt) {
+                    val file = com.example.export.SubtitleExporter.exportAsVtt(context, doc, segs)
+                    if (file != null) com.example.export.SubtitleExporter.shareSubtitleFile(context, file, ".VTT")
+                } else {
+                    val file = com.example.export.SubtitleExporter.exportAsSrt(context, doc, segs)
+                    if (file != null) com.example.export.SubtitleExporter.shareSubtitleFile(context, file, ".SRT")
+                }
+            }
+        )
+    }
+
+    com.example.ui.components.UndoSnackbarBanner(
+        activeUndo = activeUndo,
+        onUndo = { viewModel.executeActiveUndo() },
+        onDismiss = { viewModel.dismissActiveUndo() }
+    )
 }
 }
 

@@ -43,7 +43,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.Folder
@@ -118,6 +121,7 @@ fun RecordScreen(
     val durationMs by playerManager.durationMs.collectAsState()
     val recordings by viewModel.recordings.collectAsState()
     val language by viewModel.language.collectAsState()
+    val liveMarkers by recorderManager.liveMarkers.collectAsState()
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -388,6 +392,25 @@ fun RecordScreen(
                             )
                         }
 
+                        // Live Bookmark / Marker Button (Item 4)
+                        IconButton(
+                            onClick = {
+                                val m = recorderManager.addBookmark()
+                                Toast.makeText(context, "📌 ${m.label} eklendi (${m.timestampMs / 1000}s)", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.tertiaryContainer)
+                                .testTag("add_live_bookmark_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Bookmark,
+                                contentDescription = "Yer İmi Ekle",
+                                tint = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
+
                         // Pause / Resume Button
                         IconButton(
                             onClick = {
@@ -425,6 +448,38 @@ fun RecordScreen(
                                 contentDescription = "Kaydı Tamamla",
                                 modifier = Modifier.size(32.dp)
                             )
+                        }
+                    }
+
+                    // Live Markers List display under controls
+                    if (isRecording && liveMarkers.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = "📌 Eklenen Yer İmleri (${liveMarkers.size}):",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(liveMarkers) { marker ->
+                                val sec = marker.timestampMs / 1000
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+                                ) {
+                                    Text(
+                                        text = String.format(Locale.getDefault(), "📌 %02d:%02d (%s)", sec / 60, sec % 60, marker.label),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                                    )
+                                }
+                            }
                         }
                     }
                 }

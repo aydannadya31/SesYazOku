@@ -54,6 +54,22 @@ class AudioRecorderManager(private val context: Context) {
     private val _liveSpokenText = MutableStateFlow("")
     val liveSpokenText: StateFlow<String> = _liveSpokenText.asStateFlow()
 
+    data class LiveMarker(val timestampMs: Long, val label: String)
+    private val _liveMarkers = MutableStateFlow<List<LiveMarker>>(emptyList())
+    val liveMarkers: StateFlow<List<LiveMarker>> = _liveMarkers.asStateFlow()
+
+    fun addBookmark(label: String = ""): LiveMarker {
+        val currentMs = _elapsedTimeMs.value
+        val name = if (label.isNotBlank()) label else "İşaret ${_liveMarkers.value.size + 1}"
+        val marker = LiveMarker(currentMs, name)
+        _liveMarkers.value = _liveMarkers.value + marker
+        return marker
+    }
+
+    fun clearBookmarks() {
+        _liveMarkers.value = emptyList()
+    }
+
     private var liveSpeechRecognizer: SpeechRecognizer? = null
     private var isRecognizerListening = false
 
@@ -131,6 +147,7 @@ class AudioRecorderManager(private val context: Context) {
             _isPaused.value = false
             _isMicMuted.value = false
             _elapsedTimeMs.value = 0L
+            _liveMarkers.value = emptyList()
             startTicker()
             // Bipleme seslerini önlemek için kayıt esnasında arka planda sürekli startListening yapan SpeechRecognizer döngüsü kaldırıldı.
             // MediaRecorder saf ve yüksek kaliteli mikrofon kaydını doğrudan gerçekleştirir.

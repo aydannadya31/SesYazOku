@@ -21,7 +21,10 @@ data class RecordingEntity(
     val isBackedUpToDrive: Boolean = false,
     val folderName: String = "Genel",
     val projectName: String = "Genel Kayıtlar",
-    val category: String = "Genel"
+    val category: String = "Genel",
+    val colorTag: String = "#3B82F6",
+    val markersJson: String = "",
+    val summaryJson: String = ""
 )
 
 @Entity(tableName = "folders")

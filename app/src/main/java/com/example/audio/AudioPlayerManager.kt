@@ -36,6 +36,69 @@ class AudioPlayerManager(private val context: Context) {
     private val _playbackSpeed = MutableStateFlow(1.0f)
     val playbackSpeed: StateFlow<Float> = _playbackSpeed.asStateFlow()
 
+    private val _skipSilenceEnabled = MutableStateFlow(false)
+    val skipSilenceEnabled: StateFlow<Boolean> = _skipSilenceEnabled.asStateFlow()
+
+    private val _vocalBoostEnabled = MutableStateFlow(false)
+    val vocalBoostEnabled: StateFlow<Boolean> = _vocalBoostEnabled.asStateFlow()
+
+    private var equalizer: android.media.audiofx.Equalizer? = null
+    private var activeSegmentBoundaries: List<Pair<Long, Long>> = emptyList()
+
+    fun setSkipSilence(enabled: Boolean) {
+        _skipSilenceEnabled.value = enabled
+    }
+
+    fun toggleSkipSilence() {
+        _skipSilenceEnabled.value = !_skipSilenceEnabled.value
+    }
+
+    fun setSegmentBoundaries(segments: List<Pair<Long, Long>>) {
+        activeSegmentBoundaries = segments.sortedBy { it.first }
+    }
+
+    fun toggleVocalBoost() {
+        val next = !_vocalBoostEnabled.value
+        _vocalBoostEnabled.value = next
+        applyVocalBoostEffect(next)
+    }
+
+    private fun applyVocalBoostEffect(enable: Boolean) {
+        try {
+            val player = mediaPlayer ?: return
+            if (enable) {
+                if (equalizer == null) {
+                    equalizer = android.media.audiofx.Equalizer(0, player.audioSessionId).apply {
+                        enabled = true
+                    }
+                }
+                equalizer?.let { eq ->
+                    eq.enabled = true
+                    val bands = eq.numberOfBands
+                    for (i in 0 until bands) {
+                        val freq = eq.getCenterFreq(i.toShort()) / 1000 // in Hz
+                        val range = eq.bandLevelRange
+                        val maxBoost = range[1]
+                        val minCut = range[0]
+                        if (freq in 800..4500) {
+                            // Boost vocal speech frequencies by +6 dB (600 mB)
+                            eq.setBandLevel(i.toShort(), (600).coerceAtMost(maxBoost.toInt()).toShort())
+                        } else if (freq < 200) {
+                            // Cut low rumble / air conditioner noise by -4 dB
+                            eq.setBandLevel(i.toShort(), (-400).coerceAtLeast(minCut.toInt()).toShort())
+                        }
+                    }
+                }
+            } else {
+                equalizer?.enabled = false
+                equalizer?.release()
+                equalizer = null
+            }
+        } catch (e: Exception) {
+            Log.w("AudioPlayerManager", "Vocal boost equalizer not supported on this device/emulator: ${e.message}")
+        }
+    }
+
     fun setPlaybackSpeed(speed: Float) {
         _playbackSpeed.value = speed
         try {
@@ -108,6 +171,10 @@ class AudioPlayerManager(private val context: Context) {
                 progressJob?.cancel()
             }
 
+            if (_vocalBoostEnabled.value) {
+                applyVocalBoostEffect(true)
+            }
+
             startProgressTracker()
         } catch (e: Exception) {
             Log.e("AudioPlayerManager", "Failed to play audio", e)
@@ -128,6 +195,9 @@ class AudioPlayerManager(private val context: Context) {
         try {
             mediaPlayer?.start()
             _isPlaying.value = true
+            if (_vocalBoostEnabled.value) {
+                applyVocalBoostEffect(true)
+            }
             startProgressTracker()
         } catch (e: Exception) {
             Log.e("AudioPlayerManager", "Error resuming player", e)
@@ -145,6 +215,11 @@ class AudioPlayerManager(private val context: Context) {
 
     fun stop() {
         progressJob?.cancel()
+        try {
+            equalizer?.enabled = false
+            equalizer?.release()
+        } catch (_: Exception) {}
+        equalizer = null
         try {
             mediaPlayer?.apply {
                 if (isPlaying) stop()
@@ -167,9 +242,28 @@ class AudioPlayerManager(private val context: Context) {
                 try {
                     val pos = mediaPlayer?.currentPosition?.toLong() ?: 0L
                     _currentPositionMs.value = pos
+
+                    // Feature 5: Skip Silence Mode
+                    if (_skipSilenceEnabled.value && activeSegmentBoundaries.isNotEmpty()) {
+                        val bounds = activeSegmentBoundaries
+                        // Check if pos is in a gap before the first segment
+                        if (bounds.isNotEmpty() && pos < bounds.first().first - 1000L) {
+                            seekTo(bounds.first().first)
+                        } else {
+                            // Check if pos is between segment end and next segment start
+                            for (i in 0 until bounds.size - 1) {
+                                val currentEnd = bounds[i].second
+                                val nextStart = bounds[i + 1].first
+                                if (pos > currentEnd + 800L && pos < nextStart - 300L && (nextStart - currentEnd) >= 1200L) {
+                                    seekTo(nextStart)
+                                    break
+                                }
+                            }
+                        }
+                    }
                 } catch (_: Exception) {
                 }
-                delay(150)
+                delay(120)
             }
         }
     }
