@@ -1,9 +1,9 @@
 {
-  "versionCode": 38,
-  "versionName": "1.0.38",
+  "versionCode": 40,
+  "versionName": "1.0.40",
   "apkUrl": "ScribeCraftGlobal.apk",
   "webPageUrl": "https://aydannadya31.github.io/SesYazOku/",
-  "releaseNotes": "GitHub Güncellemesi (063439a): feat: add audio markers and audio enhancement features",
-  "publishedAt": "2026-10-26 11:59 UTC",
+  "releaseNotes": "GitHub Güncellemesi (518c129): chore: rename project to Scribe Craft Global",
+  "publishedAt": "2026-10-27 12:05 UTC",
   "minSdkVersion": 24
 }
