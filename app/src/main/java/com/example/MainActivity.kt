@@ -69,7 +69,7 @@ class MainActivity : ComponentActivity() {
         if (justUpdated) {
             android.widget.Toast.makeText(
                 this,
-                "SesYazOku başarıyla güncellendi ve yeniden başlatıldı! (v${BuildConfig.VERSION_NAME})",
+                "Scribe Craft Global başarıyla güncellendi ve yeniden başlatıldı! (v${BuildConfig.VERSION_NAME})",
                 android.widget.Toast.LENGTH_LONG
             ).show()
         }

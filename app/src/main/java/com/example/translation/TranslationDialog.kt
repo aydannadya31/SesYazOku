@@ -188,7 +188,7 @@ fun TranslationDialog(
                             }
                         }
                         appendLine("-------------------------------")
-                        appendLine("📲 SesYazOku Akıllı Çeviri")
+                        appendLine("📲 Scribe Craft Global Akıllı Çeviri")
                     }
                     onShareTranslated(fullText)
                 }

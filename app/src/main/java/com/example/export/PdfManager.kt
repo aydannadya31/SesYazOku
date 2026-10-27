@@ -64,7 +64,7 @@ object PdfManager {
             }
 
             val headerTitle = when (template) {
-                PdfTemplate.STANDARD -> "SesYazOku - Transkript Raporu"
+                PdfTemplate.STANDARD -> "Scribe Craft Global - Transkript Raporu"
                 PdfTemplate.OFFICIAL_MINUTES -> "RESMİ TOPLANTI VE KARAR TUTANAĞI"
                 PdfTemplate.LECTURE_NOTES -> "DERS, SEMİNER VE KONFERANS DÖKÜMÜ"
                 PdfTemplate.INTERVIEW -> "RÖPORTAJ VE GÖRÜŞME METNİ"
@@ -240,7 +240,7 @@ object PdfManager {
             paint.color = Color.rgb(148, 163, 184)
             paint.textSize = 9f
             paint.typeface = Typeface.DEFAULT
-            canvas.drawText("SesYazOku Android Profesyonel Raporlama Modülü ile oluşturulmuştur. (Sayfa $pageNumber)", 36f, (pageHeight - 20).toFloat(), paint)
+            canvas.drawText("Scribe Craft Global Android Profesyonel Raporlama Modülü ile oluşturulmuştur. (Sayfa $pageNumber)", 36f, (pageHeight - 20).toFloat(), paint)
 
             pdfDocument.finishPage(page)
 
@@ -277,7 +277,7 @@ object PdfManager {
                 type = "application/pdf"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 putExtra(Intent.EXTRA_SUBJECT, pdfFile.nameWithoutExtension)
-                putExtra(Intent.EXTRA_TEXT, "SesYazOku ile oluşturulmuş transkript PDF dökümanı ekte yer almaktadır.")
+                putExtra(Intent.EXTRA_TEXT, "Scribe Craft Global ile oluşturulmuş transkript PDF dökümanı ekte yer almaktadır.")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(Intent.createChooser(shareIntent, "PDF'i Paylaş (WhatsApp, E-posta vs.)"))
@@ -292,7 +292,7 @@ object PdfManager {
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_SUBJECT, title)
-                putExtra(Intent.EXTRA_TEXT, "$title\n\n$text\n\n-- SesYazOku")
+                putExtra(Intent.EXTRA_TEXT, "$title\n\n$text\n\n-- Scribe Craft Global")
             }
             context.startActivity(Intent.createChooser(shareIntent, "Metni Paylaş (WhatsApp, Mesajlar)"))
         } catch (e: Exception) {

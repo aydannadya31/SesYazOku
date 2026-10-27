@@ -140,7 +140,7 @@ class FloatingRecordingService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("SesYazOku - Uygulama & Görüşme Kaydı")
+            .setContentTitle("Scribe Craft Global - Uygulama & Görüşme Kaydı")
             .setContentText(statusText)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentIntent(openAppPendingIntent)

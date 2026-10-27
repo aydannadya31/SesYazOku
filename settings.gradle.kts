@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "SesYazıcı AI"
+rootProject.name = "Scribe Craft Global"
 
 include(":app")

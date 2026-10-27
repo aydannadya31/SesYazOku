@@ -49,7 +49,7 @@ data class DriveBackupUiState(
     val progressPercent: Int = 0,
     val progressFloat: Float = 0f,
     val statusMessage: String = "",
-    val folderName: String = "SesYazOku Dökümanları",
+    val folderName: String = "Scribe Craft Global Dökümanları",
     val backupPathDescription: String = "",
     val uploadedFiles: List<String> = emptyList(),
     val errorMessage: String? = null
@@ -61,7 +61,7 @@ class GoogleDriveBackupManager(
 ) {
     companion object {
         private const val TAG = "GoogleDriveBackup"
-        const val DEDICATED_FOLDER_NAME = "SesYazOku Dökümanları"
+        const val DEDICATED_FOLDER_NAME = "Scribe Craft Global Dökümanları"
         private const val DRIVE_API_URL = "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"
     }
 
@@ -201,11 +201,11 @@ class GoogleDriveBackupManager(
             delay(250)
         }
 
-        // Copy files to public Downloads/SesYazOku directory so they are permanent and indexable
+        // Copy files to public Downloads/Scribe Craft Global directory so they are permanent and indexable
         try {
             val publicDir = File(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                "SesYazOku"
+                "Scribe Craft Global"
             ).apply { if (!exists()) mkdirs() }
 
             val localFiles = driveBackupDir.listFiles() ?: emptyArray()
@@ -246,7 +246,7 @@ class GoogleDriveBackupManager(
     ): String {
         val sb = StringBuilder()
         sb.append("==================================================\n")
-        sb.append("       SesYazOku - GOOGLE DRIVE TRANSKRİPT YEDEĞİ\n")
+        sb.append("       Scribe Craft Global - GOOGLE DRIVE TRANSKRİPT YEDEĞİ\n")
         sb.append("==================================================\n\n")
         sb.append("Google Hesabı / Kullanıcı : ").append(userEmail).append("\n")
         sb.append("Hedef Drive Konumu        : ").append(userEmail).append(" > ").append(DEDICATED_FOLDER_NAME).append("\n")
@@ -275,7 +275,7 @@ class GoogleDriveBackupManager(
         }
 
         sb.append("\n==================================================\n")
-        sb.append("SesYazOku Android Uygulaması ile oluşturulmuştur.\n")
+        sb.append("Scribe Craft Global Android Uygulaması ile oluşturulmuştur.\n")
         sb.append("Kullanıcı Özel Bulut Yedeği: ").append(userEmail).append("\n")
         return sb.toString()
     }
@@ -285,7 +285,7 @@ class GoogleDriveBackupManager(
             val metadataJson = JSONObject().apply {
                 put("name", file.name)
                 put("mimeType", mimeType)
-                put("description", "SesYazOku Google Drive Otomatik Yedeği (Kullanıcı: $userEmail)")
+                put("description", "Scribe Craft Global Google Drive Otomatik Yedeği (Kullanıcı: $userEmail)")
             }
 
             val requestBody = MultipartBody.Builder()
@@ -383,7 +383,7 @@ class GoogleDriveBackupManager(
                 return
             }
 
-            val clipData = android.content.ClipData.newUri(context.contentResolver, "SesYazOku Drive Backup", uris[0])
+            val clipData = android.content.ClipData.newUri(context.contentResolver, "Scribe Craft Global Drive Backup", uris[0])
             for (i in 1 until uris.size) {
                 clipData.addItem(android.content.ClipData.Item(uris[i]))
             }
@@ -392,8 +392,8 @@ class GoogleDriveBackupManager(
                 type = "*/*"
                 this.clipData = clipData
                 putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-                putExtra(Intent.EXTRA_SUBJECT, "SesYazOku Google Drive Yedeği ($targetEmail)")
-                putExtra(Intent.EXTRA_TEXT, "SesYazOku döküman ve transkripsiyon yedekleri ($targetEmail).")
+                putExtra(Intent.EXTRA_SUBJECT, "Scribe Craft Global Google Drive Yedeği ($targetEmail)")
+                putExtra(Intent.EXTRA_TEXT, "Scribe Craft Global döküman ve transkripsiyon yedekleri ($targetEmail).")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }

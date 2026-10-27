@@ -97,7 +97,7 @@ fun GoogleSignInScreen(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.RecordVoiceOver,
-                        contentDescription = "SesYazOku Logo",
+                        contentDescription = "Scribe Craft Global Logo",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(44.dp)
                     )
@@ -107,8 +107,8 @@ fun GoogleSignInScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "SesYazOku",
-                fontSize = 32.sp,
+                text = "Scribe Craft Global",
+                fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
                 textAlign = TextAlign.Center

@@ -16,7 +16,7 @@ class PackageReplacedReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
-            Log.i(TAG, "New APK version successfully installed. Restarting SesYazOku...")
+            Log.i(TAG, "New APK version successfully installed. Restarting Scribe Craft Global...")
             try {
                 val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)

@@ -1,7 +1,7 @@
-# 🎙️ SesYazOku (SCG)
+# 🎙️ Scribe Craft Global (SCG)
 
 <p align="center">
-  <img src="docs/assets/logo.jpg" alt="SesYazOku Logo" width="120" style="border-radius: 24px; box-shadow: 0 4px 20px rgba(6,182,212,0.4);" />
+  <img src="docs/assets/logo.jpg" alt="Scribe Craft Global Logo" width="120" style="border-radius: 24px; box-shadow: 0 4px 20px rgba(6,182,212,0.4);" />
 </p>
 
 <p align="center">
@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="../../actions"><img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue?logo=githubactions" alt="CI/CD" /></a>
-  <a href="docs/SesYazOku.apk"><img src="https://img.shields.io/badge/APK-SesYazOku.apk%20(v1.0.1)-success?logo=android" alt="Download APK" /></a>
+  <a href="docs/ScribeCraftGlobal.apk"><img src="https://img.shields.io/badge/APK-ScribeCraftGlobal.apk%20(v1.0.1)-success?logo=android" alt="Download APK" /></a>
   <img src="https://img.shields.io/badge/Kotlin-2.2.10-purple?logo=kotlin" alt="Kotlin" />
   <img src="https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-brightgreen?logo=jetpackcompose" alt="Compose" />
   <img src="https://img.shields.io/badge/License-Apache%202.0-lightgrey" alt="License" />
@@ -23,12 +23,12 @@
 Bu projede **GitHub Pages** üzerinde canlı olarak çalışan kapsamlı bir tanıtım ve indirme sayfası bulunmaktadır:
 
 - **Canlı Web Tanıtım Sayfası**: `https://<kullanici-adiniz>.github.io/<depo-adiniz>/`
-- **Doğrudan APK İndir**: [docs/SesYazOku.apk](docs/SesYazOku.apk) (~25.1 MB, Android 8.0+)
+- **Doğrudan APK İndir**: [docs/ScribeCraftGlobal.apk](docs/ScribeCraftGlobal.apk) (~25.1 MB, Android 8.0+)
 - **Tarayıcıda Canlı Test Simülatörü**: Web sayfasında canlı mikrofon kaydı, konuşmacı simülasyonu ve PDF çıktısı anında test edilebilir.
 
 ---
 
-## 📱 SesYazOku'nun 7 Temel Modülü
+## 📱 Scribe Craft Global'ın 7 Temel Modülü
 
 ### 0. 🔑 Google ile Giriş & Bulut Entegrasyonu
 - **Güvenli Kimlik Doğrulama:** Google Sign-In (Credential Manager) ile tek tıkla güvenli oturum.
@@ -56,7 +56,7 @@ Bu projede **GitHub Pages** üzerinde canlı olarak çalışan kapsamlı bir tan
 - **Ses İnce Ayarları:** Ses örnekleme frekansı, gürültü bastırma filtresi ve mikrofon hassasiyeti.
 
 ### 5. ✨ Özel Açılış Deneyimi & SCG Logosu
-- **Splash Animasyonu:** Açılışta sabit logo yerine **"SesYazOku"** yazısı ve çevresinde dönen parlama efekti (Glow effect).
+- **Splash Animasyonu:** Açılışta dönen parlama efekti (Glow effect) eşliğinde **SCG Logosu** ve altında **"Scribe Craft Global"** yazısı.
 - **Özel Logo:** Canlı ses dalgası ekolayzırı ve **SCG** harflerinden oluşan marka simgesi.
 
 ### 6. 🛡️ Açılış İzinleri
@@ -81,7 +81,7 @@ cd <depo-adiniz>
 ./gradlew assembleDebug
 ```
 
-Derlenen APK: `app/build/outputs/apk/debug/app-debug.apk` ve `docs/SesYazOku.apk`.
+Derlenen APK: `app/build/outputs/apk/debug/app-debug.apk` ve `docs/ScribeCraftGlobal.apk`.
 
 ---
 

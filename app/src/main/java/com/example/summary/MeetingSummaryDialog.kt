@@ -228,7 +228,7 @@ fun MeetingSummaryDialog(
                         appendLine("\n📊 *Konuşmacı Katılımları:*")
                         summaryData.speakerStats.forEach { appendLine("• ${it.speakerLabel}: %${it.percentage}") }
                         appendLine("--------------------------------")
-                        appendLine("📲 SesYazOku Toplantı Asistanı")
+                        appendLine("📲 Scribe Craft Global Toplantı Asistanı")
                     }
                     onShareSummary(fullSummaryText)
                 }

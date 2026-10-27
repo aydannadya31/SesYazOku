@@ -8,7 +8,9 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
@@ -31,10 +35,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import kotlinx.coroutines.delay
 
 @Composable
@@ -88,10 +94,10 @@ fun SplashScreen(
             .testTag("splash_screen"),
         contentAlignment = Alignment.Center
     ) {
-        // Rotating Glowing Aura Canvas around the text
+        // Rotating Glowing Aura Canvas around the logo and text
         Box(
             modifier = Modifier
-                .size(310.dp)
+                .size(330.dp)
                 .scale(pulseScale),
             contentAlignment = Alignment.Center
         ) {
@@ -136,27 +142,42 @@ fun SplashScreen(
                 )
             }
 
-            // Central "SesYazOku" Typography (NO LOGO, strictly text as requested)
+            // Central SCG Logo & Scribe Craft Global Typography
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(16.dp)
             ) {
+                Image(
+                    painter = painterResource(id = R.drawable.scg_soundwave_icon_1791885315536),
+                    contentDescription = "SCG Logo",
+                    modifier = Modifier
+                        .size(74.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .border(
+                            width = 2.dp,
+                            color = Color(0xFF38BDF8).copy(alpha = glowAlpha),
+                            shape = RoundedCornerShape(18.dp)
+                        )
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
                 Text(
-                    text = "SesYazOku",
-                    fontSize = 38.sp,
+                    text = "Scribe Craft Global",
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 2.sp,
+                    letterSpacing = 1.2.sp,
                     color = Color.White,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Ses • Transkript • Döküman",
-                    fontSize = 13.sp,
+                    text = "Audio Intelligence & Transcription",
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    letterSpacing = 1.sp,
+                    letterSpacing = 0.8.sp,
                     color = Color(0xFF94A3B8),
                     textAlign = TextAlign.Center
                 )

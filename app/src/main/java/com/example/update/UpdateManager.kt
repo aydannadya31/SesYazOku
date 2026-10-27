@@ -58,7 +58,7 @@ class UpdateManager(private val context: Context) {
 
         // Default remote check URLs (GitHub Pages live production distribution)
         const val DEFAULT_VERSION_URL = "https://aydannadya31.github.io/SesYazOku/version.json"
-        const val DEFAULT_WEB_DOWNLOAD_URL = "https://aydannadya31.github.io/SesYazOku/SesYazOku.apk"
+        const val DEFAULT_WEB_DOWNLOAD_URL = "https://aydannadya31.github.io/SesYazOku/ScribeCraftGlobal.apk"
     }
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -230,7 +230,7 @@ class UpdateManager(private val context: Context) {
             "updates"
         ).apply { if (!exists()) mkdirs() }
 
-        val destinationFile = File(updatesDir, "SesYazOku_v${targetVersion}.apk")
+        val destinationFile = File(updatesDir, "ScribeCraftGlobal_v${targetVersion}.apk")
 
         try {
             // Attempt network download
@@ -293,7 +293,7 @@ class UpdateManager(private val context: Context) {
 
                 // Copy existing compiled debug APK as updated package
                 val localBuiltApk = File("/app/build/outputs/apk/debug/app-debug.apk")
-                val docsApk = File("/docs/SesYazOku.apk")
+                val docsApk = File("/docs/ScribeCraftGlobal.apk").takeIf { it.exists() } ?: File("/docs/SesimiOku.apk").takeIf { it.exists() } ?: File("/docs/SesYazOku.apk")
 
                 if (localBuiltApk.exists()) {
                     localBuiltApk.copyTo(destinationFile, overwrite = true)
@@ -301,7 +301,7 @@ class UpdateManager(private val context: Context) {
                     docsApk.copyTo(destinationFile, overwrite = true)
                 } else {
                     // Create minimal valid APK container
-                    destinationFile.writeText("SesYazOku APK Package v$targetVersion")
+                    destinationFile.writeText("Scribe Craft Global APK Package v$targetVersion")
                 }
             }
 
@@ -415,11 +415,11 @@ class UpdateManager(private val context: Context) {
         )
 
         val publicDownloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val publicApk = File(publicDownloads, "SesYazOku_v${targetVersion}.apk")
+        val publicApk = File(publicDownloads, "ScribeCraftGlobal_v${targetVersion}.apk")
 
         val internalDir = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.cacheDir, "updates")
         if (!internalDir.exists()) internalDir.mkdirs()
-        val internalApk = File(internalDir, "SesYazOku_v${targetVersion}.apk")
+        val internalApk = File(internalDir, "ScribeCraftGlobal_v${targetVersion}.apk")
 
         try {
             var downloadSuccess = false
@@ -459,7 +459,7 @@ class UpdateManager(private val context: Context) {
 
             if (!downloadSuccess || internalApk.length() < 1024) {
                 val localBuiltApk = File("/app/build/outputs/apk/debug/app-debug.apk")
-                val docsApk = File("/docs/SesYazOku.apk")
+                val docsApk = File("/docs/ScribeCraftGlobal.apk").takeIf { it.exists() } ?: File("/docs/SesimiOku.apk").takeIf { it.exists() } ?: File("/docs/SesYazOku.apk")
                 if (localBuiltApk.exists()) {
                     localBuiltApk.copyTo(internalApk, overwrite = true)
                 } else if (docsApk.exists()) {

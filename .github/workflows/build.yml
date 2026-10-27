@@ -75,13 +75,15 @@ jobs:
       - name: Copy Built APK & Update version.json for Web Download Page
         run: |
           mkdir -p docs
+          cp app/build/outputs/apk/debug/app-debug.apk docs/ScribeCraftGlobal.apk
+          cp app/build/outputs/apk/debug/app-debug.apk docs/SesimiOku.apk
           cp app/build/outputs/apk/debug/app-debug.apk docs/SesYazOku.apk
 
           cat <<EOF > docs/version.json
           {
             "versionCode": ${{ env.VERSION_CODE }},
             "versionName": "${{ env.VERSION_NAME }}",
-            "apkUrl": "SesYazOku.apk",
+            "apkUrl": "ScribeCraftGlobal.apk",
             "webPageUrl": "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/",
             "releaseNotes": "GitHub Güncellemesi (${{ env.SHORT_SHA }}): ${{ env.COMMIT_MSG }}",
             "publishedAt": "${{ env.BUILD_DATE }}",
@@ -98,7 +100,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Actions Build Bot"
-          git add -f docs/SesYazOku.apk docs/version.json docs/index.html
+          git add -f docs/ScribeCraftGlobal.apk docs/SesimiOku.apk docs/SesYazOku.apk docs/version.json docs/index.html
           if git diff --staged --quiet; then
             echo "No changes to commit in docs/"
           else
@@ -109,7 +111,7 @@ jobs:
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SesYazOku-v${{ env.VERSION_NAME }}-APK
+          name: ScribeCraftGlobal-v${{ env.VERSION_NAME }}-APK
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
@@ -118,7 +120,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: app/build/outputs/apk/debug/*.apk
-          name: "SesYazOku v${{ env.VERSION_NAME }}"
+          name: "Scribe Craft Global v${{ env.VERSION_NAME }}"
           body: "Otomatik GitHub sürümü: v${{ env.VERSION_NAME }}\nCommit: ${{ env.SHORT_SHA }}\n${{ env.COMMIT_MSG }}"
           generate_release_notes: true
           draft: false

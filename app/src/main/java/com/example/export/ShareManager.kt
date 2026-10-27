@@ -54,7 +54,7 @@ object ShareManager {
                     appendLine("*(... ve ${segments.size - 4} konuşma parçası daha)*")
                 }
                 appendLine("━━━━━━━━━━━━━━━━━━━━━")
-                appendLine("📲 SesYazOku Android ile hazırlanmıştır.")
+                appendLine("📲 Scribe Craft Global Android ile hazırlanmıştır.")
             }
 
             val intent = Intent(Intent.ACTION_SEND).apply {

@@ -739,7 +739,7 @@ fun RecordScreen(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "Bu mod aktif edildiğinde arka plan servisi başlar. SesYazOku arka planda çalışırken diğer uygulamalara geçebilir, gelen veya giden konuşmaları kesintisiz kaydedebilirsiniz.",
+                    text = "Bu mod aktif edildiğinde arka plan servisi başlar. Scribe Craft Global arka planda çalışırken diğer uygulamalara geçebilir, gelen veya giden konuşmaları kesintisiz kaydedebilirsiniz.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

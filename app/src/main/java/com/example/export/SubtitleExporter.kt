@@ -93,7 +93,7 @@ object SubtitleExporter {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 putExtra(Intent.EXTRA_SUBJECT, file.name)
-                putExtra(Intent.EXTRA_TEXT, "SesYazOku ile oluşturulmuş $formatName dosyası ekte yer almaktadır.")
+                putExtra(Intent.EXTRA_TEXT, "Scribe Craft Global ile oluşturulmuş $formatName dosyası ekte yer almaktadır.")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(Intent.createChooser(shareIntent, "$formatName Paylaş"))
