@@ -1,9 +1,9 @@
 {
-  "versionCode": 40,
-  "versionName": "1.0.40",
+  "versionCode": 41,
+  "versionName": "1.0.41",
   "apkUrl": "ScribeCraftGlobal.apk",
   "webPageUrl": "https://aydannadya31.github.io/SesYazOku/",
-  "releaseNotes": "GitHub Güncellemesi (518c129): chore: rename project to Scribe Craft Global",
-  "publishedAt": "2026-10-27 12:05 UTC",
+  "releaseNotes": "GitHub Güncellemesi (ce0377f): feat(sync): enhance admin feedback system",
+  "publishedAt": "2026-10-28 10:13 UTC",
   "minSdkVersion": 24
 }
