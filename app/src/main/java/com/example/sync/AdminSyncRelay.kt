@@ -176,7 +176,7 @@ class AdminSyncRelay(private val context: Context) {
     fun startListeningForAdminEvents(
         scope: CoroutineScope,
         userEmail: String,
-        onAdminReplyReceived: (replyText: String) -> Unit,
+        onAdminReplyReceived: (replyText: String, subject: String, attachmentsJson: String, audioUri: String?, imageUri: String?, pdfUri: String?) -> Unit,
         onSupportAlertReceived: (alertText: String) -> Unit
     ) {
         val effectiveEmail = userEmail.ifBlank { "aydannadya31@gmail.com" }
@@ -207,10 +207,22 @@ class AdminSyncRelay(private val context: Context) {
 
                                         if (type == "ADMIN_REPLY" && (targetEmail.isBlank() || targetEmail.equals(effectiveEmail, ignoreCase = true))) {
                                             val text = innerJson.optString("replyText")
-                                            if (text.isNotBlank()) {
-                                                Log.i(TAG, "Admin reply received: $text")
+                                            val subject = innerJson.optString("subject", "Teknik Destek Ekibi Yanıtı")
+                                            val attachmentsJson = innerJson.optString("attachmentsJson", "")
+                                            val audioUri = innerJson.optString("audioUri", "")
+                                            val imageUri = innerJson.optString("imageUri", "")
+                                            val pdfUri = innerJson.optString("pdfUri", "")
+                                            if (text.isNotBlank() || attachmentsJson.isNotBlank()) {
+                                                Log.i(TAG, "Admin reply received: $text, attachments=$attachmentsJson")
                                                 scope.launch(Dispatchers.Main) {
-                                                    onAdminReplyReceived(text)
+                                                    onAdminReplyReceived(
+                                                        text,
+                                                        subject,
+                                                        attachmentsJson,
+                                                        audioUri.ifBlank { null },
+                                                        imageUri.ifBlank { null },
+                                                        pdfUri.ifBlank { null }
+                                                    )
                                                 }
                                             }
                                         } else if (type == "SUPPORT_ALERT") {

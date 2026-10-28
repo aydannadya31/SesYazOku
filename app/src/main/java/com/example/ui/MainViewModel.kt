@@ -90,8 +90,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 adminSyncRelay.startListeningForAdminEvents(
                     scope = viewModelScope,
                     userEmail = initialEmail,
-                    onAdminReplyReceived = { replyText ->
-                        Toast.makeText(getApplication(), "Yönetimden Yeni Yanıt: $replyText", Toast.LENGTH_LONG).show()
+                    onAdminReplyReceived = { replyText, subject, attachmentsJson, audioUri, imageUri, pdfUri ->
+                        viewModelScope.launch {
+                            val currentList = feedbacks.value
+                            val alreadyExists = currentList.any { fb ->
+                                fb.category == "Yönetici Yanıtı" && fb.message == replyText && (System.currentTimeMillis() - fb.timestamp < 60000)
+                            }
+                            if (!alreadyExists) {
+                                val adminFeedback = FeedbackEntity(
+                                    subject = subject.ifBlank { "Teknik Destek Ekibi Yanıtı" },
+                                    category = "Yönetici Yanıtı",
+                                    message = replyText,
+                                    timestamp = System.currentTimeMillis(),
+                                    userEmail = "destek@scribecraftglobal.com",
+                                    status = "Cevaplandı",
+                                    audioUri = audioUri,
+                                    imageUri = imageUri,
+                                    pdfUri = pdfUri,
+                                    attachmentsJson = attachmentsJson
+                                )
+                                feedbackDao.insertFeedback(adminFeedback)
+                            }
+                            val displayMsg = if (replyText.isNotBlank()) replyText else "Ekli dosya gönderildi"
+                            Toast.makeText(getApplication(), "🛡️ Yönetimden Yanıt Geldi: $displayMsg", Toast.LENGTH_LONG).show()
+                        }
                     },
                     onSupportAlertReceived = { alertText ->
                         feedbackPrefs.edit().putString("active_support_alert", alertText).apply()

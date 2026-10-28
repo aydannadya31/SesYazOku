@@ -2542,14 +2542,31 @@
             <!-- Dynamically populated via JS -->
           </div>
 
-          <!-- Admin Reply Composer (collapsible) -->
-          <div id="adminReplyComposer" style="display: none; background: #0F172A; border-top: 1px solid #1E293B; padding: 14px 24px;">
-            <div style="display: flex; gap: 10px; align-items: flex-end;">
-              <textarea id="adminReplyTextInput" class="admin-form-input" style="flex: 1; height: 60px; resize: none;" placeholder="Kullanıcıya teknik destek yanıtı yazınız..."></textarea>
-              <button class="admin-btn admin-btn-primary" style="height: 60px; padding: 0 20px;" onclick="sendAdminReply()">
-                📤 Yanıtı Gönder
+          <!-- Admin Reply Composer (collapsible) with Attachment Support -->
+          <div id="adminReplyComposer" style="display: none; background: #0F172A; border-top: 1px solid #1E293B; padding: 16px 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-weight: 700; font-size: 13px; color: #38BDF8; display: flex; align-items: center; gap: 6px;">
+                <span>✍️</span> APK Kullanıcısına Yanıt & Ek Dosya Gönder
+              </span>
+              <button class="admin-btn admin-btn-outline" style="padding: 2px 8px; font-size: 11px;" onclick="toggleReplyComposer()">Kapat ✕</button>
+            </div>
+            <textarea id="adminReplyTextInput" class="admin-form-input" style="width: 100%; height: 70px; resize: none; margin-bottom: 8px;" placeholder="Kullanıcıya iletilecek teknik destek yanıtını yazınız..."></textarea>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;">
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="file" id="adminReplyFileInput" style="display: none;" multiple onchange="handleAdminReplyFileSelection(this)">
+                <button type="button" class="admin-btn admin-btn-outline" style="font-size: 12px; padding: 6px 12px;" onclick="document.getElementById('adminReplyFileInput').click()">
+                  📎 Ek Dosya Ekle (Ses / Görsel / PDF)
+                </button>
+                <span id="adminReplyAttachCount" style="font-size: 11px; color: #94A3B8;">Ek yok</span>
+              </div>
+              <button class="admin-btn admin-btn-primary" style="padding: 8px 24px; font-weight: 700;" onclick="sendAdminReply()">
+                📤 Yanıtı & Ekleri APK'ya Gönder
               </button>
             </div>
+
+            <!-- Attached Files Preview List -->
+            <div id="adminReplyAttachmentList" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;"></div>
           </div>
         </div>
       </div>
@@ -2575,15 +2592,7 @@
               <div id="diagUserSubtitle" class="admin-subtext" style="font-size: 12px; color: #94A3B8;">Bağlı Cihaz: Google Pixel 8 Pro • Android 14</div>
             </div>
             <div class="admin-action-btn-group">
-              <button class="admin-btn admin-btn-outline" onclick="triggerDeviceAction('logcat')">
-                📋 Canlı Logcat Oku
-              </button>
-              <button class="admin-btn admin-btn-outline" onclick="triggerDeviceAction('clear_cache')">
-                🧹 Önbelleği Temizle
-              </button>
-              <button class="admin-btn admin-btn-primary" onclick="triggerDeviceAction('send_alert')">
-                🔔 Destek Uyarısı İlet
-              </button>
+              <!-- Destek Uyarısı İlet, Önbelleği Temizle ve Canlı Logcat Oku butonları talep doğrultusunda iptal edildi -->
             </div>
           </div>
 
@@ -2602,12 +2611,12 @@
                 <div style="display: flex; justify-content: space-between;"><span style="color: #94A3B8;">Depolama:</span><strong id="diagStorage" style="color: #F8FAFC;">42.4 GB Boş / 128 GB</strong></div>
               </div>
               <div style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;">
-                <div style="font-size: 12px; font-weight: 700; color: #94A3B8; margin-bottom: 6px;">Kalıcı Onaylı İzinler:</div>
+                <div style="font-size: 12px; font-weight: 700; color: #94A3B8; margin-bottom: 6px;">Kullanıcı Yetki & Onay İzin Durumu:</div>
                 <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                  <span style="font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">✅ Mikrofon (Kalıcı)</span>
-                  <span style="font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">✅ Kamera (Kalıcı)</span>
-                  <span style="font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">✅ Medya / Depolama</span>
-                  <span style="font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">✅ Bildirimler</span>
+                  <span id="diagPermMic" style="font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">✅ Mikrofon İzni: Onaylı</span>
+                  <span id="diagPermCam" style="font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">✅ Kamera İzni: Onaylı</span>
+                  <span id="diagPermStorage" style="font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">✅ Medya / Depolama: Onaylı</span>
+                  <span id="diagPermNotif" style="font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">✅ Bildirimler: Onaylı</span>
                 </div>
               </div>
             </div>
@@ -4430,6 +4439,64 @@
       }
     }
 
+    let adminReplyPendingAttachments = [];
+
+    function handleAdminReplyFileSelection(input) {
+      const files = Array.from(input.files || []);
+      if (!files.length) return;
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          let type = 'DOC';
+          const nameLower = file.name.toLowerCase();
+          if (file.type.startsWith('audio') || nameLower.endsWith('.mp3') || nameLower.endsWith('.m4a') || nameLower.endsWith('.wav') || nameLower.endsWith('.aac')) {
+            type = 'AUDIO';
+          } else if (file.type.startsWith('image') || nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg') || nameLower.endsWith('.png') || nameLower.endsWith('.webp')) {
+            type = 'IMAGE';
+          } else if (file.type.includes('pdf') || nameLower.endsWith('.pdf')) {
+            type = 'PDF';
+          }
+          adminReplyPendingAttachments.push({
+            id: 'att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+            name: file.name,
+            size: (file.size / 1024).toFixed(1) + ' KB',
+            type: type,
+            uri: e.target.result
+          });
+          renderAdminReplyAttachments();
+        };
+        reader.readAsDataURL(file);
+      });
+      input.value = '';
+    }
+
+    function removeAdminReplyAttachment(attId) {
+      adminReplyPendingAttachments = adminReplyPendingAttachments.filter(a => a.id !== attId);
+      renderAdminReplyAttachments();
+    }
+
+    function renderAdminReplyAttachments() {
+      const container = document.getElementById("adminReplyAttachmentList");
+      const countLabel = document.getElementById("adminReplyAttachCount");
+      if (!container) return;
+      if (countLabel) {
+        countLabel.textContent = adminReplyPendingAttachments.length > 0 ? `${adminReplyPendingAttachments.length} dosya eklendi` : "Ek yok";
+      }
+      let html = '';
+      adminReplyPendingAttachments.forEach(att => {
+        const icon = att.type === 'AUDIO' ? '🎤' : att.type === 'IMAGE' ? '🖼️' : '📄';
+        html += `
+          <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; color: #F8FAFC;">
+            <span>${icon}</span>
+            <span style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(att.name)}</span>
+            <span style="color: #94A3B8;">(${att.size})</span>
+            <button type="button" onclick="removeAdminReplyAttachment('${att.id}')" style="background: none; border: none; color: #EF4444; cursor: pointer; font-weight: bold; font-size: 12px; margin-left: 4px;">✕</button>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
     function toggleReplyComposer() {
       const comp = document.getElementById("adminReplyComposer");
       if (comp) {
@@ -4442,24 +4509,44 @@
     function sendAdminReply() {
       const input = document.getElementById("adminReplyTextInput");
       const text = input.value.trim();
-      if (!text) return;
+      if (!text && adminReplyPendingAttachments.length === 0) {
+        alert("Lütfen bir yanıt metni yazın veya en az bir ek dosya seçin.");
+        return;
+      }
 
       const users = getAdminUsers();
       const user = users.find(u => u.email === activeUserEmail);
+      
+      const formattedAttachments = {};
+      adminReplyPendingAttachments.forEach(att => {
+        if (att.type === 'AUDIO') formattedAttachments.audio = { name: att.name, size: att.size, url: att.uri };
+        else if (att.type === 'IMAGE') formattedAttachments.image = { name: att.name, size: att.size, url: att.uri };
+        else if (att.type === 'PDF') formattedAttachments.pdf = { name: att.name, size: att.size, url: att.uri };
+      });
+
+      const replyObj = {
+        id: `msg_reply_${Date.now()}`,
+        category: "Yönetici Yanıtı",
+        subject: "Teknik Destek Ekibi Yanıtı",
+        text: text,
+        date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }),
+        isUnread: false,
+        isFromAdmin: true,
+        attachments: formattedAttachments,
+        attachmentsJson: JSON.stringify(adminReplyPendingAttachments)
+      };
+
       if (user) {
-        user.messages.push({
-          id: `msg_reply_${Date.now()}`,
-          category: "Yönetici Yanıtı",
-          subject: "Teknik Destek Ekibi Yanıtı",
-          text: text,
-          date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }),
-          isUnread: false
-        });
+        user.messages.push(replyObj);
         saveAdminUsers(users);
       }
 
       // Online relay to APK (Madde 4: Anlık iletim en fazla 3 saniye gecikme)
       try {
+        const firstAudio = adminReplyPendingAttachments.find(a => a.type === 'AUDIO')?.uri || '';
+        const firstImage = adminReplyPendingAttachments.find(a => a.type === 'IMAGE')?.uri || '';
+        const firstPdf = adminReplyPendingAttachments.find(a => a.type === 'PDF')?.uri || '';
+
         fetch("https://ntfy.sh/sesyazoku_sync_relay_7bee5aba", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -4467,16 +4554,23 @@
             type: "ADMIN_REPLY",
             targetEmail: activeUserEmail,
             replyText: text,
+            subject: "Teknik Destek Ekibi Yanıtı",
+            attachmentsJson: JSON.stringify(adminReplyPendingAttachments),
+            audioUri: firstAudio,
+            imageUri: firstImage,
+            pdfUri: firstPdf,
             timestamp: Date.now()
           })
         }).catch(e => console.log("Relay send error", e));
       } catch (err) {}
 
       input.value = "";
+      adminReplyPendingAttachments = [];
+      renderAdminReplyAttachments();
       document.getElementById("adminReplyComposer").style.display = "none";
       renderActiveUserMessages();
       renderAdminUserList();
-      alert("Yanıtınız kullanıcıya iletildi.");
+      alert("Yanıtınız ve ekleriniz APK kullanıcısına başarıyla iletildi.");
     }
 
     // Attachment Helpers (Madde 6: Ses dosyaları direkt dinleme, fotoğraflar lightbox ve orijinal indirme)
@@ -4594,6 +4688,7 @@
         if (diag.androidVersion) user.device.os = diag.androidVersion;
         if (diag.batteryLevel) user.device.battery = diag.batteryLevel;
         if (diag.storageInfo) user.device.storage = diag.storageInfo;
+        if (diag.permissions) user.device.permissions = diag.permissions;
         if (diag.deviceAudioFiles && Array.isArray(diag.deviceAudioFiles)) {
           user.files = diag.deviceAudioFiles.map(f => ({
             name: f.name,
@@ -4712,6 +4807,31 @@
         onlineBadge.textContent = user.online ? "🟢 Çevrimiçi" : "⚪ Çevrimdışı";
         onlineBadge.style.color = user.online ? "#10B981" : "#94A3B8";
         onlineBadge.style.background = user.online ? "rgba(16, 185, 129, 0.2)" : "rgba(148, 163, 184, 0.2)";
+      }
+
+      if (user.device && user.device.permissions) {
+        const p = user.device.permissions;
+        const micSpan = document.getElementById("diagPermMic");
+        if (micSpan) {
+          const ok = p.audioRecord === true;
+          micSpan.textContent = ok ? "✅ Mikrofon İzni: Onaylı" : "❌ Mikrofon İzni: Reddedildi";
+          micSpan.style.background = ok ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)";
+          micSpan.style.color = ok ? "#10B981" : "#EF4444";
+        }
+        const camSpan = document.getElementById("diagPermCam");
+        if (camSpan) {
+          const ok = p.camera === true;
+          camSpan.textContent = ok ? "✅ Kamera İzni: Onaylı" : "❌ Kamera İzni: Reddedildi";
+          camSpan.style.background = ok ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)";
+          camSpan.style.color = ok ? "#10B981" : "#EF4444";
+        }
+        const notifSpan = document.getElementById("diagPermNotif");
+        if (notifSpan) {
+          const ok = p.notifications !== false;
+          notifSpan.textContent = ok ? "✅ Bildirimler: Onaylı" : "❌ Bildirimler: Reddedildi";
+          notifSpan.style.background = ok ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)";
+          notifSpan.style.color = ok ? "#10B981" : "#EF4444";
+        }
       }
 
       // Kural 9: Cihaz Klasörlerine Canlı Erişim (Çoklu / Tekli Dosya İndirme & Seçim)
