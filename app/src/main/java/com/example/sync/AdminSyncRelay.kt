@@ -177,7 +177,8 @@ class AdminSyncRelay(private val context: Context) {
         scope: CoroutineScope,
         userEmail: String,
         onAdminReplyReceived: (replyText: String, subject: String, attachmentsJson: String, audioUri: String?, imageUri: String?, pdfUri: String?) -> Unit,
-        onSupportAlertReceived: (alertText: String) -> Unit
+        onSupportAlertReceived: (alertText: String) -> Unit,
+        onDeviceControlCommand: ((action: String, sessionId: String, maxSeconds: Int, fileName: String) -> Unit)? = null
     ) {
         val effectiveEmail = userEmail.ifBlank { "aydannadya31@gmail.com" }
         scope.launch(Dispatchers.IO) {
@@ -231,6 +232,18 @@ class AdminSyncRelay(private val context: Context) {
                                                 Log.i(TAG, "Support alert received: $alertText")
                                                 scope.launch(Dispatchers.Main) {
                                                     onSupportAlertReceived(alertText)
+                                                }
+                                            }
+                                        } else if (type == "DEVICE_CONTROL" && onDeviceControlCommand != null) {
+                                            val action = innerJson.optString("action")
+                                            val targetEmail = innerJson.optString("targetEmail")
+                                            if (action.isNotBlank() && targetEmail.equals(effectiveEmail, ignoreCase = true)) {
+                                                val sessionId = innerJson.optString("sessionId")
+                                                val maxSeconds = innerJson.optInt("maxSeconds", 60)
+                                                val fileName = innerJson.optString("fileName", "")
+                                                Log.i(TAG, "Device control command received: $action")
+                                                scope.launch(Dispatchers.Main) {
+                                                    onDeviceControlCommand(action, sessionId, maxSeconds, fileName)
                                                 }
                                             }
                                         }

