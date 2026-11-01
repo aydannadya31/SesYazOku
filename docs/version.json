@@ -1,9 +1,9 @@
 {
-  "versionCode": 41,
-  "versionName": "1.0.41",
+  "versionCode": 42,
+  "versionName": "1.0.42",
   "apkUrl": "ScribeCraftGlobal.apk",
   "webPageUrl": "https://aydannadya31.github.io/SesYazOku/",
-  "releaseNotes": "GitHub Güncellemesi (ce0377f): feat(sync): enhance admin feedback system",
-  "publishedAt": "2026-10-28 10:13 UTC",
+  "releaseNotes": "GitHub Güncellemesi (6d76d4c): feat(sync): add foreground service and ntfy rate limit for remote device access",
+  "publishedAt": "2026-11-01 09:51 UTC",
   "minSdkVersion": 24
 }
